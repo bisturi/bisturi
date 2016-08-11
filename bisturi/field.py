@@ -9,6 +9,15 @@ class Field(object):
       self.struct_code = None
       self.is_bigendian = True
 
+      self.move_to = None
+
+   def describe_yourself(self, field_name):
+      if self.move_to is None:
+         return [(field_name, self)]
+
+      else:
+         return [("_shift_to_%s" % field_name, Move(self.move_to)), (field_name, self)]
+
    def compile(self, field_name, position, fields):
       del self.ctime
       self.field_name = field_name
@@ -28,7 +37,7 @@ class Field(object):
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
 
-   def pack(self, packet):
+   def pack(self, pkt, offset):
       raise NotImplementedError()
 
    def repeated(self, count=None, until=None, when=None, default=None):
@@ -41,6 +50,9 @@ class Field(object):
    def when(self, condition, default=None):
       return Optional(prototype=self, when=condition, default=default)
 
+   def at(self, position):
+      self.move_to = position
+      return self
 
 def _get_count(count_arg):
    '''Return a callable from count_arg so you can invoke that callable
@@ -185,13 +197,15 @@ class Sequence(Field):
       return offset
 
 
-   def pack(self, packet):
-      sequence = getattr(packet, self.field_name)
+   def pack(self, pkt, offset):
+      sequence = getattr(pkt, self.field_name)
       raw = []
       seq_elem_field_name = self.seq_elem_field_name
       for val in sequence:
-         setattr(packet,  seq_elem_field_name, val)
-         raw.append(self.prototype_field.pack(packet))
+         setattr(pkt,  seq_elem_field_name, val)
+         r = self.prototype_field.pack(pkt, offset)
+         offset += len(r)
+         raw.append(r)
 
       return "".join(raw)
 
@@ -245,12 +259,12 @@ class Optional(Field):
       return offset
 
 
-   def pack(self, packet):
-      obj = getattr(packet, self.field_name)
+   def pack(self, pkt, offset):
+      obj = getattr(pkt, self.field_name)
       opt_elem_field_name = self.opt_elem_field_name
       if obj is not None:
-         setattr(packet,  opt_elem_field_name, obj)
-         return self.prototype_field.pack(packet)
+         setattr(pkt,  opt_elem_field_name, obj)
+         return self.prototype_field.pack(pkt, offset)
 
       else:
          return ""
@@ -291,7 +305,7 @@ class Int(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
-   def pack(self, packet):
+   def pack(self, pkt, offset):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
    def _unpack_fixed_and_primitive_size(self, pkt, raw, offset=0, **k):
@@ -301,7 +315,7 @@ class Int(Field):
 
       return next_offset
 
-   def _pack_fixed_and_primitive_size(self, pkt):
+   def _pack_fixed_and_primitive_size(self, pkt, offset):
       integer = getattr(pkt, self.field_name)
       raw = self.struct_obj.pack(integer)
 
@@ -320,7 +334,7 @@ class Int(Field):
       setattr(pkt, self.field_name, num)
       return next_offset
 
-   def _pack_fixed_size(self, pkt):
+   def _pack_fixed_size(self, pkt, offset):
       integer = getattr(pkt, self.field_name)
       num = (self.base + integer) if integer < 0 else integer
 
@@ -385,8 +399,8 @@ class Data(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
-   def pack(self, packet):
-      return getattr(packet, self.field_name) + self.delimiter_to_be_included
+   def pack(self, pkt, offset):
+      return getattr(pkt, self.field_name) + self.delimiter_to_be_included
 
    def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
@@ -537,11 +551,11 @@ class Ref(Field):
       return referenced.unpack(raw, offset, **k)
 
 
-   def pack(self, packet):
+   def pack(self, pkt, offset):
       if isinstance(self.prototype, Field):
-         return self.prototype.pack(packet)
+         return self.prototype.pack(pkt, offset)
 
-      obj = getattr(packet, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+      obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack()
 
@@ -549,13 +563,13 @@ class Ref(Field):
 
       # we try to know how to pack this value
       assert callable(self.prototype)
-      referenced = self.prototype(pkt=packet, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, offset=offset, packing=True)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[])
-         #referenced.init(packet, {})
+         #referenced.init(pkt, {})
 
-         return referenced.pack(packet)
+         return referenced.pack(pkt, offset)
 
       # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
       # however, the 'referenced' object IS a Packet and we cannot do anything else
@@ -564,20 +578,20 @@ class Ref(Field):
    def _unpack_referencing_a_packet(self, pkt, **k):
       return getattr(pkt, self.field_name).unpack(**k)
 
-   def _pack_referencing_a_packet(self, packet):
-      return getattr(packet, self.field_name).pack()
+   def _pack_referencing_a_packet(self, pkt, offset):
+      return getattr(pkt, self.field_name).pack()
  
-   def _pack_referencing_a_unknow_object(self, packet):     
-      obj = getattr(packet, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+   def _pack_referencing_a_unknow_object(self, pkt, offset):     
+      obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack()
 
       # we try to know how to pack this "primitive" value
-      referenced = self.prototype(pkt=packet, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, offset=offset, packing=True)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[])
-         return referenced.pack(packet)
+         return referenced.pack(pkt)
 
       # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
       # however, the 'referenced' object IS a Packet and we cannot do anything else
@@ -651,15 +665,43 @@ class Bits(Field):
       setattr(pkt, self.field_name, (I & self.mask) >> self.shift)
       return offset
 
-   def pack(self, packet):
-      I = getattr(packet, self.I.field_name)
-      setattr(packet, self.I.field_name, ((getattr(packet, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
+   def pack(self, pkt, offset):
+      I = getattr(pkt, self.I.field_name)
+      setattr(pkt, self.I.field_name, ((getattr(pkt, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
 
       if self.iam_last:
-         return self.I.pack(packet)
+         return self.I.pack(pkt, offset=0)
       else:
          return ""
       
+
+class Move(Field):
+   def __init__(self, to):
+      Field.__init__(self)
+      self.absolute_position = to
+      self.default = ''
+
+   def unpack(self, pkt, raw, offset=0, **k):
+      if isinstance(self.absolute_position, Field):
+         next_offset = getattr(pkt, self.absolute_position.field_name)
+      else:
+         assert isinstance(self.absolute_position, (int, long))
+         next_offset = self.absolute_position
+
+      setattr(pkt, self.field_name, raw[offset:next_offset])
+      return next_offset
+
+   def pack(self, pkt, offset):
+      garbage = getattr(pkt, self.field_name)
+
+      if isinstance(self.absolute_position, Field):
+         next_offset = getattr(pkt, self.absolute_position.field_name)
+      else:
+         assert isinstance(self.absolute_position, (int, long))
+         next_offset = self.absolute_position
+      
+      return garbage + ("\x00" * (next_offset - len(garbage) + offset - 1))
+
 
 class Bkpt(Field):
    def init(self, packet, defaults):
@@ -670,7 +712,7 @@ class Bkpt(Field):
       pdb.set_trace()
       return offset
 
-   def pack(self, packet):
+   def pack(self, pkt, offset):
       import pdb
       pdb.set_trace()
       return ""

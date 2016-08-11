@@ -70,8 +70,8 @@ So we need to create our own field.
 ... 
 ...       return self.byte_count + offset
 ... 
-...    def pack(self, packet):
-...       ip_address = self.getval(packet)
+...    def pack(self, pkt, offset):
+...       ip_address = self.getval(pkt)
 ...       raw = ip_address.packed
 ... 
 ...       return raw

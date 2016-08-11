@@ -19,14 +19,23 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
    if generate_for_pack:
       pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
-def pack(pkt, **k):
+def pack(pkt, offset=0, **k):
    chunks_raw = []
    fields = pkt.get_fields()
+   try:
 %(blocks_of_code)s
+   except Exception, e:
+%(except_block)s
 
    return "".join(chunks_raw)
 ''' % {
-      'blocks_of_code': indent("\n".join([c[0] for c in codes]))
+      'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
+      'except_block': indent('''
+import traceback
+msg = traceback.format_exc()
+raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
+                              name, pkt.__class__.__name__, offset, msg))
+''', level=2)
    }
    else:
       pack_code = ""
@@ -130,9 +139,11 @@ offset = next_offset
    pack_code = '''
 name = "%(name)s" 
 chunks_raw.append(StructPack("%(fmt)s", %(lookup_fields)s))
+offset += %(advance)s
 ''' % {
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
+         'advance': struct.calcsize(fmt),
          'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
       }
    
@@ -145,12 +156,14 @@ def generate_code_for_fixed_fields_without_struct_code(group):
    return (generate_code_for_loop_pack(group), generate_code_for_loop_unpack(group))
 
 def generate_code_for_loop_pack(group):
-   return '''
-chunks_raw.extend([pack(pkt) for name, f, pack, _ in fields[%(start_index)i:%(end_index)i]])
+   return ''.join(['''
+name, _, pack, _ = fields[%(field_index)i]
+r = pack(pkt=pkt, offset=offset)
+chunks_raw.append(r)
+offset += len(r)
 ''' % {
-         'start_index': group[0][0],
-         'end_index':   group[-1][0]+1,
-      }
+      'field_index': field_index
+   } for field_index in range(group[0][0], group[-1][0]+1)])
 
 def generate_code_for_loop_unpack(group):
    return ''.join(['''

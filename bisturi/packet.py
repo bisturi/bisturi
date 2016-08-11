@@ -10,6 +10,9 @@ class MetaPacket(type):
       from field import Field
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
+
+      # request to describe yourself to each field
+      fields = sum([valfield.describe_yourself(namefield) for namefield, valfield in fields], [])
       
       # create the slots (memory optimization)
       additional_slots = attrs.get('__bisturi__', {}).get('additional_slots', [])
@@ -25,7 +28,8 @@ class MetaPacket(type):
       
       # remove the fields from the class definition
       for n, _, _, _ in fields:
-         del attrs[n]
+         if n in attrs: # check this, because 'describe_yourself' can add new fields
+            del attrs[n]
 
       cls = type.__new__(metacls, name, bases, attrs)
 
@@ -64,8 +68,8 @@ class Packet(object):
       self.pop_from_the_stack(stack)
       return offset
          
-   def pack(self):
-      return ''.join([pack(self) for name, f, pack, _ in self.get_fields()])
+   def pack(self, offset=0):
+      return ''.join([pack(self, offset) for name, f, pack, _ in self.get_fields()])
 
    def push_to_the_stack(self, stack):
       if stack:
