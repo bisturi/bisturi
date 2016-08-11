@@ -20,6 +20,37 @@ class Field(object):
    def to_raw(self, packet):
       raise NotImplementedError()
 
+   def repeated(self, count=None, until=None):
+      assert not (count is None and until is None)
+      assert not (count is not None and until is not None)
+
+      #TODO count can be a number, a field, or a callable.
+      #assume that count is a number
+      return Sequence(prototype=self, count=count, until=until)
+
+class Sequence(Field):
+   def __init__(self, prototype, count, until):
+      Field.__init__(self)
+      self.ctime = prototype.ctime
+      self.default = []
+
+      self.prototype = prototype
+      self.count = count
+      self.until = until
+
+   def compile(self, field_name, position, fields):
+      Field.compile(self, field_name, position, fields)
+      self.prototype.compile("self", position, fields)
+
+
+   def from_raw(self, packet, raw, offset=0):
+      obj = prototype.copy() # TODO
+      
+      obj.from_raw(packet, raw, offset)
+
+
+   def to_raw(self, packet):
+      raise NotImplementedError()
 
 
 class Int(Field):
