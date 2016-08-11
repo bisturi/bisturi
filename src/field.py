@@ -11,10 +11,13 @@ class Field(object):
       self.setval = lambda packet, val: setattr(packet, field_name, val)
 
 
-   def init(self, packet, field_name, defaults):
+   def init(self, packet, defaults):
       raise NotImplementedError()
 
    def from_raw(self, packet, raw, offset=0):
+      raise NotImplementedError()
+
+   def to_raw(self, packet):
       raise NotImplementedError()
 
 
@@ -136,3 +139,24 @@ class Data(Field):
 
    def to_raw(self, packet):
       return self.getval(packet) + self.delimiter_to_be_included
+
+class Ref(Field):
+   def __init__(self, packet_class, *packet_args, **packet_kargs):
+      Field.__init__(self)
+      self.packet_class = packet_class
+      self.packet_args = packet_args
+      self.packet_kargs = packet_kargs
+
+
+   def init(self, packet, defaults):
+      if self.field_name in defaults:
+         self.setval(packet, defaults[self.field_name])
+      else:
+         self.setval(packet, self.packet_class(*self.packet_args, **self.packet_kargs))
+
+   def from_raw(self, packet, raw, offset=0):
+      return self.getval(packet).from_raw(raw, offset)
+
+   def to_raw(self, packet):
+      return self.getval(packet).to_raw()
+
