@@ -1,6 +1,6 @@
 Some times, the field use a partial count of bytes. Only a few bits are used.
 
-
+```python
 >>> from packet import Packet
 >>> from field  import Bits, Int
 >>>
@@ -8,10 +8,13 @@ Some times, the field use a partial count of bytes. Only a few bits are used.
 ...   fragment_offset = Bits(12)
 ...   flags = Bits(4)
 
+```
+
 In this example, 2 bytes are required but the distribution of th bits is not 8,8.
 As you can see, it is 12,4.
 The default interpretation of the field is like an integer.
 
+```python
 >>> s = '\x00\x12'
 >>> p = BitsExample(s)
 >>>
@@ -25,10 +28,13 @@ The default interpretation of the field is like an integer.
 >>> q.pack() == s
 True
 
+```
+
 The implementation require that the sequence of Bits field consume an entire byte 
 (or a multiple). So, the sumatory of bits must be a multiple of 8.
 Partial usages are not allowed.
 
+```python
 >>> try:
 ...   class WrongUse(Packet):
 ...     fragment_offset = Bits(12)
@@ -37,8 +43,11 @@ Partial usages are not allowed.
 ...   True
 True
 
+```
+
 This restriction is needed for each contiguous sequence
 
+```python
 >>> try:
 ...   class WrongUse(Packet):
 ...     fragment_offset = Bits(12)   # the sequence is fragment_offset and flags1
@@ -48,4 +57,6 @@ This restriction is needed for each contiguous sequence
 ... except Bits.ByteBoundaryError:
 ...   True
 True
+
+```
 
