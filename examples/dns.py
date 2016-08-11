@@ -30,7 +30,18 @@ class Label(Packet):
       if not self.is_compressed():
          return self.name.val
       else:
-         return #TODO
+         class Builder(Packet):
+            name = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+         
+         builder = Builder()
+         builder.unpack(raw, self.offset())
+
+         names = []
+         for n in builder.name:
+            names.append(n.uncompressed_name(raw, offset))
+
+         return ".".join(names)
+            
 
 class ResourceRecord(Packet):
    name   = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
@@ -246,11 +257,16 @@ if __name__ == '__main__':
    the_question = response.questions[0]
    assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
  
-   for resource_records in (response.answers, response.authorities, response.additionals):
+   for resource_records in (response.questions, response.answers, response.authorities, response.additionals):
       for one_record in resource_records:
-         for label in one_record.name:
+         labels = one_record.name if hasattr(one_record, 'name') else one_record.qname
+         for label in labels:
             if label.is_compressed():
-               print hex(label.offset())
+               print hex(label.offset()), "compressed",
+            
+            print label.uncompressed_name(raw_response)
+         print "-" * 20
+      print "=" * 20
    
    #position_of_first_partial_name = raw_response.find('www')
    #inspect(response)
