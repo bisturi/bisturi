@@ -58,8 +58,10 @@ So we need to create our own field.
 ...      
 ...       self.byte_count = 4 if version == 4 else 16
 ...       self.cls_address = IPv4Address if version == 4 else IPv6Address
-...       self.default = self.cls_address(default)
+...       self.default = default
 ...    
+...    def init(self, packet, defaults):
+...       self.setval(packet, self.cls_address(defaults.get(self.field_name, self.default)))
 ...    
 ...    def unpack(self, packet, raw, offset=0):
 ...       raw_data = raw[offset:offset+self.byte_count]
@@ -87,10 +89,10 @@ Ok, lets see.
    its binary representation which is returned
 
 >>> class IP_Example(Packet):
-...    destination = IP(4, '127.0.0.1')
+...    destination = IP(4)
 ...    source = IP()
 
->>> p = IP_Example()
+>>> p = IP_Example(destination='127.0.0.1')
 >>> isinstance(p.destination, IPv4Address)
 True
 >>> str(p.destination)

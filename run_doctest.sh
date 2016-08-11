@@ -1,4 +1,16 @@
 pushd .
 cd bisturi
-python -m doctest ../docs/reference/*.rst
+
+for t in ../docs/reference/*.rst
+do
+   echo $t
+   python -m doctest $t
+done
+
+for t in ../examples/*.py
+do
+   echo $t
+   python $t
+done
+
 popd
