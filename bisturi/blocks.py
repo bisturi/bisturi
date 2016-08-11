@@ -66,7 +66,7 @@ raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
    module_compiled_filename = module_name + ".pyc"
 
    module = None
-   if os.path.exists(module_filename) or os.path.exists(module_compiled_filename):
+   if os.path.exists(module_filename):
       try:
          module = imp.load_source(module_name, module_filename)
       except ImportError:
