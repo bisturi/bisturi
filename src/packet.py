@@ -1,4 +1,5 @@
 from field import Field
+import re
 
 
 class MetaPacket(type):
@@ -21,6 +22,8 @@ class MetaPacket(type):
 
 class Packet(object):
    __metaclass__ = MetaPacket
+
+   END = re.compile('$')
 
    def __init__(self, bytestring=None, **defaults):
       map(lambda name_val: name_val[1].init(self, defaults), self.get_fields())

@@ -100,19 +100,20 @@ class Data(Field):
       self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
+      byte_count = self.byte_count(packet) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
       extra_count = 0
-      if isinstance(self.byte_count, int):
-         count = self.byte_count
-      elif isinstance(self.byte_count, basestring):
+      if isinstance(byte_count, int):
+         count = byte_count
+      elif isinstance(byte_count, basestring):
          if self.include_delimiter:
-            count = raw[offset:].find(self.byte_count) + len(self.byte_count)
+            count = raw[offset:].find(byte_count) + len(byte_count)
          else:
-            count = raw[offset:].find(self.byte_count)
-            extra_count = len(self.byte_count)
-            self.delimiter_to_be_included = self.byte_count
+            count = raw[offset:].find(byte_count)
+            extra_count = len(byte_count)
+            self.delimiter_to_be_included = byte_count
 
-      elif hasattr(self.byte_count, 'search'):
-         match = self.byte_count.search(raw, offset)
+      elif hasattr(byte_count, 'search'):
+         match = byte_count.search(raw, offset)
          if match:
             if self.include_delimiter:
                count = match.end()
@@ -123,7 +124,7 @@ class Data(Field):
          else:
             count = -1
       else:
-         count = self.byte_count.getval(packet)
+         count = byte_count.getval(packet)
 
       if count < 0:
          raise IndexError()

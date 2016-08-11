@@ -92,4 +92,33 @@ True
 
 As you can see, when you use a token as delimiter, the token is added to the result.
 
+A special case arise when the size of the data is not bound to a field only. Instead
+depend on something that can be resolved only when the packet disassmble the byte string.
+In this case, a callable can be used
+
+>>> class DataExample(Packet):
+...    size = Int(1)
+...    payload = Data(lambda packet: packet.size if packet.size < 255 else packet.END)
+
+In this example, the size of the 'payload' is determined by the value of 'size' only if it 
+is not equal to 255. When 'size' is 255, the payload will consume all the bytes until the
+'END' of the packet.
+This special attribute is just a shortcut for 're.compile("$")'.
+
+>>> s1 = '\x01a'
+>>> s2 = '\x02ab'
+>>> s3 = '\x01abc'
+>>> s4 = '\xffa'
+>>> s5 = '\xffabc'
+
+>>> DataExample(s1).payload
+'a'
+>>> DataExample(s2).payload
+'ab'
+>>> DataExample(s3).payload
+'a'
+>>> DataExample(s4).payload
+'a'
+>>> DataExample(s5).payload
+'abc'
 
