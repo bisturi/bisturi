@@ -86,30 +86,13 @@ class Packet(object):
    @classmethod
    def build_default_instance(cls):
        try:
-           obj = cls._build_default_instance_from_picked()
-           cls.build_default_instance = cls._build_default_instance_from_picked
-       except:
-           try:
-               obj = cls._build_default_instance_copying()
-               cls.build_default_instance = cls._build_default_instance_copying
-           except:
-               obj = cls()
-               cls.__bisturi__['default_instance'] = obj
-               
-               try:
-                   cls.__bisturi__['default_instance_pickled'] = pickle.dumps(obj, -1)
-               except:
-                   pass
+           return cls.__bisturi__['clone_default_instance']()
+       except KeyError:
+           pkt = cls()
+           prototype = Prototype(pkt)
+           cls.__bisturi__['clone_default_instance'] = prototype.clone
 
-       return obj
-
-   @classmethod
-   def _build_default_instance_from_picked(cls):
-       return pickle.loads(cls.__bisturi__['default_instance_pickled'])
-
-   @classmethod
-   def _build_default_instance_copying(cls):
-       return copy.deepcopy(cls.__bisturi__['default_instance'])
+           return prototype.clone()
 
    def as_prototype(self):
       return Prototype(self)
