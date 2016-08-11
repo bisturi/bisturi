@@ -52,3 +52,15 @@ True
 >>> q.to_raw() == s2
 True
 
+Finally, you can set the offset of the string where to start to read. By default is 0.
+However, to use this you need to call from_raw directly.
+>>> s2 = 'xxx\x01\x00\x00\x00\x01d'
+>>> q = TLP()
+>>> q.from_raw(s2, 3) #ignore the first 3 bytes "xxx"
+9
+>>> q.type
+1
+>>> q.length
+1
+>>> q.payload
+'d'
