@@ -15,7 +15,7 @@ class len_val(Packet):
 
 class Option(Packet):
    type     = Int(1)
-   payload  = Ref(len_val).when(lambda pkt, **k: pkt.type != 0)
+   payload  = Ref(len_val).when(type != 0)
 
 
 class HopByHop(Packet):
@@ -90,7 +90,7 @@ class IPv6(Packet):
    dst_addr    = IPAddr(version=6)
 
    extentions  = Ref(Extention).repeated(until=lambda pkt, **k: pkt.extentions[-1].next_header == 59,
-                                         when =lambda pkt, **k: pkt.next_header != 59)
+                                         when =next_header != 59)
 
    payload     = Data(0) # TODO aca debe ir un pkt.length-len(pkt.extentions)
 

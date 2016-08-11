@@ -58,10 +58,16 @@ def _defer_method(target, methodname, op, is_binary):
 
 def defer_operations_of(cls):
    for binary_op in [
+            # arith ------------------------------------
             operator.add,         operator.sub,
             operator.mul,         operator.div,
             operator.truediv,     operator.floordiv,
             operator.mod,         operator.pow,
+
+            # cmp --------------------------------------
+            operator.le,          operator.lt,
+            operator.ge,          operator.gt,
+            operator.eq,          operator.ne,
             ]:
       
       methodname = "__%s__" % binary_op.__name__

@@ -145,8 +145,8 @@ class Sequence(Field):
       #if isinstance(until, (UnaryExpr, BinaryExpr)):
       #   until = compile_expr_into_callable(until)
       
-      #if isinstance(when, (UnaryExpr, BinaryExpr)):
-      #   when = compile_expr_into_callable(when)
+      if isinstance(when, (UnaryExpr, BinaryExpr)):
+         when = compile_expr_into_callable(when)
 
       resolved_count = None if count is None else _get_count(count)
       self.when = _get_when(resolved_count, when)
@@ -214,8 +214,8 @@ class Optional(Field):
       when = self.tmp
       del self.tmp
       
-      #if isinstance(when, (UnaryExpr, BinaryExpr)):
-      #   when = compile_expr_into_callable(when)
+      if isinstance(when, (UnaryExpr, BinaryExpr)):
+         when = compile_expr_into_callable(when)
 
       self.when = _get_when(None, when)
       return slots + [self.opt_elem_field_name]

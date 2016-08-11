@@ -2,12 +2,12 @@ All the fields accept different ways to define how much they will consume.
 
 This is a summary:
 
-            | Int   | Data | Bits    | Seq count(**) | Seq until  | Seq when
------------ | ----- | ---- | ------- | ------------- | ---------- | ---------
-Fixed       | true  | true | true(*) | true          | no apply   | no apply
-Other field | false | true | false   | true          | no apply   | no apply
-Expr field  | false | true | false   | true          | no apply   | no apply
-A callable  | false | true | false   | true          | true       | true
+            | Int   | Data | Bits    | Seq count(**) | Seq until  | Seq when  | Ref when
+----------- | ----- | ---- | ------- | ------------- | ---------- | --------- | ---------
+Fixed       | true  | true | true(*) | true          | no apply   | no apply  | no apply
+Other field | false | true | false   | true          | no apply   | no apply  | no apply
+Expr field  | false | true | false   | true          | no apply   | true      | true
+A callable  | false | true | false   | true          | true       | true      | true
 
 
 Notes: (\*) The amount set in a Bits fields is the amount of bits, no of bytes, and must be multiple of 8.
@@ -112,6 +112,59 @@ For example
 
 >>> pkt.pack()
 '\x02ABCDEF\x01\x02\x03\x04\x05\x06'
+
+```
+
+Don't be shy, we can do more complex expressions
+
+```python
+>>> class AllVariable(Packet):
+...    rows   = Int(byte_count=1)
+...    cols   = Int(byte_count=1)
+...    matrix = Int(byte_count=1).repeated(count=rows * cols)
+
+
+>>> raw = "\x01\x02\x01\x02XXXX"
+>>> pkt = AllVariable(raw)
+>>> pkt.matrix
+[1, 2]
+
+>>> pkt.pack()
+'\x01\x02\x01\x02'
+
+>>> raw = "\x02\x03\x01\x02\x03\x04\x05\x06"
+>>> pkt = AllVariable(raw)
+>>> pkt.matrix
+[1, 2, 3, 4, 5, 6]
+
+>>> pkt.pack()
+'\x02\x03\x01\x02\x03\x04\x05\x06'
+
+```
+
+We can go further to use expressions in the until and when conditions:
+
+```python
+>>> class AllVariable(Packet):
+...    type  = Int(byte_count=1)
+...    opt   = Int(byte_count=1).when(type != 0)
+
+
+>>> raw = "\x01\x02XXX"
+>>> pkt = AllVariable(raw)
+>>> pkt.opt
+2
+
+>>> pkt.pack()
+'\x01\x02'
+
+>>> raw = "\x00XXX"
+>>> pkt = AllVariable(raw)
+>>> pkt.opt is None
+True
+
+>>> pkt.pack()
+'\x00'
 
 ```
 
