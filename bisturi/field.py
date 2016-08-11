@@ -540,7 +540,8 @@ class Ref(Field):
 
       if embeb and not isinstance(self.prototype, Packet):
          raise ValueError("The prototype must be a Packet if you want to embeb it.")
-            
+ 
+      #assert not isinstance(self.prototype, Field)
       self.embeb = embeb
    
    def describe_yourself(self, field_name):
@@ -573,7 +574,11 @@ class Ref(Field):
          if isinstance(self.default, Prototype):
              self.default = self.default.as_prototype()
 
+         self.unpack = self._unpack_using_callable
+         self.pack   = self._pack_with_callable
+
       if self.embeb:
+         assert isinstance(prototype, Packet)
          self.pack   = self.pack_noop
          self.unpack = self.unpack_noop
 
@@ -603,11 +608,8 @@ class Ref(Field):
 
          Field.init(self, packet, defaults)
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      if callable(self.prototype):
-         referenced = self.prototype(pkt=pkt, raw=raw, offset=offset, **k)
-      else:
-         referenced = self.prototype
+   def _unpack_using_callable(self, pkt, raw, offset=0, **k):
+      referenced = self.prototype(pkt=pkt, raw=raw, offset=offset, **k)
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
@@ -620,11 +622,7 @@ class Ref(Field):
       setattr(pkt, self.field_name, referenced)
       return referenced.unpack(raw, offset, **k)
 
-
-   def pack(self, pkt, fragments, **k):
-      if isinstance(self.prototype, Field):
-         return self.prototype.pack(pkt, fragments, **k)
-
+   def _pack_with_callable(self, pkt, fragments, **k):
       obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack(fragments=fragments, **k)
@@ -645,27 +643,13 @@ class Ref(Field):
       # however, the 'referenced' object IS a Packet and we cannot do anything else
       raise NotImplementedError()
 
+
    def _unpack_referencing_a_packet(self, pkt, **k):
       return getattr(pkt, self.field_name).unpack(**k)
 
    def _pack_referencing_a_packet(self, pkt, fragments, **k):
       return getattr(pkt, self.field_name).pack(fragments=fragments, **k)
  
-   def _pack_referencing_a_unknow_object(self, pkt, fragments, **k):     
-      obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
-      if isinstance(obj, Packet):
-         return obj.pack(fragments=fragments, **k)
-
-      # we try to know how to pack this "primitive" value
-      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)   # TODO add more parameters, like raw=partial_raw
-
-      if isinstance(referenced, Field):
-         referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
-         return referenced.pack(pkt, fragments=fragments, **k)
-
-      # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
-      # however, the 'referenced' object IS a Packet and we cannot do anything else
-      raise NotImplementedError()
 
 class Bits(Field):
    class ByteBoundaryError(Exception):

@@ -86,11 +86,11 @@ class Packet(object):
    @classmethod
    def build_default_instance(cls):
        try:
-           return cls.__bisturi__['clone_default_instance']()
+           return cls.__bisturi__['clone_default_instance_func']()
        except KeyError:
            pkt = cls()
            prototype = Prototype(pkt)
-           cls.__bisturi__['clone_default_instance'] = prototype.clone
+           cls.__bisturi__['clone_default_instance_func'] = prototype.clone
 
            return prototype.clone()
 
