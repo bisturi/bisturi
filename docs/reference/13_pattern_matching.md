@@ -1,5 +1,5 @@
 >>> from bisturi.packet import Packet
->>> from bisturi.field  import Int, Data, Bits
+>>> from bisturi.field  import Int, Data, Bits, Bkpt
 
 
 >>> class IP(Packet):
@@ -41,7 +41,7 @@ True
 For debugging we can ask what is the pattern of this incomplete packet
 
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.*.*'
+'(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.*.*'
 
 This pattern will match almost anything. Only the small string will not match due the required length of the header.
 But we can improve this setting some values. For example if we want to search all the IP packets with a fixed destination
@@ -49,13 +49,13 @@ address:
 
 >>> ip.destination_address = "\xff\xff\xff\xff" # broadcast address
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}\\\xff\\\xff\\\xff\\\xff.*.*'
+'(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}\\\xff\\\xff\\\xff\\\xff.*.*'
 
 If we want to look for any destination address we set the Any object again
 
 >>> ip.destination_address = Any()
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.*.*'
+'(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.*.*'
 
 The Bits field can also be set but its regexp is more complex.
 If the lower bits of a byte can be any and the higher are fixed, then the regexp will be a range:
@@ -72,7 +72,7 @@ If the lower bits of a byte can be any and the higher are fixed, then the regexp
 
 >>> ip.fragment_offset = 7
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}\\000[8-\\?].{4}.{4}.{4}.*.*'
+'(?s).{1}.{1}.{2}.{2}\\000[8-\\?].{4}.{4}.{4}.*.*'
 
 But if the lower bits are fixed, then we need to try every single bit pattern:
 
@@ -89,7 +89,7 @@ But if the lower bits are fixed, then we need to try every single bit pattern:
 >>> ip.fragment_offset = Any()
 >>> ip.flags = 3
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}.{1}[\\\x03\\\x0b\\\x13\\\x1b\\#\\+3\\;CKS\\[cks\\{\\\x83\\\x8b\\\x93\\\x9b\\\xa3\\\xab\\\xb3\\\xbb\\\xc3\\\xcb\\\xd3\\\xdb\\\xe3\\\xeb\\\xf3\\\xfb].{4}.{4}.{4}.*.*'
+'(?s).{1}.{1}.{2}.{2}.{1}[\\\x03\\\x0b\\\x13\\\x1b\\#\\+3\\;CKS\\[cks\\{\\\x83\\\x8b\\\x93\\\x9b\\\xa3\\\xab\\\xb3\\\xbb\\\xc3\\\xcb\\\xd3\\\xdb\\\xe3\\\xeb\\\xf3\\\xfb].{4}.{4}.{4}.*.*'
 
 Complex, eh?
 This is more ease:
@@ -107,7 +107,7 @@ This is more ease:
 >>> ip.fragment_offset = 7
 >>> ip.flags = 3
 >>> ip.as_regular_expression().pattern
-'.{1}.{1}.{2}.{2}\\000\\;.{4}.{4}.{4}.*.*'
+'(?s).{1}.{1}.{2}.{2}\\000\\;.{4}.{4}.{4}.*.*'
 
 
 Setting a value not only define a fixed string to match for that field but also can change the pattern for others.
@@ -118,7 +118,7 @@ the options field should have 0 bytes. This dependecy is tracked automatically.
 >>> ip.version = 4
 >>> ip.header_length = 5
 >>> ip.as_regular_expression().pattern
-'E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*'
+'(?s)E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*'
 
 Notice how the data field depends of both, the header length and the total length and because the last field can
 be anything, the data field still has a generic pattern.
@@ -126,7 +126,62 @@ Setting the total length to 30 bytes then the data must have room for only 10 by
 
 >>> ip.total_length = 30
 >>> ip.as_regular_expression().pattern
-'E.{1}\\000\\\x1e.{2}.{1}.{1}.{4}.{4}.{4}.{0}.{10}'
+'(?s)E.{1}\\000\\\x1e.{2}.{1}.{1}.{4}.{4}.{4}.{0}.{10}'
+
+Now it's time to do something more useful. In the following data file there are 1210  IP packets, 
+all of them of 84 bytes.
+Let load the data first.
+
+>>> packet_size  = 84
+>>> packet_count = 1210
+>>> data = open("pingpattern.data").read()
+>>> raw_packets = [data[i*packet_size: (i+1)*packet_size] for i in range(packet_count)]
+>>> del data
+
+Now we can build a very simple pattern that will match every packet 
+>>> ip = anything_like(IP)
+>>> ip.version = 4
+>>> ip.header_length = 5
+>>> ip.total_length = 84
+
+With our packet we can filter the raw packets loaded before. The filter uses the pattern
+to discard string that are not compatible with the IP structure without parsing the string.
+
+>>> from bisturi.pattern_matching import filter_like
+>>> len(list(filter_like(ip, raw_packets))) == packet_count
+True
+
+This is more fast (two orders) than parsing each string:
+>>> import timeit
+
+>>> topt = timeit.Timer(lambda: list(filter_like(ip, raw_packets)))
+>>> tgen = timeit.Timer(lambda: [IP(s) for s in raw_packets])
+>>>
+>>> best_topt = min(topt.repeat(repeat=1, number=10))
+>>> best_tgen = min(tgen.repeat(repeat=1, number=10))
+
+>>> best_topt < best_tgen
+True
+
+If we want to find a particular packet, then the filter is faster
+>>> ip.identification = 0x2fbb
+>>> len(list(filter_like(ip, raw_packets))) == 1
+True
+
+filter_like returns strings that match the pattern and are possible IPs packets
+but if we want to be sure we need to unpack the string and do a manual check comparing
+the unpacked packet with out target.
+The function filter will do that for us and it will return the packets found (objects  not
+strings)
+
+>>> import bisturi.pattern_matching as pattern_matching
+>>> found = list(pattern_matching.filter(ip, raw_packets))
+
+>>> len(found) == 1
+True
+
+>>> isinstance(found[0], IP) and found[0].identification == 0x2fbb
+True
 
 (?s)
 (?P<version_01>45)

@@ -1021,6 +1021,9 @@ class Bkpt(Field):
       import pdb
       pdb.set_trace()
       return fragments
+   
+   def pack_regexp(self, pkt, fragments, **k):
+      return fragments
 
 class Em(Field):
    def __init__(self):

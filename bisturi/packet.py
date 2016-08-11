@@ -61,6 +61,18 @@ class Packet(object):
    def as_prototype(self):
       return Prototype(self)
 
+   @classmethod
+   def create_from(cls, raw, offset=0, silent=False):
+     pkt = cls()
+     try:
+         pkt.unpack(raw, offset)
+         return pkt
+     except:
+         if silent:
+             return None
+         else:
+             raise
+
 
    def unpack(self, raw, offset=0):
       stack = []
@@ -68,7 +80,6 @@ class Packet(object):
          return self.unpack_impl(raw, offset, stack)
       except PacketError, e:
          raise e
-
 
    def unpack_impl(self, raw, offset, stack):
       stack.append(Layer(self, offset))
@@ -113,12 +124,23 @@ class Packet(object):
       stack = []
       self.as_regular_expression_impl(fragments, stack)
 
-      return re.compile(fragments.assemble_regexp(), re.DEBUG if debug else 0)
+      return re.compile("(?s)" + fragments.assemble_regexp(), re.DEBUG if debug else 0)
 
 
    def as_regular_expression_impl(self, fragments, stack):
        for name, f, pack, _ in self.get_fields():
            f.pack_regexp(self, fragments, stack=stack)
+
+   def __eq__(self, other):
+       if not isinstance(other, self.__class__):
+           return False
+
+       for name, f, pack, _ in self.get_fields():
+           if getattr(self, name) != getattr(other, name):
+               return False
+
+       return True
+
 
 
    def iterative_unpack(self, raw, offset=0, stack=None):
