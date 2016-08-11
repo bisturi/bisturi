@@ -35,6 +35,9 @@ The code should be self explaining. But to remove any doubt,
 >>> [p.a, p.b, p.c, p.d, p.e]
 [1, 2, 3, -4, 5]
 
+>>> p.f in (6, 100663296)
+True
+
 >>> p.pack() == s
 True
 
@@ -42,8 +45,8 @@ True
 
 A little optimization is made when the byte count is fixed and is 1, 2, 4, or 8.
 In those cases, the internal implementation uses 'struct'.
-But Int can handle other cases, using a hand-crafted implementation. It is more 
-inefficient but it is implemented if you need it.
+But Int can handle other cases, using a hand-crafted implementation. It is slower
+ but it is implemented if you need to pack/unpack integers of other non-standar sizes.
 
 ```python
 >>> class IntExample(Packet):
@@ -64,16 +67,13 @@ inefficient but it is implemented if you need it.
 >>> [p.a, p.b, int(p.c), p.d]
 [1, 2, -3, 4]
 
+>>> p.e in (5, 327680)
+True
+
 >>> p.pack() == s
 True
 
 ```
-
-Because the field 'c' is a big integer, python see it as an object of type 'long'
-instead of 'int'. Because this, if you print p.c, you will see -3L instead of -3.
-This difference only happens in Python <= 2.7, but because i don't know you python
-version, i put the 'int(.)' cast around the p.c so the output is consistent in all
-versions of python.
 
 To see the 'cost' of both implementations, we can mount a very rudimentary test.
 
@@ -99,8 +99,8 @@ True
 
 ```
 
-In some cases you need to change the endianness of all the Ints from bigendian (default)
-to littleendian.
+In some cases you need to change the endianness of all the Ints from big endian (default)
+to little endian.
 Changeing this in each Int is terrible, so we can change the default directly 
 
 ```python
@@ -125,3 +125,4 @@ Changeing this in each Int is terrible, so we can change the default directly
 True
 
 ```
+
