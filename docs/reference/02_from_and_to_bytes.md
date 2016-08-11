@@ -129,3 +129,28 @@ Field's exception:
 ...
 
 ```
+
+No always you will have the full string in memory to parse but you will have a file.
+Instead of load the full file and read it, you can use the SeekableFile adapter that will
+work like a string:
+
+```python
+>>> from bisturi.util import SeekableFile
+>>>
+>>> def _string_as_seekable_file(s):  # used for testing purposes, to fake a real file
+...   from StringIO import StringIO
+...   return SeekableFile(file=StringIO(s))
+>>>
+>>> seekable_file = _string_as_seekable_file('\x03abc')
+
+>>> p = VariablePayload()
+>>> p.unpack(seekable_file)
+4
+
+>>> p.length
+3
+>>> p.payload
+'abc'
+
+```
+
