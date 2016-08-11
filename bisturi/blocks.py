@@ -23,7 +23,7 @@ from bisturi.fragments import Fragments
 from bisturi.packet import Layer, PacketError
 
 def pack_impl(pkt, fragments, **k):
-   [sync(pkt) for sync in pkt.get_sync_before_pack_methods()]
+%(sync_descriptors_code)s
    k['local_offset'] = fragments.current_offset
    fields = pkt.get_fields()
    try:
@@ -37,6 +37,7 @@ def pack_impl(pkt, fragments, **k):
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
+      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=True),
    }
    else:
       pack_code = ""
@@ -58,10 +59,11 @@ def unpack_impl(pkt, raw, offset, **k):
    except Exception, e:
       raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
    
-   [sync(pkt) for sync in pkt.get_sync_after_unpack_methods()]
+%(sync_descriptors_code)s
    return offset
 ''' % {
       'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
+      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=False),
    })
    else:
       unpack_code = ""
@@ -106,7 +108,21 @@ def unpack_impl(pkt, raw, offset, **k):
 
    if generate_for_unpack and (pkt_class.unpack_impl == packet.Packet.unpack_impl):
       pkt_class.unpack_impl = module.unpack_impl
-            
+ 
+def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
+   if sync_for_pack:
+       sync_methods = pkt_class.get_sync_before_pack_methods()
+       setup_code = "   sync_methods = pkt.get_sync_before_pack_methods()\n"
+   else:
+       sync_methods = pkt_class.get_sync_after_unpack_methods()
+       setup_code = "   sync_methods = pkt.get_sync_after_unpack_methods()\n"
+   
+   if not sync_methods:
+       return "   "
+
+   sync_calls = '\n'.join('   sync_methods[%i](pkt)' % i for i in range(len(sync_methods)))
+   return setup_code + sync_calls
+
 
 def generate_code_for_fixed_fields(fields):
    grouped_by_struct_code =  [(k, list(g)) for k, g in itertools.groupby(fields, lambda i_n_f: i_n_f[2].struct_code is not None)]
