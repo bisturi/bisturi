@@ -6,7 +6,7 @@ try:
 except ImportError:
     import pickle
 
-import copy
+import copy, time
 
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
@@ -110,6 +110,20 @@ class Packet(object):
    @classmethod
    def _build_default_instance_copying(cls):
        return copy.deepcopy(cls.__bisturi__['default_instance'])
+
+   def clone_prototype(self):
+       keyword = hash(hash(self) % time.time())
+       try:
+           obj = pickle.loads(self.__bisturi__['instance_pickled__%s' % keyword])
+       except Exception as e:
+           try:
+               self.__bisturi__['instance_pickled__%s' % keyword] = pickle.dumps(self, -1)
+           except Exception as e:
+               pass
+ 
+           obj = copy.deepcopy(self)
+
+       return obj
 
    def unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)

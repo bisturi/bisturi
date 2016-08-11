@@ -49,7 +49,12 @@ class Field(object):
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
-      setattr(packet, self.field_name, defaults.get(self.field_name, copy.deepcopy(self.default))) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
+      try:
+         obj = defaults[self.field_name]
+      except KeyError:
+         obj = copy.deepcopy(self.default)
+
+      setattr(packet, self.field_name, obj) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
@@ -326,7 +331,10 @@ class Int(Field):
          self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
       return slots
-
+   
+   def init(self, packet, defaults):
+      setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
+ 
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
@@ -423,6 +431,9 @@ class Data(Field):
             assert False
 
       return slots
+   
+   def init(self, packet, defaults):
+      setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
 
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
@@ -564,7 +575,7 @@ class Ref(Field):
 
       elif isinstance(prototype, Packet):
          if self.field_name not in defaults:
-            defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance (Field.init will copy that object)
+            defaults[self.field_name] = prototype.clone_prototype()
 
          Field.init(self, packet, defaults)
 
@@ -573,10 +584,9 @@ class Ref(Field):
          default = self.default
          if isinstance(default, Packet):
             if self.field_name not in defaults:
-               defaults[self.field_name] = copy.deepcopy(default)  # get a new instance (Field.init will copy that object)
+               defaults[self.field_name] = default.clone_prototype()
 
          Field.init(self, packet, defaults)
-
 
    def unpack(self, pkt, raw, offset=0, **k):
       if callable(self.prototype):
@@ -699,8 +709,7 @@ class Bits(Field):
       if self.iam_first:
          setattr(packet, self.I.field_name, 0)
 
-      Field.init(self, packet, defaults)
-
+      setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
 
    def unpack(self, pkt, raw, offset=0, **k):
       if self.iam_first:
@@ -742,9 +751,12 @@ class Move(Field):
       # in the future and then the packet will have duplicated data (but see pack())
       #setattr(pkt, self.field_name, raw[offset:next_offset])
       return next_offset
+   
+   def init(self, packet, defaults):
+      pass
 
    def pack(self, pkt, fragments, **k):
-      garbage = getattr(pkt, self.field_name)
+      #garbage = getattr(pkt, self.field_name)
 
       if isinstance(self.absolute_position, Field):
          next_offset = getattr(pkt, self.absolute_position.field_name)
