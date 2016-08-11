@@ -57,5 +57,7 @@ class Fragments(object):
       return repr(sorted(self.fragments.iteritems()))
 
    def __eq__(self, other):
-      assert isinstance(other, basestring)
-      return str(self) == other
+       if isinstance(other, basestring):
+          return str(self) == other
+       else:
+          return str(self) == str(other)
