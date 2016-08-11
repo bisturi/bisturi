@@ -17,13 +17,13 @@ class PacketClassBuilder(object):
 
     def collect_the_fields(self):
       from field import Field
-      self.fields = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
-      self.fields.sort(key=lambda name_val: name_val[1].ctime)
+      self.fields_in_class = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
+      self.fields_in_class.sort(key=lambda name_val: name_val[1].ctime)
 
-      self.original_fields = list(self.fields)
+      self.original_fields_in_class = list(self.fields_in_class)
 
     def make_field_descriptions(self):
-      self.fields = sum([valfield.describe_yourself(namefield, self.bisturi_conf) for namefield, valfield in self.fields], [])
+      self.fields = sum([valfield.describe_yourself(namefield, self.bisturi_conf) for namefield, valfield in self.fields_in_class], [])
 
     def compile_fields_and_create_slots(self):
       # compile each field (speed optimization) and create the slots (memory optimization)
@@ -35,12 +35,16 @@ class PacketClassBuilder(object):
       self.fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in self.fields]
       
     def remove_fields_from_class_definition(self):
-      for n, _, _, _ in self.fields:
-         if n in self.attrs: # check this, because 'describe_yourself' can add new fields
-            del self.attrs[n]
+      for name, _ in self.original_fields_in_class:
+         del self.attrs[name]
+    
+    def add_descriptors_to_class_definition(self):
+      for name, field, _, _ in self.fields:
+          if field.descriptor:
+              self.attrs[field.descriptor_name] = field.descriptor
 
     def create_class(self):
-      self.bisturi_conf['original_fields'] = self.original_fields
+      self.bisturi_conf['original_fields_in_class'] = self.original_fields_in_class
 
       self.attrs['__slots__'] = self.slots
       self.attrs['__bisturi__'] = self.bisturi_conf
@@ -77,8 +81,8 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
         self.super_class = attrs['__bisturi__']['specialization_of']
         assert isinstance(self.super_class, Packet)
 
-        original_fields = self.super_class.__bisturi__['original_fields']
-        specialized_fields = self.specialize_fields(attrs, original_fields)
+        original_fields_in_class = self.super_class.__bisturi__['original_fields_in_class']
+        specialized_fields = self.specialize_fields(attrs, original_fields_in_class)
 
         PacketClassBuilder.__init__(self, metacls, name, bases, specialized_attrs)
 
@@ -119,6 +123,7 @@ class MetaPacket(type):
       builder.compile_fields_and_create_slots()
       builder.unroll_fields_with_their_pack_unpack_methods()
       builder.remove_fields_from_class_definition()
+      builder.add_descriptors_to_class_definition()
 
       builder.create_class()
       builder.add_get_fields_class_method()
