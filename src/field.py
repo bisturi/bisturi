@@ -12,7 +12,7 @@ class Field(object):
 
 
    def init(self, packet, defaults):
-      raise NotImplementedError()
+      self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
       raise NotImplementedError()
@@ -74,8 +74,6 @@ class Int(Field):
       self._unpack = _unpack
       self._pack = _pack
 
-   def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
       raw_data = raw[offset:offset+self.byte_count]
@@ -99,8 +97,6 @@ class Data(Field):
       self.include_delimiter = include_delimiter
       self.delimiter_to_be_included = self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
 
-   def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
       byte_count = self.byte_count(packet) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
