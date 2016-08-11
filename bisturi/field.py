@@ -220,7 +220,7 @@ class Sequence(Field):
    def init(self, packet, defaults):
       Field.init(self, packet, defaults)
       self.prototype_field.init(packet, {})
-      
+    
    def unpack(self, pkt, raw, offset=0, **k):
       self.until_condition.reset()
 
@@ -245,7 +245,7 @@ class Sequence(Field):
          if isinstance(obj, Packet):
              # if this is a Packet instance, obj is the same object each iteration, 
              # so we need a copy, a fresh object for the next round
-             setattr(pkt, seq_elem_field_name, obj.__class__.build_default_instance())
+             setattr(pkt, seq_elem_field_name, obj.__class__(_initialize_fields=False))
          elif not isinstance(obj, (int, long, basestring)): 
              # Other object no constant should be copied too: TODO will this work all the times?
              setattr(pkt, seq_elem_field_name, copy.deepcopy(obj))
