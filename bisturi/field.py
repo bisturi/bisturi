@@ -550,7 +550,17 @@ class Ref(Field):
       if embeb and not isinstance(self.prototype, Packet):
          raise ValueError("The prototype must be a Packet if you want to embeb it.")
             
-      self.embeb = embeb
+      self.embeb = embeb 
+      # TODO :
+      # class D(Packet):
+      #    i = Int()
+      # class A(Packet):
+      #    d = Ref(D, embeb=True)
+      #
+      # a = A()
+      # a.i    has the correct value
+      # a.d.i  has the default value of an Int which it is wrong.
+      #        we need to do something with this case.
    
    def describe_yourself(self, field_name, bisturi_conf):
       desc = Field.describe_yourself(self, field_name, bisturi_conf)
