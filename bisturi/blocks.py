@@ -21,6 +21,7 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
 from struct import pack as StructPack, unpack as StructUnpack
 def pack(pkt, **k):
    chunks_raw = []
+   fields = pkt.get_fields()
 %(blocks_of_code)s
 
    return "".join(chunks_raw)
@@ -35,6 +36,7 @@ def pack(pkt, **k):
 from struct import pack as StructPack, unpack as StructUnpack
 def unpack(pkt, raw, offset=0, stack=None, **k):
    stack = pkt.push_to_the_stack(stack)
+   fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
    except Exception, e:
@@ -148,7 +150,7 @@ def generate_code_for_fixed_fields_without_struct_code(group):
 
 def generate_code_for_loop_pack(group):
    return '''
-chunks_raw.extend([f.pack(pkt) for name, f in pkt.get_fields()[%(start_index)i:%(end_index)i]])
+chunks_raw.extend([f.pack(pkt) for name, f in fields[%(start_index)i:%(end_index)i]])
 ''' % {
          'start_index': group[0][0],
          'end_index':   group[-1][0]+1,
@@ -156,7 +158,7 @@ chunks_raw.extend([f.pack(pkt) for name, f in pkt.get_fields()[%(start_index)i:%
 
 def generate_code_for_loop_unpack(group):
    return '''
-for name, f in pkt.get_fields()[%(start_index)i:%(end_index)i]:
+for name, f in fields[%(start_index)i:%(end_index)i]:
    offset = f.unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
 ''' % {
          'start_index': group[0][0],
