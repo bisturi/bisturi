@@ -1,3 +1,6 @@
+#PYTHON="coverage run --branch -p" # or python
+PYTHON="python"
+
 pushd .
 cd bisturi
 
@@ -6,7 +9,7 @@ do
    if [ -e $t ]
    then
       echo $t
-      python -m doctest $t
+      $PYTHON -m doctest $t
    fi
 done
 
@@ -15,7 +18,7 @@ do
    if [ -e $t ]
    then
       echo $t
-      python $t
+      $PYTHON $t
    fi
 done
 
@@ -29,7 +32,7 @@ do
    if [ -e $t ]
    then
       echo $t
-      python -m unittest -q "${t%%.*}"
+      $PYTHON -m unittest -q "${t%%.*}"
    fi
 done
 
