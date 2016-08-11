@@ -18,7 +18,7 @@ class MetaPacket(type):
       bisturi_conf = attrs.get('__bisturi__', {})
 
       # collect the fields (Field)  
-      from field import Field
+      from field import Field, Bkpt
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
 
@@ -46,10 +46,15 @@ class MetaPacket(type):
       cls = type.__new__(metacls, name, bases, attrs)
 
       cls.get_fields = get_fields
+
+      # check if we are 'in debug mode'
+      am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in fields))
       
       # create code to optimize the pack/unpack
-      generate_for_pack = cls.__bisturi__.get('generate_for_pack', True)
-      generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', True)
+      # by default, if we are in debug mode, disable the optimization
+      generate_by_default = True if not am_in_debug_mode else False
+      generate_for_pack = cls.__bisturi__.get('generate_for_pack', generate_by_default)
+      generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', generate_by_default)
       write_py_module = cls.__bisturi__.get('write_py_module', False)
       blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
  
