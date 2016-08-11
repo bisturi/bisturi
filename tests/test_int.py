@@ -10,7 +10,11 @@ class TestInt(unittest.TestCase):
    def _test_ints(self, obj_one, obj_two,
                         default_raw, obj_one_defaults, obj_two_defaults, 
                         first_raw,   obj_one_values,
-                        first_raw2, second_raw2, obj_one_values2, obj_two_values2):
+                        first_raw2, second_raw2, obj_one_values2, obj_two_values2,
+                        default_raw2=None):
+
+      if default_raw2 is None:
+         default_raw2 = default_raw
 
       try:
          #import pdb; pdb.set_trace()
@@ -20,7 +24,8 @@ class TestInt(unittest.TestCase):
          # check defaults
          assert (one.first, one.second) == obj_one_defaults
          assert (two.first, two.second) == obj_two_defaults
-         assert one.pack() == two.pack() == default_raw
+         assert one.pack() == default_raw
+         assert two.pack() == default_raw2
 
          raw = first_raw
          one.unpack(raw)
@@ -28,7 +33,7 @@ class TestInt(unittest.TestCase):
          # check parsing (each instance must have its own set of fields and values)
          assert (one.first, one.second) == obj_one_values
          assert (two.first, two.second) == obj_two_defaults
-         assert one.pack() == raw and two.pack() == default_raw
+         assert one.pack() == raw and two.pack() == default_raw2
 
          raw  = first_raw2
          raw2 = second_raw2
@@ -180,4 +185,145 @@ class TestInt(unittest.TestCase):
          obj_two_values2 = (7, 8)
       )
 
+   def test_double_int_defaults_from_user(self):
+      class Double(Packet):
+         first  = Int(4)
+         second = Int(4)
+    
+      self._test_ints(
+         obj_one = Double(first=1), 
+         obj_two = Double(second=2),
+         default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
+         default_raw2= '\x00\x00\x00\x00\x00\x00\x00\x02',
+         obj_one_defaults = (1, 0), 
+         obj_two_defaults = (0, 2), 
+         first_raw =   '\x00\x00\x00\x03\x00\x00\x00\x02',   
+         obj_one_values = (3, 2),
+         first_raw2 =  '\x00\x00\x00\x04\x00\x00\x00\x05', 
+         second_raw2 = '\x00\x00\x00\x06\x00\x00\x00\x07', 
+         obj_one_values2 = (4, 5), 
+         obj_two_values2 = (6, 7)
+      )
 
+   def test_rare_int_defaults_from_user(self):
+      class Double(Packet):
+         first  = Int(3)
+         second = Int(3)
+    
+      self._test_ints(
+         obj_one = Double(first=1), 
+         obj_two = Double(second=2),
+         default_raw = '\x00\x00\x01\x00\x00\x00',
+         default_raw2= '\x00\x00\x00\x00\x00\x02',
+         obj_one_defaults = (1, 0), 
+         obj_two_defaults = (0, 2), 
+         first_raw =   '\x00\x00\x03\x00\x00\x02',   
+         obj_one_values = (3, 2),
+         first_raw2 =  '\x00\x00\x04\x00\x00\x05', 
+         second_raw2 = '\x00\x00\x06\x00\x00\x07', 
+         obj_one_values2 = (4, 5), 
+         obj_two_values2 = (6, 7)
+      )
+
+   def test_double_int_without_optimizations(self):
+      class Double(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Int(4)
+         second = Int(4)
+    
+      self._test_ints(
+         obj_one = Double(), 
+         obj_two = Double(),
+         default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
+         obj_one_defaults = (0, 0), 
+         obj_two_defaults = (0, 0), 
+         first_raw =   '\x00\x00\x00\x01\x00\x00\x00\x02',   
+         obj_one_values = (1, 2),
+         first_raw2 =  '\x00\x00\x00\x03\x00\x00\x00\x04', 
+         second_raw2 = '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         obj_one_values2 = (3, 4), 
+         obj_two_values2 = (5, 6)
+      )
+
+   def test_double_int_with_distinct_defaults(self):
+      class WithDefaults(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Int(4, default=1)
+         second = Int(4, default=2)
+      
+      self._test_ints(
+         obj_one = WithDefaults(), 
+         obj_two = WithDefaults(),
+         default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
+         obj_one_defaults = (1, 2), 
+         obj_two_defaults = (1, 2), 
+         first_raw =   '\x00\x00\x00\x03\x00\x00\x00\x04',   
+         obj_one_values = (3, 4),
+         first_raw2 =  '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw2 = '\x00\x00\x00\x07\x00\x00\x00\x08', 
+         obj_one_values2 = (5, 6), 
+         obj_two_values2 = (7, 8)
+      )
+
+
+   def test_rare_int_with_distinct_defaults(self):
+      class RareSizeWithDefaults(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Int(3, default=1)
+         second = Int(3, default=2)
+      
+      self._test_ints(
+         obj_one = RareSizeWithDefaults(), 
+         obj_two = RareSizeWithDefaults(),
+         default_raw = '\x00\x00\x01\x00\x00\x02',
+         obj_one_defaults = (1, 2), 
+         obj_two_defaults = (1, 2), 
+         first_raw =   '\x00\x00\x03\x00\x00\x04',   
+         obj_one_values = (3, 4),
+         first_raw2 =  '\x00\x00\x05\x00\x00\x06', 
+         second_raw2 = '\x00\x00\x07\x00\x00\x08', 
+         obj_one_values2 = (5, 6), 
+         obj_two_values2 = (7, 8)
+      )
+   
+   def test_double_int_defaults_from_user_without_optimizations(self):
+      class Double(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Int(4)
+         second = Int(4)
+    
+      self._test_ints(
+         obj_one = Double(first=1), 
+         obj_two = Double(second=2),
+         default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
+         default_raw2= '\x00\x00\x00\x00\x00\x00\x00\x02',
+         obj_one_defaults = (1, 0), 
+         obj_two_defaults = (0, 2), 
+         first_raw =   '\x00\x00\x00\x03\x00\x00\x00\x02',   
+         obj_one_values = (3, 2),
+         first_raw2 =  '\x00\x00\x00\x04\x00\x00\x00\x05', 
+         second_raw2 = '\x00\x00\x00\x06\x00\x00\x00\x07', 
+         obj_one_values2 = (4, 5), 
+         obj_two_values2 = (6, 7)
+      )
+
+   def test_rare_int_defaults_from_user_without_optimizations(self):
+      class Double(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Int(3)
+         second = Int(3)
+    
+      self._test_ints(
+         obj_one = Double(first=1), 
+         obj_two = Double(second=2),
+         default_raw = '\x00\x00\x01\x00\x00\x00',
+         default_raw2= '\x00\x00\x00\x00\x00\x02',
+         obj_one_defaults = (1, 0), 
+         obj_two_defaults = (0, 2), 
+         first_raw =   '\x00\x00\x03\x00\x00\x02',   
+         obj_one_values = (3, 2),
+         first_raw2 =  '\x00\x00\x04\x00\x00\x05', 
+         second_raw2 = '\x00\x00\x06\x00\x00\x07', 
+         obj_one_values2 = (4, 5), 
+         obj_two_values2 = (6, 7)
+      )
