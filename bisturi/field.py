@@ -342,14 +342,12 @@ class Bits(Field):
 
    def from_raw(self, packet, raw, offset=0):
       if self.iam_first:
-         consumed = self.I.from_raw(packet, raw, offset)
-      else:
-         consumed = 0
+         offset = self.I.from_raw(packet, raw, offset)
 
       I = self.I.getval(packet)
 
       self.setval(packet, (I & self.mask) >> self.shift)
-      return consumed + offset
+      return offset
 
    def to_raw(self, packet):
       I = self.I.getval(packet)
