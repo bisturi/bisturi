@@ -90,12 +90,15 @@ class Int(Field):
 
 
 class Data(Field):
-   def __init__(self, byte_count, include_delimiter=False, default=''):
+   def __init__(self, byte_count, include_delimiter=False, consume_delimiter=True, default=''):
       Field.__init__(self)
       self.default = default
       self.byte_count = byte_count
       self.include_delimiter = include_delimiter
       self.delimiter_to_be_included = self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
+
+      assert not (consume_delimiter == False and include_delimiter == True)
+      self.consume_delimiter = consume_delimiter #XXX document this!
 
 
    def from_raw(self, packet, raw, offset=0):
@@ -108,7 +111,8 @@ class Data(Field):
             count = raw[offset:].find(byte_count) + len(byte_count)
          else:
             count = raw[offset:].find(byte_count)
-            extra_count = len(byte_count)
+            if self.consume_delimiter:
+               extra_count = len(byte_count)
             self.delimiter_to_be_included = byte_count
 
       elif hasattr(byte_count, 'search'):
@@ -118,7 +122,8 @@ class Data(Field):
                count = match.end()
             else:
                count = match.start()
-               extra_count = match.end()-count
+               if self.consume_delimiter:
+                  extra_count = match.end()-count
                self.delimiter_to_be_included = match.group()
          else:
             count = -1
