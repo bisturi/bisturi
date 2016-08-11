@@ -1,24 +1,56 @@
 from itertools import ifilter
-from re import finditer
+from re import finditer, compile, escape
 from functools import partial
 from operator import eq as equals_to
 
 class Any(object):
-    def __init__(self, regexp=None):
-        self.regexp = regexp
-        self.length = None
+    def __init__(self, startswith=None, endswith=None, contains=None):
+        if startswith == endswith == contains == None:  # most common case
+            self.regexp = None
+            self.__eq__ = self.eq_for_any
+            self.__ne__ = self.ne_for_any
 
-    def create_regexp(self, field, pkt, fragments, stack):
-        if self.regexp:
-            fragments.append(self.regexp)
-        else:
-            field.pack_regexp(pkt, fragments, stack=stack)
+            return
+
+        middle = ".*" if contains is None else (".*%s.*" % escape(contains))
+
+        self.regexp = ""
+        if startswith is not None:
+            self.regexp += escape(startswith)
+
+        self.regexp += middle
+
+        if endswith is not None:
+            self.regexp += escape(endswith)
+
+        self.regexp = compile(self.regexp)
+        self.__eq__ = self.eq_for_regexp
+        self.__ne__ = self.ne_for_regexp
+
 
     def __eq__(self, other):
-        return True
+        if self.regexp is None:
+            return self.eq_for_any(other)
+        else:
+            return self.eq_for_regexp(other)
     
     def __ne__(self, other):
+        if self.regexp is None:
+            return self.ne_for_any(other)
+        else:
+            return self.ne_for_regexp(other)
+
+    def eq_for_any(self, other):
+        return True
+    
+    def ne_for_any(self, other):
         return False 
+
+    def eq_for_regexp(self, other):
+        return bool(self.regexp.search(other))
+    
+    def ne_for_regexp(self, other):
+        return not bool(self.regexp.search(other))
 
 def anything_like(pkt_class):
     pkt = pkt_class()

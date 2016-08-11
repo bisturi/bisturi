@@ -241,5 +241,26 @@ True
 >>> isinstance(found[0], IP) and found[0].identification == 0x2fbb
 True
 
+
 ```
+
+The Any object can accept certain conditions, strings that should are at the begin (startswith) or 
+the end of the field (endswith) or even in the middle (contains). 
+This allow us to find packets that contains a particular string in the field.
+This feature is only supported by Data and Ref fields.
+
+For example, to search all the packets that contain the famous two byte sequence 0xde 0xad in their data we do:
+
+```python
+>>> ip.total_length = Any()
+>>> ip.identification = Any()
+>>> ip.data = Any(contains="\xde\xad")
+>>> ip.as_regular_expression().pattern
+'(?s)E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*\\\xde\\\xad.*'
+
+```
+
+>>> found = list(pattern_matching.filter(ip, raw_packets))
+>>> len(found)
+100
 

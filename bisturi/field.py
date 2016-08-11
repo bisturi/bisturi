@@ -652,6 +652,7 @@ class Data(Field):
           self.pack(pkt, fragments, **k)
 
       else:
+          custom_regexp = value.regexp.pattern if value.regexp is not None else ".*"
           if self.byte_count is not None:
              if isinstance(self.byte_count, (int, long)):
                 byte_count = self.byte_count
@@ -666,20 +667,14 @@ class Data(Field):
                     byte_count = None
 
              if byte_count is not None:
-                 fragments.append(".{%i}" % byte_count, is_literal=False)
+                 fragments.append(".{%i}" % byte_count, is_literal=False) # TODO ignoring the custom regexp!!
              else:
-                 fragments.append(".*", is_literal=False)
+                 fragments.append(custom_regexp, is_literal=False)
 
           else:
-             if isinstance(self.until_marker, basestring):
-                 fragments.append(".*?%s" % re.escape(self.until_marker), is_literal=False)
-
-             elif hasattr(self.until_marker, 'search'):
-                 fragments.append(self.until_marker.pattern, is_literal=False)
+             endswith = re.escape(self.until_marker) if isinstance(self.until_marker, basestring) else self.until_marker.pattern
+             fragments.append(custom_regexp + endswith, is_literal=False)
              
-             else:
-                assert False
-
       return fragments
 
 class Ref(Field):
