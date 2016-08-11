@@ -26,7 +26,10 @@ class Field(object):
       self.move_arg = None
       self.movement_type = None
 
-   def describe_yourself(self, field_name):
+   def describe_yourself(self, field_name, bisturi_conf):
+      if self.move_arg is None and 'align' in bisturi_conf:
+         self.aligned(to=bisturi_conf['align'])
+
       if self.move_arg is None:
          return [(field_name, self)]
 
@@ -174,7 +177,7 @@ class Sequence(Field):
       self.default = default if default is not None else []
 
       self.prototype_field = prototype
-      self.aligned_to = 1 if aligned is None else aligned
+      self.aligned_to = aligned
 
       self.tmp = (count, until, when)
 
@@ -182,6 +185,12 @@ class Sequence(Field):
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
       slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+      if self.aligned_to is None:
+          self.aligned_to = bisturi_conf.get('align', 1)
+
+      # XXX we are propagating the 'align' attribute (in bisturi_conf) to
+      # the prototype packet. This is valid ...but inelegant
+      # This happen in others fields like Optional and Ref
       self.seq_elem_field_name = "_seq_elem__"+field_name
       self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[], bisturi_conf=bisturi_conf)
 
@@ -543,8 +552,8 @@ class Ref(Field):
             
       self.embeb = embeb
    
-   def describe_yourself(self, field_name):
-      desc = Field.describe_yourself(self, field_name)
+   def describe_yourself(self, field_name, bisturi_conf):
+      desc = Field.describe_yourself(self, field_name, bisturi_conf)
       if self.embeb:
          desc.extend([(fname, f) for fname, f, _, _ in self.prototype.get_fields()])
 

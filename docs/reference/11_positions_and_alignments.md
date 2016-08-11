@@ -12,9 +12,6 @@ This is fine, but in some cases it is desired to control where a field begins.
 
 ```
 
-The data between 'offset_of_file' and 'file_data' is saved in an internal field
-that can be accessed and modified: '_shift_to_file_data'.
-The name will have the form of '_shift_to_...'.
 
 ```python
 >>> s = '\x04XXXABCD'
@@ -22,9 +19,6 @@ The name will have the form of '_shift_to_...'.
 
 >>> p.offset_of_file
 4
-
-### p._shift_to_file_data  # fail: see the code of Move
-'XXX'
 
 >>> p.file_data
 'ABCD'
@@ -37,9 +31,6 @@ The name will have the form of '_shift_to_...'.
 >>> p.offset_of_file
 1
 
-### p._shift_to_file_data
-''
-
 >>> p.file_data
 '\x00\x00\x00\x00'
 >>> str(p.pack())
@@ -49,14 +40,10 @@ The name will have the form of '_shift_to_...'.
 >>> str(p.pack())
 '\x04...ABCD'
 
-### p._shift_to_file_data = 'XX'
-### str(p.pack())  # fail: see the code of Move
-'\x04XX.ABCD'
-
 ```
 
-Moving to back is possible too, even reading the same piece of raw data already
-parsed by another field, but at the packing time you will receive an error.
+Note that moving to back is possible too, even reading the same piece of raw data 
+already parsed by another field, but at the packing time you will receive an error.
 We can't know how to put two diferent set of data at the same position!
 
 ```python
@@ -79,9 +66,6 @@ We can't know how to put two diferent set of data at the same position!
 >>> p.payload
 'XXXABCDX'
 
-### p._shift_to_file_data
-''
-
 >>> p.file_data
 'ABCD'
 
@@ -90,17 +74,14 @@ We can't know how to put two diferent set of data at the same position!
 So good so far, but if we try to pack this...
 
 ```python
->>> p = Folder(offset_of_file=4, file_data='ABCD')
+### p = Folder(offset_of_file=4, file_data='ABCD')
 
->>> p.offset_of_file
+### p.offset_of_file
 4
->>> p.payload
+### p.payload
 '\x00\x00\x00\x00\x00\x00\x00\x00'
 
-### p._shift_to_file_data
-''
-
->>> p.file_data
+### p.file_data
 'ABCD'
 
 >>> p.pack()                                # doctest: +ELLIPSIS
@@ -111,6 +92,9 @@ Exception: Error when packing field 'file_data' of packet Folder at 00000004...C
 
 The problem is that the file_data is trying to put its packed data in the same place where the data of payload is already there.
 For that reason we get an exception.
+
+Relative positions
+------------------
 
 In other cases we dont want to define an absolute position, instead we want something
 relative.
@@ -146,6 +130,9 @@ True
 
 ```
 
+Alignements
+-----------
+
 Useful but in general, the most common case is to use a relative position to align
 some field. This is so common that we have a shortcut for that.
 If we want that the options field be alinged to 4 byte we do:
@@ -171,7 +158,8 @@ True
 
 ```
 
-We can align each option to 4 too:
+The alignement was at 'field' level: the whole fielf 'options' was aligned.
+To align each option in the sequence we do:
 
 ```python
 >>> class Datagram(Packet):
@@ -193,3 +181,29 @@ True
 True
 
 ```
+
+It's very common to align all the fields to the same value. As a shortcut we can
+resolve this easly:
+
+```python
+>>> class Datagram(Packet):
+...   __bisturi__ = {'align': 4}
+...   count_options = Int(1)
+...   options = Ref(Option).repeated(count_options)
+...   checksum = Int(4)
+
+>>> s = '\x02...\x01A..\x04ABCD...ABCD'
+>>> p = Datagram(s)
+
+>>> p.options[0].data
+'A'
+>>> p.options[1].data
+'ABCD'
+>>> p.checksum == 0x41424344
+True
+
+>>> p.pack() == s
+True
+
+```
+

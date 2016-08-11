@@ -23,7 +23,7 @@ class MetaPacket(type):
       fields.sort(key=lambda name_val: name_val[1].ctime)
 
       # request to describe yourself to each field
-      fields = sum([valfield.describe_yourself(namefield) for namefield, valfield in fields], [])
+      fields = sum([valfield.describe_yourself(namefield, bisturi_conf) for namefield, valfield in fields], [])
       
       # compile and create the slots (memory optimization)
       additional_slots = bisturi_conf.get('additional_slots', [])
