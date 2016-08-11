@@ -19,7 +19,7 @@ class Option(Packet):
 
 
 class HopByHop(Packet):
-   __bisturi__ = {'generate_for_unpack': False}
+   __bisturi__ = {'generate_for_unpack': False, 'additional_slots': ['_start']}
 
    length      = Int(1)
    options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + pkt._start )

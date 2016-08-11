@@ -1,38 +1,50 @@
 import blocks
 
 class MetaPacket(type):
-   def __init__(cls, name, bases, attrs):
-      type.__init__(cls, name, bases, attrs)
-
+   def __new__(metacls, name, bases, attrs):
       if name == 'Packet' and bases == (object,):
-         return # Packet base class
-   
+         attrs['__slots__'] = []
+         return type.__new__(metacls, name, bases, attrs) # Packet base class
+ 
+      # collect the fields (Field)  
       from field import Field
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
       
-      map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields), *zip(*enumerate(fields)))
-
+      # create the slots (memory optimization)
+      additional_slots = attrs.get('__bisturi__', {}).get('additional_slots', [])
+      slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields), *zip(*enumerate(fields))), additional_slots)
+      
+      # extend the field list with the their pack/unpack methods (to avoid lookups)
       fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in fields]
       @classmethod
       def get_fields(cls):
          return fields
 
-      cls.get_fields = get_fields
+      attrs['__slots__'] = slots
+      
+      # remove the fields from the class definition
+      for n, _, _, _ in fields:
+         del attrs[n]
 
+      cls = type.__new__(metacls, name, bases, attrs)
+
+      cls.get_fields = get_fields
+      
+      # create code to optimize the pack/unpack
       generate_for_pack = cls.__bisturi__.get('generate_for_pack', True)
       generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', True)
       write_py_module = cls.__bisturi__.get('write_py_module', False)
       blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
-
-
+      
+      return cls
 
 class Packet(object):
    __metaclass__ = MetaPacket
    __bisturi__ = {}
 
    def __init__(self, bytestring=None, **defaults):
-      map(lambda name_val: name_val[1].init(self, defaults), self.get_fields())
+      map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
       
       if bytestring is not None:
          self.unpack(bytestring)

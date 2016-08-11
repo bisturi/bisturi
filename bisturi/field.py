@@ -11,8 +11,8 @@ class Field(object):
    def compile(self, field_name, position, fields):
       del self.ctime
       self.field_name = field_name
-      #self.getval = lambda packet: getattr(packet, field_name)
-      #self.setval = lambda packet, val: setattr(packet, field_name, val)
+
+      return [field_name]
 
    def getval(self, packet): #TODO do this INLINE!!
       return getattr(packet, self.field_name)
@@ -21,6 +21,7 @@ class Field(object):
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
+      #import pdb; pdb.set_trace()
       setattr(packet, self.field_name, defaults.get(self.field_name, copy.deepcopy(self.default))) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
@@ -49,7 +50,7 @@ def _get_count(count_arg):
       return lambda **k: count_arg
 
    if isinstance(count_arg, Field):
-      return lambda pkt, **k: count_arg.getval(pkt)
+      return lambda pkt, **k: getattr(pkt, count_arg.field_name)
 
    if callable(count_arg):
       return count_arg
@@ -132,9 +133,11 @@ class Sequence(Field):
 
       
    def compile(self, field_name, position, fields):
-      Field.compile(self, field_name, position, fields)
+      slots = Field.compile(self, field_name, position, fields)
       self.seq_elem_field_name = "_seq_elem__"+field_name
       self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[])
+
+      return slots + [self.seq_elem_field_name]
 
    def init(self, packet, defaults):
       Field.init(self, packet, defaults)
@@ -144,7 +147,7 @@ class Sequence(Field):
       self.until_condition.reset()
 
       sequence = [] 
-      self.setval(pkt, sequence) # clean up the previous sequence, so it can be used by the 'when' and 'until' callbacks
+      setattr(pkt, self.field_name, sequence) # clean up the previous sequence, so it can be used by the 'when' and 'until' callbacks
       stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
       seq_elem_field_name = self.seq_elem_field_name
@@ -168,7 +171,7 @@ class Sequence(Field):
 
 
    def pack(self, packet):
-      sequence = self.getval(packet)
+      sequence = getattr(packet, self.field_name)
       raw = []
       seq_elem_field_name = self.seq_elem_field_name
       for val in sequence:
@@ -188,7 +191,7 @@ class Int(Field):
       self.is_fixed = True
 
    def compile(self, field_name, position, fields):
-      Field.compile(self, field_name, position, fields)
+      slots = Field.compile(self, field_name, position, fields)
       
       if self.byte_count in (1, 2, 4, 8): 
          code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
@@ -208,6 +211,7 @@ class Int(Field):
 
          self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
+      return slots
 
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
@@ -218,12 +222,12 @@ class Int(Field):
    def _unpack_fixed_and_primitive_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
       integer = self.struct_obj.unpack(raw[offset:next_offset])[0]
-      self.setval(pkt, integer)
+      setattr(pkt, self.field_name, integer)
 
       return next_offset
 
    def _pack_fixed_and_primitive_size(self, pkt):
-      integer = self.getval(pkt)
+      integer = getattr(pkt, self.field_name)
       raw = self.struct_obj.pack(integer)
 
       return raw
@@ -238,11 +242,11 @@ class Int(Field):
       if self.is_signed and ord(raw_data[0]) > 127:
          num = -(self.base - num)
 
-      self.setval(pkt, num)
+      setattr(pkt, self.field_name, num)
       return next_offset
 
    def _pack_fixed_size(self, pkt):
-      integer = self.getval(pkt)
+      integer = getattr(pkt, self.field_name)
       num = (self.base + integer) if integer < 0 else integer
 
       data = (self.xcode % num).decode('hex')
@@ -271,7 +275,7 @@ class Data(Field):
       self.is_fixed = isinstance(byte_count, (int, long))
 
    def compile(self, field_name, position, fields):
-      Field.compile(self, field_name, position, fields)
+      slots = Field.compile(self, field_name, position, fields)
 
       if self.byte_count is not None:
          if isinstance(self.byte_count, (int, long)):
@@ -297,27 +301,29 @@ class Data(Field):
          else:
             assert False
 
+      return slots
+
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
    def pack(self, packet):
-      return self.getval(packet) + self.delimiter_to_be_included
+      return getattr(packet, self.field_name) + self.delimiter_to_be_included
 
    def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
-      self.setval(pkt, raw[offset:next_offset])
+      setattr(pkt, self.field_name, raw[offset:next_offset])
       
       return next_offset
    
    def _unpack_variable_size_field(self, pkt, raw, offset=0, **k):
-      next_offset = offset + self.byte_count.getval(pkt)
-      self.setval(pkt, raw[offset:next_offset])
+      next_offset = offset + getattr(pkt, self.byte_count.field_name)
+      setattr(pkt, self.field_name, raw[offset:next_offset])
       
       return next_offset
    
    def _unpack_variable_size_callable(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)
-      self.setval(pkt, raw[offset:next_offset])
+      setattr(pkt, self.field_name, raw[offset:next_offset])
       
       return next_offset
 
@@ -335,7 +341,7 @@ class Data(Field):
             extra_count = len(until_marker)
 
       next_offset = offset + count
-      self.setval(pkt, raw[offset:next_offset])
+      setattr(pkt, self.field_name, raw[offset:next_offset])
 
       return next_offset + extra_count
    
@@ -358,7 +364,7 @@ class Data(Field):
             assert False
       
       next_offset = offset + count
-      self.setval(pkt, raw[offset:next_offset])
+      setattr(pkt, self.field_name, raw[offset:next_offset])
 
       return next_offset + extra_count
 
@@ -389,10 +395,9 @@ class Ref(Field):
 
 
    def compile(self, field_name, position, fields):
-      # TODO should we call Field.compile here?
+      slots = Field.compile(self, field_name, position, fields)
 
       self.position = position
-      self.field_name = field_name
       if isinstance(self.prototype, Field): 
          self.prototype.compile(field_name=field_name, position=position, fields=[])
 
@@ -409,6 +414,8 @@ class Ref(Field):
          assert callable(self.prototype)
          pass
 
+      return slots
+      
 
    def init(self, packet, defaults):   #TODO ver el tema de los defaults q viene de la instanciacion del packet
       # we use our prototype to get a valid default if the prototype is not a callable
@@ -447,7 +454,7 @@ class Ref(Field):
 
       assert isinstance(referenced, Packet)
 
-      self.setval(pkt, referenced)
+      setattr(pkt, self.field_name, referenced)
       return referenced.unpack(raw, offset, **k)
 
 
@@ -455,7 +462,7 @@ class Ref(Field):
       if isinstance(self.prototype, Field):
          return self.prototype.pack(packet)
 
-      obj = self.getval(packet)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+      obj = getattr(packet, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack()
 
@@ -474,13 +481,13 @@ class Ref(Field):
       raise NotImplementedError()
 
    def _unpack_referencing_a_packet(self, pkt, **k):
-      return self.getval(pkt).unpack(**k)
+      return getattr(pkt, self.field_name).unpack(**k)
 
    def _pack_referencing_a_packet(self, packet):
-      return self.getval(packet).pack()
+      return getattr(packet, self.field_name).pack()
  
    def _pack_referencing_a_unknow_object(self, packet):     
-      obj = self.getval(packet)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+      obj = getattr(packet, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack()
 
@@ -509,7 +516,7 @@ class Bits(Field):
       self.iam_first = self.iam_last = False
    
    def compile(self, field_name, position, fields):
-      Field.compile(self, field_name, position, fields)
+      slots = Field.compile(self, field_name, position, fields)
 
       if position == 0 or not isinstance(fields[position-1][1], Bits):
          self.iam_first = True
@@ -540,12 +547,16 @@ class Bits(Field):
             raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(reversed(seq))), cumshift))
 
          I.byte_count = cumshift / 8
-         I.compile(field_name="_bits__"+"_".join(reversed(name_of_members)), position=-1, fields=[])
-   
+         fname = "_bits__"+"_".join(reversed(name_of_members))
+         I.compile(field_name=fname, position=-1, fields=[])
+
+         slots.append(fname)
+      return slots
+
 
    def init(self, packet, defaults):
       if self.iam_first:
-         self.I.setval(packet, 0)
+         setattr(packet, self.I.field_name, 0)
 
       Field.init(self, packet, defaults)
 
@@ -554,14 +565,14 @@ class Bits(Field):
       if self.iam_first:
          offset = self.I.unpack(pkt, raw, offset, **k)
 
-      I = self.I.getval(pkt)
+      I = getattr(pkt, self.I.field_name)
 
-      self.setval(pkt, (I & self.mask) >> self.shift)
+      setattr(pkt, self.field_name, (I & self.mask) >> self.shift)
       return offset
 
    def pack(self, packet):
-      I = self.I.getval(packet)
-      self.I.setval(packet, ((self.getval(packet) << self.shift) & self.mask) | (I & (~self.mask)))
+      I = getattr(packet, self.I.field_name)
+      setattr(packet, self.I.field_name, ((getattr(packet, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
 
       if self.iam_last:
          return self.I.pack(packet)

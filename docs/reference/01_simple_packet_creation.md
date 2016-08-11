@@ -40,6 +40,9 @@ Ok, now lets intantiate a TLP packet and see its values by default
 >>> p.payload
 ''
 
+>>> hasattr(p, '__dict__')
+False
+
 ```
 
 Those values come from the defined defaults of Int (0) and Data ('').

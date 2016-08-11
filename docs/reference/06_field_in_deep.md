@@ -17,13 +17,6 @@ the 'python object' of Int and not with the Int itself.
 ...    size = Int(1)
 
 >>> from field import Field
->>>
->>> isinstance(Ethernet.size, Int)
-True
->>> isinstance(Ethernet.size, Field)
-True
->>> isinstance(Ethernet.size, (int, long))
-False
 
 >>> p = Ethernet()
 >>> isinstance(p.size, Int)
