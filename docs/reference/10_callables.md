@@ -28,7 +28,7 @@ however, there isn't a fixed amount of bytes to be set for referenced objects or
 
 
 >>> raw = "\x01\x02\x03"
->>> pkt = AllFixed.create_from(raw)
+>>> pkt = AllFixed.unpack(raw)
 >>> pkt.num, pkt.data, pkt.bits
 (1, '\x02', 3)
 
@@ -46,7 +46,7 @@ For sequence of objects you can set the amount of objects to be extracted:
 ...    seq = Int(byte_count=1).repeated(count=3)
 
 >>> raw = "\x01\x02\x03"
->>> pkt = FixedSeq.create_from(raw)
+>>> pkt = FixedSeq.unpack(raw)
 >>> pkt.seq
 [1, 2, 3]
 
@@ -68,7 +68,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 
 
 >>> raw = "\x01\x01\x02"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('\x01', [2])
 
@@ -76,7 +76,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 '\x01\x01\x02'
 
 >>> raw = "\x02AA\x01\x02"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('AA', [1, 2])
 
@@ -98,7 +98,7 @@ For example
 
 
 >>> raw = "\x01ABC\x01\x02\x03"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('ABC', [1, 2, 3])
 
@@ -106,7 +106,7 @@ For example
 '\x01ABC\x01\x02\x03'
 
 >>> raw = "\x02ABCDEF\x01\x02\x03\x04\x05\x06"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('ABCDEF', [1, 2, 3, 4, 5, 6])
 
@@ -125,7 +125,7 @@ Don't be shy, lets do more complex expressions
 
 
 >>> raw = "\x01\x02\x01\x02XXXX"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.matrix
 [1, 2]
 
@@ -133,7 +133,7 @@ Don't be shy, lets do more complex expressions
 '\x01\x02\x01\x02'
 
 >>> raw = "\x02\x03\x01\x02\x03\x04\x05\x06"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.matrix
 [1, 2, 3, 4, 5, 6]
 
@@ -151,7 +151,7 @@ We can go further to use expressions in the until and when conditions:
 
 
 >>> raw = "\x01\x02XXX"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.opt
 2
 
@@ -159,7 +159,7 @@ We can go further to use expressions in the until and when conditions:
 '\x01\x02'
 
 >>> raw = "\x00XXX"
->>> pkt = AllVariable.create_from(raw)
+>>> pkt = AllVariable.unpack(raw)
 >>> pkt.opt is None
 True
 
@@ -180,7 +180,7 @@ You can use any kind of callable, functions, methods or lambdas.
 ...    seq2   = Int(byte_count=1).repeated(until=lambda pkt, **k: pkt.seq2[-1]==0)
 
 >>> raw = "\x01\x00\x01\x02\x03\x00"
->>> pkt = VariableUsingCallable.create_from(raw)
+>>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
 ('\x00\x01', [2, 3], [0])
 
@@ -188,7 +188,7 @@ You can use any kind of callable, functions, methods or lambdas.
 '\x01\x00\x01\x02\x03\x00'
 
 >>> raw = "\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
->>> pkt = VariableUsingCallable.create_from(raw)
+>>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
 ('AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
 
@@ -216,7 +216,7 @@ available arguments:
 ...    lower  = Ref(Lower)
 
 >>> raw = "\x02AA"
->>> pkt = Higher.create_from(raw)
+>>> pkt = Higher.unpack(raw)
 >>> pkt.amount, pkt.lower.data
 (2, 'AA')
 

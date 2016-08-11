@@ -24,7 +24,7 @@ Let see what happen when the packet is built from this string
 
 ```python
 >>> s = '\x01abCddd\x00eeeeoffghiXjk'
->>> p = DataExample.create_from(s)
+>>> p = DataExample.unpack(s)
 >>> p.length
 1
 >>> p.a
@@ -80,7 +80,7 @@ If you need that the token be in the result, you can use the keyword 'include_de
 ...    f = Data(until_marker=re.compile('X+|$'), include_delimiter=True)
 
 >>> s = '\x01abCddd\x00eeeeoffghiXjk'
->>> p = DataExample.create_from(s)
+>>> p = DataExample.unpack(s)
 >>> p.length
 1
 >>> p.a
@@ -120,7 +120,7 @@ Let see an example:
 ...    a = Data(until_marker='\0', include_delimiter=False)
 
 >>> s = 'ab\x00eeee'
->>> p = DataWithSearchLengthLimit.create_from(s)
+>>> p = DataWithSearchLengthLimit.unpack(s)
 >>> p.a
 'ab'
 
@@ -136,7 +136,7 @@ if the marker does't exist in the whole string
 ...    a = Data(until_marker='\0', include_delimiter=False)
 
 >>> s = 'ab\x00eeee'
->>> p = DataWithSearchLengthLimitTooShort.create_from(s)        # doctest: +ELLIPSIS
+>>> p = DataWithSearchLengthLimitTooShort.unpack(s)        # doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
 PacketError: Error when unpacking the field 'a' of packet DataWithSearchLengthLimitTooShort at 00000000...
@@ -154,7 +154,7 @@ ignoring the search buffer length:
 ...    a = Data(until_marker=re.compile('$'), include_delimiter=False)
 
 >>> s = 'abeeee'
->>> p = DataWithSearchLengthLimitTooShortButIgnored.create_from(s) 
+>>> p = DataWithSearchLengthLimitTooShortButIgnored.unpack(s) 
 >>> p.a
 'abeeee'
 
@@ -183,20 +183,20 @@ end of the packet.
 >>> s4 = '\xffa'
 >>> s5 = '\xffabc'
 
->>> DataExample.create_from(s1).payload
+>>> DataExample.unpack(s1).payload
 'a'
->>> DataExample.create_from(s2).payload
+>>> DataExample.unpack(s2).payload
 'ab'
->>> DataExample.create_from(s3).payload
+>>> DataExample.unpack(s3).payload
 'a'
->>> DataExample.create_from(s4).payload
+>>> DataExample.unpack(s4).payload
 'a'
->>> DataExample.create_from(s5).payload
+>>> DataExample.unpack(s5).payload
 'abc'
 
->>> DataExample.create_from(s1).pack() == s1
+>>> DataExample.unpack(s1).pack() == s1
 True
->>> DataExample.create_from(s5).pack() == s5
+>>> DataExample.unpack(s5).pack() == s5
 True
 
 ```
@@ -214,18 +214,18 @@ writing the expression directly:
 >>> s2 = '\x02abcdzz'
 >>> s3 = '\x01aabb'
 
->>> DataWithExpr.create_from(s1).payload
+>>> DataWithExpr.unpack(s1).payload
 'aa'
->>> DataWithExpr.create_from(s2).payload
+>>> DataWithExpr.unpack(s2).payload
 'abcd'
->>> DataWithExpr.create_from(s3).payload
+>>> DataWithExpr.unpack(s3).payload
 'aa'
 
->>> DataWithExpr.create_from(s1).pack() == s1[:-4]
+>>> DataWithExpr.unpack(s1).pack() == s1[:-4]
 True
->>> DataWithExpr.create_from(s2).pack() == s2[:-2]
+>>> DataWithExpr.unpack(s2).pack() == s2[:-2]
 True
->>> DataWithExpr.create_from(s3).pack() == s3[:-2]
+>>> DataWithExpr.unpack(s3).pack() == s3[:-2]
 True
 
 ```

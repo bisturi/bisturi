@@ -15,7 +15,7 @@ This is fine, but in some cases it is desired to control where a field begins.
 
 ```python
 >>> s = '\x04XXXABCD'
->>> p = Folder.create_from(s)
+>>> p = Folder.unpack(s)
 
 >>> p.offset_of_file
 4
@@ -58,7 +58,7 @@ We can't know how to put two diferent set of data at the same position!
 
 ```python
 >>> s = '\x04XXXABCDX'
->>> p = Folder.create_from(s)
+>>> p = Folder.unpack(s)
 
 >>> p.offset_of_file
 4
@@ -118,7 +118,7 @@ field count_options
 ...   checksum = Int(4)
 
 >>> s = '\x02...\x01A\x04ABCDABCD'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
 'A'
@@ -146,7 +146,7 @@ If we want that the options field be alinged to 4 byte we do:
 ...   checksum = Int(4)
 
 >>> s = '\x02...\x01A\x04ABCDABCD'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
 'A'
@@ -170,7 +170,7 @@ To align each option in the sequence we do:
 ...   checksum = Int(4)
 
 >>> s = '\x02...\x01A..\x04ABCDABCD'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
 'A'
@@ -195,7 +195,7 @@ resolve this easly:
 ...   checksum = Int(4)
 
 >>> s = '\x02...\x01A..\x04ABCD...ABCD'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
 'A'
@@ -218,7 +218,7 @@ For example, if we have this:
 ...   y = Int(2).aligned(4)
 
 >>> s = '\x00\x01..\x00\x02'
->>> p = Point.create_from(s)
+>>> p = Point.unpack(s)
 
 >>> p.pack() == s
 True
@@ -233,7 +233,7 @@ But if we put this point in another packet, see what happen:
 ...   point = Ref(Point)
 
 >>> s  = 'f\x00\x00\x01\x00\x02'
->>> np = NamedPoint.create_from(s)
+>>> np = NamedPoint.unpack(s)
 
 >>> np.pack() == s
 True
@@ -254,7 +254,7 @@ fields are aligned inside the packet but not necessary outside:
 ...   y = Int(2).aligned(4, local=True)
 
 >>> s = '\x00\x01..\x00\x02'
->>> p = Point.create_from(s)
+>>> p = Point.unpack(s)
 
 >>> p.x, p.y
 (1, 2)
@@ -267,7 +267,7 @@ True
 ...   point = Ref(Point)
 
 >>> s  = 'f\x00\x00\x01..\x00\x02'
->>> np = NamedPoint.create_from(s)
+>>> np = NamedPoint.unpack(s)
 
 >>> np.name
 'f'
@@ -298,7 +298,7 @@ will introduce any byte during the packing.
 
 >>> # First case, the packet already is multiple of 4
 >>> s = '\x03ABC'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.size
 3
@@ -311,7 +311,7 @@ True
 
 >>> # No so lucky this time, we need to add 3 bytes to be multiple of 4
 >>> s = '\x04ABCD...'
->>> p = Datagram.create_from(s)
+>>> p = Datagram.unpack(s)
 
 >>> p.size
 4

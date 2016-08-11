@@ -155,7 +155,7 @@ This is more fast (two orders) than parsing each string:
 >>> import timeit
 
 >>> topt = timeit.Timer(lambda: list(filter_like(ip, raw_packets)))
->>> tgen = timeit.Timer(lambda: [IP.create_from(s) for s in raw_packets])
+>>> tgen = timeit.Timer(lambda: [IP.unpack(s) for s in raw_packets])
 >>>
 >>> best_topt = min(topt.repeat(repeat=1, number=10))
 >>> best_tgen = min(tgen.repeat(repeat=1, number=10))

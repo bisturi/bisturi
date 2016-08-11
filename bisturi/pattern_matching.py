@@ -38,4 +38,4 @@ def filter(pkt, iterable, filter_with_regexp_first=True, filter_like_args={}):
 
     cls = pkt.__class__
     equals_to_pkt = partial(equals_to, pkt)
-    return ifilter(equals_to_pkt, (cls.create_from(r, silent=True) for r in iterable))
+    return ifilter(equals_to_pkt, (cls.unpack(r, silent=True) for r in iterable))

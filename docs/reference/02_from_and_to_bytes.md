@@ -25,7 +25,7 @@ You can see what should be the value of 'type' or 'payload'?
 I hope!. If not, let the packet dissect the string for you
 
 ```python
->>> p = TLP.create_from(s1)
+>>> p = TLP.unpack(s1)
 >>> p.type
 2
 >>> p.length
@@ -39,7 +39,7 @@ And another example
 
 ```python
 >>> s2 = '\x01\x00\x00\x00\x01d'
->>> q = TLP.create_from(s2)
+>>> q = TLP.unpack(s2)
 >>> q.type
 1
 >>> q.length
@@ -77,7 +77,7 @@ However, to use this you need to call unpack directly.
 
 ```python
 >>> s2 = 'xxx\x01\x00\x00\x00\x01d'
->>> q = TLP.create_from(s2, offset=3)   #ignore the first 3 bytes "xxx"
+>>> q = TLP.unpack(s2, offset=3)   #ignore the first 3 bytes "xxx"
 >>> q.type
 1
 >>> q.length
@@ -95,7 +95,7 @@ If a field cannot be unpacked, an exception is raised with the full stack of pac
 ...    payload = Data(length)
 
 >>> def some_function(raw):
-...    q = VariablePayload.create_from(raw)
+...    q = VariablePayload.unpack(raw)
 
 >>> s = '\x04a'
 >>> some_function(s)                                         #doctest: +ELLIPSIS
@@ -140,7 +140,7 @@ work like a string:
 >>>
 >>> seekable_file = _string_as_seekable_file('\x03abc')
 
->>> p = VariablePayload.create_from(seekable_file)
+>>> p = VariablePayload.unpack(seekable_file)
 >>> p.length
 3
 >>> p.payload

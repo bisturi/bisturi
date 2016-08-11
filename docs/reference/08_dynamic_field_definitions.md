@@ -53,7 +53,7 @@ you need to set a default value (this is mandatory)
 
 ```python
 >>> s = '\x01\x01\x02\x03\x04'
->>> p = SOCKS.create_from(s)
+>>> p = SOCKS.unpack(s)
 >>> p.type
 1
 >>> p.address
@@ -62,7 +62,7 @@ you need to set a default value (this is mandatory)
 True
 
 >>> s = '\x04\x01\x02\x03\x04\x05\x06\x07\x08'
->>> p = SOCKS.create_from(s)
+>>> p = SOCKS.unpack(s)
 >>> p.type
 4
 >>> p.address
@@ -71,7 +71,7 @@ True
 True
 
 >>> s = '\x03\x0bexample.com'
->>> p = SOCKS.create_from(s)
+>>> p = SOCKS.unpack(s)
 >>> p.type
 3
 >>> p.address.data

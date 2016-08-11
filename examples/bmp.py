@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     raw_img = b16decode('424D4E0000000000000036000000280000000300000002000000010018000000000018000000C40E0000C40E00000000000000000000FFFFFF8080800000000000000000FF00FF00FF0000000000', True)
 
-    img = BMP.create_from(raw_img)
+    img = BMP.unpack(raw_img)
 
     assert img.signature == "BM"
     assert img.file_size == 78

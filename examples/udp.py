@@ -20,8 +20,8 @@ if __name__ == '__main__':
    raw_query = b16decode('a4d9003500331c7c' + 'e11e' * 11 * 2, True)
    raw_response = b16decode('0035a4d9010be2fe' + 'e11e' * 65 * 2, True)
 
-   udp_query = UDP.create_from(raw_query)
-   udp_response = UDP.create_from(raw_response)
+   udp_query = UDP.unpack(raw_query)
+   udp_response = UDP.unpack(raw_response)
 
    assert udp_query.src_port == udp_response.dst_port == 42201
    assert udp_query.dst_port == udp_response.src_port == 53

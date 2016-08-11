@@ -61,7 +61,7 @@ class Packet(object):
       return Prototype(self)
 
    @classmethod
-   def create_from(cls, raw, offset=0, silent=False):
+   def unpack(cls, raw, offset=0, silent=False):
      pkt = cls(_initialize_fields=False)
      try:
          stack = []
@@ -72,15 +72,6 @@ class Packet(object):
              return None
          else:
              raise
-
-
-   def unpack(self, raw, offset=0):
-      raise Exception("NO")
-      stack = []
-      try:
-         return self.unpack_impl(raw, offset, stack)
-      except PacketError, e:
-         raise e
 
    def unpack_impl(self, raw, offset, stack):
       stack.append(Layer(self, offset))
