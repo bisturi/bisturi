@@ -1,7 +1,7 @@
 import time, struct, sys, copy
 from packet import Packet, Prototype
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
-
+from pattern_matching import Any
 
 def exec_once(m):
    ''' Force to execute the method M only once and save its result.
@@ -787,13 +787,13 @@ class Bits(Field):
             cumshift += f.bit_count
             del f.bit_count
 
-         name_of_members, bit_sequence = zip(*self.members)
+         name_of_members, bit_sequence = zip(*reversed(self.members))
 
          if not (cumshift % 8 == 0):
-            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(reversed(bit_sequence))), cumshift))
+            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
 
          I.byte_count = cumshift / 8
-         fname = "_bits__"+"_".join(reversed(name_of_members))
+         fname = "_bits__"+"_".join(name_of_members)
          I.compile(field_name=fname, position=-1, fields=[], bisturi_conf={})
 
          slots.append(fname)
@@ -825,7 +825,50 @@ class Bits(Field):
          return fragments
       
    def pack_regexp(self, pkt, fragments, **k):
-       pass
+      if self.iam_last:
+          bits = []
+          for name, bit_count in self.members:
+              is_literal = not isinstance(getattr(pkt, name), Any)
+              if is_literal:
+                  b = bin(getattr(pkt, name))[2:]
+                  zeros = bit_count-len(b)
+
+                  bits.append("0" * zeros)
+                  bits.append(b)
+              else:
+                  bits.append("x" * bit_count)
+
+          bits  = "".join(bits)
+          bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)/8)]
+
+          for byte in bytes:
+              if byte == "x" * 8:                                 # xxxx xxxx pattern (all dont care)
+                  fragments.append(".{1}", is_literal=False)
+              else:
+                  first_dont_care = byte.index("x")
+                  if first_dont_care == -1:                       # 0000 0000 pattern (all fixed)
+                     char = chr(int(byte, 2))
+                     fragments.append(char, is_literal=True)
+
+                  elif byte[first_dont_care:] == "x" * len(byte[first_dont_care:]):
+                     dont_care_bits = len(byte[first_dont_care:]) # 00xx xxxx pattern (lower dont care)
+                     lower_char = chr(int(byte[first_dont_care:] + ("0" * dont_care_bits)))
+                     higher_char = chr(int(byte[first_dont_care:] + ("1" * dont_care_bits)))
+
+                     lower_literal = re.escape(lower_char)
+                     higher_literal = re.escape(higher_literal)
+                     fragments.append("[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
+                  
+                  else:                                           # 00xx x0x0 pattern (mixed pattern)
+                     all_patterns  = range(256)
+                     fixed_pattern = int(byte.replace("x", "0"), 2)
+
+                     mixed_patterns = sorted(set(p & fixed_pattern for p in all_patterns))
+                     
+                     literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
+                     fragments.append("[%s]" % "".join(literal_patterns), is_literal=False)
+
+      return fragments
 
 class Move(Field):
    def __init__(self, move_arg, movement_type):
