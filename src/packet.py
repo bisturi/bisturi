@@ -10,6 +10,8 @@ class MetaPacket(type):
    
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
+      
+      map(lambda name_val: name_val[1].compile(), fields)
 
       @classmethod
       def get_fields(cls):
@@ -20,8 +22,8 @@ class MetaPacket(type):
 class Packet(object):
    __metaclass__ = MetaPacket
 
-   def __init__(self):
-      map(lambda name_val: name_val[1].init(self, name_val[0]), self.get_fields())
+   def __init__(self, **defaults):
+      map(lambda name_val: name_val[1].init(self, name_val[0], defaults), self.get_fields())
 
 
    def from_raw(self, raw, offset=0):
