@@ -2,6 +2,7 @@ import time, struct, sys, copy, re
 from packet import Packet, Prototype
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 from pattern_matching import Any
+from fragments import FragmentsOfRegexps
 
 def exec_once(m):
    ''' Force to execute the method M only once and save its result.
@@ -93,7 +94,7 @@ class Field(object):
       return self
 
    def pack_regexp(self, pkt, fragments, **k):
-      raise NotImplementedError()
+      raise NotImplementedError("The pack_regexp method is not implemented for this field.")
 
 def _get_count(count_arg):
    '''Return a callable from count_arg so you can invoke that callable
@@ -210,9 +211,9 @@ class Sequence(Field):
       if isinstance(when, (UnaryExpr, BinaryExpr)):
          when = compile_expr_into_callable(when)
 
-      resolved_count = None if count is None else _get_count(count)
-      self.when = _get_when(resolved_count, when)
-      self.until_condition = _get_until(resolved_count, until)
+      self.resolved_count = None if count is None else _get_count(count)
+      self.when = _get_when(self.resolved_count, when)
+      self.until_condition = _get_until(self.resolved_count, until)
 
       return slots + [self.seq_elem_field_name]
 
@@ -262,6 +263,27 @@ class Sequence(Field):
          setattr(pkt,  seq_elem_field_name, val)
          fragments.current_offset += (_aligned_to - (fragments.current_offset % _aligned_to)) % _aligned_to
          self.prototype_field.pack(pkt, fragments, **k)
+
+      return fragments
+
+   def pack_regexp(self, pkt, fragments, **k):
+      value = getattr(pkt, self.field_name)
+      is_literal = not isinstance(value, Any)
+
+      if is_literal:
+          self.pack(pkt, fragments, **k)
+      else:
+          f = FragmentsOfRegexps()
+          try:
+              self.prototype_field.pack_regexp(pkt, f, **k)
+              subregexp = f.assemble_regexp()
+          except:
+              subregexp = ".*"
+          
+          if self.resolved_count is None:
+              fragments.append("(%s)*" % subregexp, is_literal=False)
+          else:
+              fragments.append("(%s){%i}" % (subregexp, self.resolved_count), is_literal=False)
 
       return fragments
 
@@ -320,6 +342,24 @@ class Optional(Field):
 
       else:
          return fragments
+   
+   def pack_regexp(self, pkt, fragments, **k):
+      value = getattr(pkt, self.field_name)
+      is_literal = not isinstance(value, Any)
+
+      if is_literal:
+          self.pack(pkt, fragments, **k)
+      else:
+          f = FragmentsOfRegexps()
+          try:
+              self.prototype_field.pack_regexp(pkt, f, **k)
+              subregexp = f.assemble_regexp()
+          except:
+              subregexp = ".*"
+          
+          fragments.append("(%s)?" % subregexp, is_literal=False)
+
+      return fragments
 
 @defer_operations_of
 class Int(Field):
