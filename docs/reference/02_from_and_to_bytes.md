@@ -127,6 +127,5 @@ Packet stack details:
     00000000 VariablePayload                .length
 Field's exception:
 ...
-error: cannot convert argument to integer...
 
 ```
