@@ -595,10 +595,10 @@ class Data(Field):
              elif callable(self.byte_count):
                 try:
                     byte_count = self.byte_count(pkt=pkt, **k)
-                except:
+                except Exception, e:
                     byte_count = None
 
-             if byte_count:
+             if byte_count is not None:
                  fragments.append(".{%i}" % byte_count, is_literal=False)
              else:
                  fragments.append(".*", is_literal=False)
