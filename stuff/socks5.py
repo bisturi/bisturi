@@ -1,5 +1,5 @@
 from packet import Packet
-from field import Int, Data
+from field import Int, Data, Bits
 
 #RFC 1928
 #socks port 1080
@@ -68,3 +68,24 @@ class Reply(Packet):
             0x04: 8,                #  IP V6 address: X'04'
             }[self.address_type] 
 
+class UDPMessage(Packet):
+   rsv = Int(2, default=0x0)
+   end_of_fragments = Bits(1)
+   fragment_position = Bits(7)
+   address_type = Int(1)
+   destination = Data(lambda p: p.destination_length())
+   port = Int(2)
+   data = Data(Packet.END)
+   
+   def destination_length(self):
+      return {
+            0x01: 4,                #  IP V4 address: X'01'
+            0x03: 0, # <-- TODO     #  DOMAINNAME: X'03'  
+                                       #  TODO: the address field contains a fully-qualified domain name.  The first
+                                       #        octet of the address field contains the number of octets of name that
+                                       #        follow, there is no terminating NUL octet.
+            0x04: 8,                #  IP V6 address: X'04'
+            }[self.address_type] 
+
+   def is_not_fragmented(self):
+      return self.end_of_fragments == self.fragment_position == 0
