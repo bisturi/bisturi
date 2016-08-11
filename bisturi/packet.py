@@ -32,12 +32,35 @@ class Packet(object):
          self.unpack(bytestring)
 
 
-   def unpack(self, raw, offset=0):
+   def unpack(self, raw, offset=0, stack=None):
+      stack = self.push_to_the_stack(stack)
       for name, f in self.get_fields():
-         offset = f.unpack(self, raw, offset)
-
+         try:
+            offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+         except Exception, e:
+            import traceback
+            msg = traceback.format_exc()
+            raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
+                                    name, self.__class__.__name__, offset, msg))
+      
       return offset
          
    def pack(self):
       return ''.join([f.pack(self) for name, f in self.get_fields()])
 
+   def push_to_the_stack(self, stack):
+      if stack:
+         stack.append(self)
+      else:
+         stack = [self]
+
+      return stack
+
+   def iterative_unpack(self, raw, offset=0, stack=None):
+      stack = self.push_to_the_stack(stack)
+      for name, f in self.get_fields():
+         yield offset, name
+         offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+
+      yield offset, "."
+      
