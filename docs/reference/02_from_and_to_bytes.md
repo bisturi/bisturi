@@ -25,7 +25,7 @@ You can see what should be the value of 'type' or 'payload'?
 I hope!. If not, let the packet dissect the string for you
 
 ```python
->>> p = TLP(s1)
+>>> p = TLP.create_from(s1)
 >>> p.type
 2
 >>> p.length
@@ -39,7 +39,7 @@ And another example
 
 ```python
 >>> s2 = '\x01\x00\x00\x00\x01d'
->>> q = TLP(s2)
+>>> q = TLP.create_from(s2)
 >>> q.type
 1
 >>> q.length

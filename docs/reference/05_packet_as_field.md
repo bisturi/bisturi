@@ -37,8 +37,8 @@ So, we can do this
 >>> s1 = '\x00\x01\x01\x00\x00\x01\x00\x01\x01\x00\x00\x02\x05hello'
 >>> s2 = '\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
 >>>
->>> p = Ethernet(s1)
->>> q = Ethernet(s2)
+>>> p = Ethernet.create_from(s1)
+>>> q = Ethernet.create_from(s2)
 >>>
 >>> p.destination.nic
 '\x00\x00\x01'

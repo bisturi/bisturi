@@ -25,7 +25,7 @@ So,
 
 ```python
 >>> s = '\x02\x01\x02ab\x04\x03abc'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> p.count
 2
 >>> len(p.attributes)
@@ -44,7 +44,7 @@ The field is always represented as a list. One and Zero counts are valid too.
 
 ```python 
 >>> s = '\x01\x01\x02ab'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> p.count
 1
 >>> len(p.attributes)
@@ -56,7 +56,7 @@ The field is always represented as a list. One and Zero counts are valid too.
 True
 
 >>> s = '\x00'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> p.count
 0
 >>> len(p.attributes)
@@ -79,8 +79,8 @@ For example, the field 'attributes' can be a list that ends with a special
 
 >>> s =  '\x01\x02ab\x04\x03abc\x00\x00'
 >>> s2 = '\x02\x01a\x00\x00'
->>> p = Attributes(s)
->>> q = Attributes(s2)
+>>> p = Attributes.create_from(s)
+>>> q = Attributes.create_from(s2)
 >>> len(p.attributes)
 3
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -103,7 +103,7 @@ True
 True
 
 >>> s =  '\x00\x00'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> len(p.attributes)
 1
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -130,7 +130,7 @@ To support 'zero-or-more' constructions we need the 'when' condition:
 ...    attributes = Ref(TypeLenValue).repeated(when=lambda pkt, **k: pkt.has_attributes, until=lambda pkt, **k: pkt.attributes[-1].type == 0)
 
 >>> s = '\x01\x01\x02ab\x04\x03abc\x00\x00'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> len(p.attributes)
 3
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -144,7 +144,7 @@ To support 'zero-or-more' constructions we need the 'when' condition:
 True
 
 >>> s = '\x00'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> p.has_attributes
 0
 >>> p.attributes
@@ -165,7 +165,7 @@ The 'when' condition can be combinated with a fixed count, like:
 ...    attributes = Ref(TypeLenValue).repeated(2, when=lambda pkt, **k: pkt.has_attributes)
 
 >>> s = '\x01\x01\x02ab\x04\x03abc'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> len(p.attributes)
 2
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -177,7 +177,7 @@ The 'when' condition can be combinated with a fixed count, like:
 True
 
 >>> s = '\x00'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> p.has_attributes
 0
 >>> p.attributes
@@ -202,7 +202,7 @@ of the stream but leaving 4 byte at the end.
 ...    checksum = Int(4)
 
 >>> s = '\x01\x02ab\x04\x03abc\xff\xff\xff\xff'
->>> p = Attributes(s)
+>>> p = Attributes.create_from(s)
 >>> len(p.attributes)
 2
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -228,7 +228,7 @@ the field, instead we just mark the field to be there 'when' some condition is m
 ...    num  = Ref(Int).when(lambda pkt, **k: pkt.type != 0)
 
 >>> s = '\x01\x00\x00\x00\x04'
->>> p = Option(s)
+>>> p = Option.create_from(s)
 >>> p.num
 4
 
@@ -236,7 +236,7 @@ the field, instead we just mark the field to be there 'when' some condition is m
 True
 
 >>> s = '\x00'
->>> p = Option(s)
+>>> p = Option.create_from(s)
 >>> p.num is None
 True
 

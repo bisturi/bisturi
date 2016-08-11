@@ -52,6 +52,7 @@ class Packet(object):
       map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
       
       if bytestring is not None:
+         raise Exception("NO")
          self.unpack(bytestring)
 
    @classmethod

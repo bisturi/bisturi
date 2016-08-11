@@ -16,7 +16,7 @@ The default interpretation of the field is like an integer.
 
 ```python
 >>> s = '\x00\x12'
->>> p = BitsExample(s)
+>>> p = BitsExample.create_from(s)
 >>>
 >>> p.fragment_offset
 1

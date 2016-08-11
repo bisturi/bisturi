@@ -31,7 +31,7 @@ The code should be self explaining. But to remove any doubt,
 >>> f = '\x00\x00\x00\x06'  # 6 if this machine is big endian, but i don't know.
 
 >>> s = a+b+c+d+e+f
->>> p = IntExample(s)
+>>> p = IntExample.create_from(s)
 >>> [p.a, p.b, p.c, p.d, p.e]
 [1, 2, 3, -4, 5]
 
@@ -60,7 +60,7 @@ inefficient but it is implemented if you need it.
 >>> e = '\x00\x00\x05'      # 5 if this machine is big endian, but i don't know.
 
 >>> s = a+b+c+d+e
->>> p = IntExample(s)
+>>> p = IntExample.create_from(s)
 >>> [p.a, p.b, int(p.c), p.d]
 [1, 2, -3, 4]
 
@@ -88,8 +88,8 @@ To see the 'cost' of both implementations, we can mount a very rudimentary test.
 ...    b = Int(5)
 >>> 
 >>> s = '\x00\xff\x00\x00\x00\x00\xff\x00'
->>> topt = timeit.Timer(lambda: IntOptimized(s))
->>> tgen = timeit.Timer(lambda: IntGeneral(s))
+>>> topt = timeit.Timer(lambda: IntOptimized.create_from(s))
+>>> tgen = timeit.Timer(lambda: IntGeneral.create_from(s))
 >>>
 >>> best_topt = min(topt.repeat(repeat=10, number=1000))
 >>> best_tgen = min(tgen.repeat(repeat=10, number=1000))
@@ -117,7 +117,7 @@ Changeing this in each Int is terrible, so we can change the default directly
 >>> c = '\x00\x03'          # 3 in big endian (or network order)
 
 >>> s = a+b+c
->>> p = IntWithDifferentDefault(s)
+>>> p = IntWithDifferentDefault.create_from(s)
 >>> [p.a, p.b, p.c]
 [1, 2, 3]
 
