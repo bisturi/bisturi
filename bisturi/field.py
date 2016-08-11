@@ -3,6 +3,9 @@ import time, struct, sys, copy
 class Field(object):
    def __init__(self):
       self.ctime = time.time()
+      self.is_fixed = False
+      self.struct_code = None
+      self.is_bigendian = True
 
    def compile(self, field_name, position, fields):
       del self.ctime
@@ -177,6 +180,7 @@ class Int(Field):
       self.byte_count = byte_count
       self.is_signed = signed
       self.is_bigendian = (endianess in ('big', 'network')) or (endianess == 'local' and sys.byteorder == 'big')
+      self.is_fixed = True
 
    def compile(self, field_name, position, fields):
       Field.compile(self, field_name, position, fields)
@@ -193,6 +197,7 @@ class Int(Field):
          self.pack, self.unpack = self._pack_fixed_and_primitive_size, self._unpack_fixed_and_primitive_size
 
       else:
+         self.struct_code = None
          self.base = 2**(self.byte_count*8) 
          self.xcode = ("%0" + str(self.byte_count*2) + "x")
 
@@ -258,12 +263,14 @@ class Data(Field):
 
       assert not (consume_delimiter == False and include_delimiter == True)
       self.consume_delimiter = consume_delimiter #XXX document this!
+      self.is_fixed = isinstance(byte_count, (int, long))
 
    def compile(self, field_name, position, fields):
       Field.compile(self, field_name, position, fields)
 
       if self.byte_count is not None:
          if isinstance(self.byte_count, (int, long)):
+            self.struct_code = "%is" % self.byte_count
             self.unpack = self._unpack_fixed_size
          
          elif isinstance(self.byte_count, Field):
