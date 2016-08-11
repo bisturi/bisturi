@@ -1,0 +1,266 @@
+import sys
+sys.path.append("../")
+
+from bisturi.packet import Packet
+from bisturi.field  import Ref, Int
+
+import unittest
+
+class SubPacket(Packet):
+   value = Int(1)
+
+class TestRef(unittest.TestCase):
+   def _test_refs_field(self, obj_one, obj_two,
+                        one_default_raw,     obj_one_defaults, 
+                        two_default_raw,     obj_two_defaults, 
+                        first_raw_for_one,   obj_one_first_values,
+                        second_raw_for_one,  obj_one_second_values, 
+                        second_raw_for_two,  obj_two_second_values):
+
+      try:
+         #import pdb; pdb.set_trace()
+         one = obj_one
+         two = obj_two
+
+         # check defaults
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_defaults
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packed defaults
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == one_default_raw
+         assert two_packed == two_default_raw
+
+         raw = first_raw_for_one
+         one.unpack(raw)
+         
+         # check parsing (each instance must have its own set of fields and values)
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_first_values
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == two_default_raw
+
+         raw  = second_raw_for_one
+         raw2 = second_raw_for_two
+         one.unpack(raw)
+         two.unpack(raw2)
+
+         # check parsing (each instance must have its own set of fields and values)
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_second_values
+         assert (two_first, two_second) == obj_two_second_values
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == raw2
+
+      except Exception, _e:
+         import pprint, sys
+         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+
+   def _test_refs_packet(self, obj_one, obj_two,
+                               one_default_raw,     obj_one_defaults, 
+                               two_default_raw,     obj_two_defaults, 
+                               first_raw_for_one,   obj_one_first_values,
+                               second_raw_for_one,  obj_one_second_values, 
+                               second_raw_for_two,  obj_two_second_values):
+
+      try:
+         #import pdb; pdb.set_trace()
+         one = obj_one
+         two = obj_two
+
+         # check defaults
+         one_first, one_second = one.first.value, one.second.value
+         two_first, two_second = two.first.value, two.second.value
+         assert (one_first, one_second) == obj_one_defaults
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packed defaults
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == one_default_raw
+         assert two_packed == two_default_raw
+
+         raw = first_raw_for_one
+         one.unpack(raw)
+         
+         # check parsing (each instance must have its own set of fields and values)
+         one_first, one_second = one.first.value, one.second.value
+         two_first, two_second = two.first.value, two.second.value
+         assert (one_first, one_second) == obj_one_first_values
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == two_default_raw
+
+         raw  = second_raw_for_one
+         raw2 = second_raw_for_two
+         one.unpack(raw)
+         two.unpack(raw2)
+
+         # check parsing (each instance must have its own set of fields and values)
+         one_first, one_second = one.first.value, one.second.value
+         two_first, two_second = two.first.value, two.second.value
+         assert (one_first, one_second) == obj_one_second_values
+         assert (two_first, two_second) == obj_two_second_values
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == raw2
+
+      except Exception, _e:
+         import pprint, sys
+         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+
+
+   def test_ref_int_field(self):
+      class RefIntField(Packet):
+         first  = Ref(Int)
+         second = Ref(Int)
+
+      self._test_refs_field(
+         obj_one = RefIntField(), 
+         obj_two = RefIntField(),
+         one_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
+         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
+         obj_one_defaults = (0, 0), 
+         obj_two_defaults = (0, 0), 
+         first_raw_for_one =  '\x00\x00\x00\x01\x00\x00\x00\x02',   
+         obj_one_first_values = (1, 2),
+         second_raw_for_one = '\x00\x00\x00\x03\x00\x00\x00\x04', 
+         second_raw_for_two = '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         obj_one_second_values = (3, 4), 
+         obj_two_second_values = (5, 6)
+      )
+   
+   def test_ref_int_field_using_an_instance(self):
+      class RefIntFieldWithInstance(Packet):
+         first  = Ref(Int(default=1))   
+         second = Ref(Int(default=2))   
+
+      self._test_refs_field(
+         obj_one = RefIntFieldWithInstance(), 
+         obj_two = RefIntFieldWithInstance(),
+         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
+         two_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
+         obj_one_defaults = (1, 2), 
+         obj_two_defaults = (1, 2), 
+         first_raw_for_one =  '\x00\x00\x00\x03\x00\x00\x00\x04',   
+         obj_one_first_values = (3, 4),
+         second_raw_for_one = '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw_for_two = '\x00\x00\x00\x07\x00\x00\x00\x08', 
+         obj_one_second_values = (5, 6), 
+         obj_two_second_values = (7, 8)
+      )
+
+   def test_ref_subpacket(self):
+      class RefSubPacket(Packet):
+         first  = Ref(SubPacket)
+         second = Ref(SubPacket)
+
+      self._test_refs_packet(
+         obj_one = RefSubPacket(), 
+         obj_two = RefSubPacket(),
+         one_default_raw = '\x00\x00',
+         two_default_raw = '\x00\x00',
+         obj_one_defaults = (0, 0), 
+         obj_two_defaults = (0, 0), 
+         first_raw_for_one =  '\x01\x02',   
+         obj_one_first_values = (1, 2),
+         second_raw_for_one = '\x03\x04', 
+         second_raw_for_two = '\x05\x06', 
+         obj_one_second_values = (3, 4), 
+         obj_two_second_values = (5, 6)
+      )
+
+   def test_ref_subpacket_using_an_instance(self):
+      class RefSubPacketWithInstance(Packet):
+         first  = Ref(SubPacket(value=1))
+         second = Ref(SubPacket(value=2))
+
+      self._test_refs_packet(
+         obj_one = RefSubPacketWithInstance(), 
+         obj_two = RefSubPacketWithInstance(),
+         one_default_raw = '\x01\x02',
+         two_default_raw = '\x01\x02',
+         obj_one_defaults = (1, 2), 
+         obj_two_defaults = (1, 2), 
+         first_raw_for_one =  '\x03\x04',   
+         obj_one_first_values = (3, 4),
+         second_raw_for_one = '\x05\x06', 
+         second_raw_for_two = '\x07\x08', 
+         obj_one_second_values = (5, 6), 
+         obj_two_second_values = (7, 8)
+      )
+
+   def test_ref_variable_int_field(self):
+      class RefVariableIntField(Packet):
+         first  = Ref(lambda **k: Int(1),  default=Int(2))
+         second = Ref(lambda **k: Int(4),  default=Int(8))
+
+      self._test_refs_field(
+         obj_one = RefVariableIntField(), 
+         obj_two = RefVariableIntField(),
+         one_default_raw = '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02',
+         two_default_raw = '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02',
+         obj_one_defaults = (1, 2), 
+         obj_two_defaults = (1, 2), 
+         first_raw_for_one =  '\x03\x00\x00\x00\x04',   
+         obj_one_first_values = (3, 4),
+         second_raw_for_one = '\x05\x00\x00\x00\x06',   
+         second_raw_for_two = '\x07\x00\x00\x00\x08',   
+         obj_one_second_values = (5, 6), 
+         obj_two_second_values = (7, 8)
+      )
+
+   def test_ref_variable_subpacket(self):
+      class RefVariableSubPacket(Packet):
+         first  = Ref(lambda **k: SubPacket(value=1),  default=SubPacket(value=2))
+         second = Ref(lambda **k: SubPacket(value=3),  default=SubPacket(value=4))
+
+      self._test_refs_packet(
+         obj_one = RefVariableSubPacket(), 
+         obj_two = RefVariableSubPacket(),
+         one_default_raw = '\x02\x04',
+         two_default_raw = '\x02\x04',
+         obj_one_defaults = (2, 4), 
+         obj_two_defaults = (2, 4), 
+         first_raw_for_one =  '\x03\x05',   
+         obj_one_first_values = (3, 5),
+         second_raw_for_one = '\x06\x07', 
+         second_raw_for_two = '\x08\x09', 
+         obj_one_second_values = (6, 7), 
+         obj_two_second_values = (8, 9)
+      )
+
+'''
+class RefVariableMixed(Packet):
+   first  = Ref(lambda **k: Int(1),  default=SubPacket(value=2))
+   second = Ref(lambda **k: SubPacket(value=3),  default=Int(4))
+
+class RefVariableCorrectParameters(Packet):
+   first  = Ref(first_callable,  default=Int())
+   second = Ref(second_callable, default=Int())
+
+   @staticmethod
+   def first_callable(**k):
+      pass
+
+   @staticmethod
+   def second_callable(**k):
+      pass
+'''

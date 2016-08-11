@@ -20,18 +20,29 @@ class TestInt(unittest.TestCase):
          two = obj_two
 
          # check defaults
-         assert (one.first, one.second) == obj_one_defaults
-         assert (two.first, two.second) == obj_two_defaults
-         assert one.pack() == one_default_raw
-         assert two.pack() == two_default_raw
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_defaults
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packed defaults
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == one_default_raw
+         assert two_packed == two_default_raw
 
          raw = first_raw_for_one
          one.unpack(raw)
          
          # check parsing (each instance must have its own set of fields and values)
-         assert (one.first, one.second) == obj_one_first_values
-         assert (two.first, two.second) == obj_two_defaults
-         assert one.pack() == raw and two.pack() == two_default_raw
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_first_values
+         assert (two_first, two_second) == obj_two_defaults
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == two_default_raw
 
          raw  = second_raw_for_one
          raw2 = second_raw_for_two
@@ -39,9 +50,16 @@ class TestInt(unittest.TestCase):
          two.unpack(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
-         assert (one.first, one.second) == obj_one_second_values
-         assert (two.first, two.second) == obj_two_second_values
-         assert one.pack() == raw and two.pack() == raw2
+         one_first, one_second = one.first, one.second
+         two_first, two_second = two.first, two.second
+         assert (one_first, one_second) == obj_one_second_values
+         assert (two_first, two_second) == obj_two_second_values
+         
+         # check packing the parsed data
+         one_packed, two_packed = one.pack(), two.pack()
+         assert one_packed == raw 
+         assert two_packed == raw2
+
 
       except Exception, _e:
          import pprint, sys
