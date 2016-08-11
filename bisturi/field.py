@@ -545,6 +545,8 @@ class Ref(Field):
       if isinstance(obj, Packet):
          return obj.pack()
 
+      # TODO: raise NotImplementedError("We don't know how to pack this. The field '%s' (type '%s') is not a Packet neither the Ref's prototype is a Field/Packet (it is a '%s'). Probably the Ref's prototype is a callable, right? Because that we can't know how to pack this field (which is not pointing to a Packet instance) because we cannot execute the callable during the packing-time." % (self.field_name, str(type(obj)), str(type(self.prototype))))
+
       # we try to know how to pack this value
       assert callable(self.prototype)
       referenced = self.prototype(pkt=packet, packing=True)   # TODO add more parameters, like raw=partial_raw

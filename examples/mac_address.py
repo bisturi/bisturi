@@ -30,7 +30,6 @@ class MACAddress(Field):
 
 
 if __name__ == '__main__':
-   from bisturi.field import Ref
    from bisturi.packet import Packet
 
    class TestPacket(Packet):

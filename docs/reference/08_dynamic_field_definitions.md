@@ -10,10 +10,10 @@ This seems to be simple:
 
 >>> class SOCKS(Packet):
 ...    type = Int(1, default=0x01)
-...    address = Data(lambda p: {
+...    address = Data(lambda pkt, **k: {
 ...                           0x01: 4,    # IP v4
 ...                           0x04: 8,    # IP v6
-...                           }[p.type])
+...                           }[pkt.type])
 
 ```
 
