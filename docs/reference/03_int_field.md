@@ -6,8 +6,10 @@ This field represent an integer which can be
 The Int field can require any amount of bytes, 4 by default.
 Let see an example
 
+```python
 >>> from packet import Packet
 >>> from field import Int
+
 >>> class IntExample(Packet):
 ...    a = Int()
 ...    b = Int(1)
@@ -16,8 +18,11 @@ Let see an example
 ...    e = Int(endianess='network')
 ...    f = Int(endianess='local')
 
+```
+
 The code should be self explaining. But to remove any doubt,
 
+```python
 >>> a = '\x00\x00\x00\x01'  # 1
 >>> b = '\x02'              # 2
 >>> c = '\x03\x00\x00\x00'  # 3 in little endian
@@ -33,11 +38,14 @@ The code should be self explaining. But to remove any doubt,
 >>> p.pack() == s
 True
 
+```
+
 A little optimization is made when the byte count is fixed and is 1, 2, 4, or 8.
 In those cases, the internal implementation uses 'struct'.
 But Int can handle other cases, using a hand-crafted implementation. It is more 
 inefficient but it is implemented if you need it.
 
+```python
 >>> class IntExample(Packet):
 ...    a = Int(3)
 ...    b = Int(3, endianess='little')
@@ -59,6 +67,8 @@ inefficient but it is implemented if you need it.
 >>> p.pack() == s
 True
 
+```
+
 Because the field 'c' is a big integer, python see it as an object of type 'long'
 instead of 'int'. Because this, if you print p.c, you will see -3L instead of -3.
 This difference only happens in Python <= 2.7, but because i don't know you python
@@ -67,6 +77,7 @@ versions of python.
 
 To see the 'cost' of both implementations, we can mount a very rudimentary test.
 
+```python
 >>> import timeit
 >>> class IntOptimized(Packet):
 ...    a = Int(4)
@@ -85,3 +96,5 @@ To see the 'cost' of both implementations, we can mount a very rudimentary test.
 
 >>> best_topt < best_tgen
 True
+
+```
