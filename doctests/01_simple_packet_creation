@@ -1,0 +1,17 @@
+In this case we want create simple packet TLP (Type-Length-Payload) with the next format
+ - type: 1 byte
+ - length: 4 bytes (big endian, unsigned)
+ - payload: 'length' bytes
+
+We translate this into a python's class
+
+>>> from packet import Packet
+>>> from field import Int, Data
+>>> class TLP(Packet):
+...    type = Int(1)
+...    length = Int()
+...    payload = Data(length)
+
+To check that all the fields were correctly created, we can see them
+>>> [name for name, field in TLP.get_fields()]
+['type', 'length', 'payload']
