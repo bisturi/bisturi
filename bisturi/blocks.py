@@ -4,7 +4,7 @@ import hashlib
 import os.path
 import imp
 
-def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack):
+def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, write_py_module):
    if not generate_for_pack and not generate_for_unpack:
       return
 
@@ -83,6 +83,9 @@ raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
          module_file.write(unpack_code)
 
       module = imp.load_source(module_name, module_filename)
+      if not write_py_module:
+         os.remove(module_compiled_filename)
+         os.remove(module_filename)
  
    if generate_for_pack:  
       pkt_class.pack = module.pack

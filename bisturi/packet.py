@@ -21,7 +21,8 @@ class MetaPacket(type):
 
       generate_for_pack = cls.__bisturi__.get('generate_for_pack', True)
       generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', True)
-      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack)
+      write_py_module = cls.__bisturi__.get('write_py_module', False)
+      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
 
 
 
