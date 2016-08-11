@@ -36,7 +36,7 @@ def pack(pkt, fragments=None, **k):
 import traceback
 msg = traceback.format_exc()
 raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
-                              name, pkt.__class__.__name__, fragments.next_offset, msg))
+                              name, pkt.__class__.__name__, fragments.current_offset, msg))
 ''', level=2)
    }
    else:

@@ -701,7 +701,8 @@ class Move(Field):
          assert isinstance(self.absolute_position, (int, long))
          next_offset = self.absolute_position
       
-      fragments.insert(next_offset, garbage)
+      fragments.append(garbage)
+      fragments.current_offset = next_offset
       return fragments
 
 

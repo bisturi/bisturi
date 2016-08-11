@@ -48,9 +48,11 @@
 True
 
 >>> f.append('ZZZ')
->>> f
-[(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD'), (12, 'XXX'), (15, 'F'), (16, 'ZZZ'), (16, 'EEE')]
->>> str(f)
-'AAABBBCCCDDDXXXFEEE'
+Traceback (most recent call last):
+Exception: Collision detected with previous fragment 00000010-00000013 when inserting new fragment at 00000010 that span to 00000013
+
+>>> f.insert(2, 'ZZZ')
+Traceback (most recent call last):
+Exception: Collision detected with previous fragment 00000000-00000003 when inserting new fragment at 00000002 that span to 00000005
 
 ```
