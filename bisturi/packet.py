@@ -43,6 +43,7 @@ class Packet(object):
             raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
                                     name, self.__class__.__name__, offset, msg))
       
+      self.pop_from_the_stack(stack)
       return offset
          
    def pack(self):
@@ -55,6 +56,9 @@ class Packet(object):
          stack = [self]
 
       return stack
+
+   def pop_from_the_stack(self, stack):
+      stack.pop()
 
    def iterative_unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)

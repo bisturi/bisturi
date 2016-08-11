@@ -134,6 +134,9 @@ class Sequence(Field):
 
          def push_to_the_stack(self, stack):
             return stack
+   
+         def pop_from_the_stack(self, stack):
+            return
 
       self._Element = Element
       
