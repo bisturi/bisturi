@@ -38,6 +38,8 @@ class Field(object):
       if self.descriptor:
           self.descriptor_name = field_name
 
+          # The original field name will be used by the descriptor. We (field) use
+          # a hidden field name instead
           self.field_name = "_described_%s" % field_name
           field_name = self.field_name
 
@@ -55,8 +57,12 @@ class Field(object):
       # Dont call this from a subclass. Call _compile directly.
       return self._compile(position, fields, bisturi_conf)
 
-   def _compile(self, position, fields, bisturi_conf): 
-      return [self.field_name]
+   def _compile(self, position, fields, bisturi_conf):
+      slots = [self.field_name]
+      if self.descriptor:
+          slots.append(self.descriptor_name)
+
+      return slots
 
    def getval(self, packet): #TODO do this INLINE!!
       return getattr(packet, self.field_name)
