@@ -1,16 +1,22 @@
 pushd .
 cd bisturi
 
-for t in ../docs/reference/*.rst
+for t in ../docs/reference/$1*.rst
 do
-   echo $t
-   python -m doctest $t
+   if [ -e $t ]
+   then
+      echo $t
+      python -m doctest $t
+   fi
 done
 
-for t in ../examples/*.py
+for t in ../examples/$1*.py
 do
-   echo $t
-   python $t
+   if [ -e $t ]
+   then
+      echo $t
+      python $t
+   fi
 done
 
 popd
