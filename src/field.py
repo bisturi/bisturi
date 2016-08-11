@@ -58,6 +58,33 @@ class Int(Field):
 
       return self.byte_count
 
+   def to_raw(self, packet):
+      integer = self.getval(packet)
+      if self.byte_count in (1, 2, 4, 8): 
+         code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
+         if self.is_signed:
+            code.lowercase()
+
+         fmt = (">" if self.is_bigendian else "<") + code
+         s = struct.Struct(fmt)
+
+         raw = s.pack(integer)
+
+      else:
+         val = integer
+         if val < 0:
+            num = self.base + val + 1
+         else:
+            num = val
+
+         data = (("%0" + str(self.byte_count*2) + "x") % num).decode('hex')
+         if not self.is_bigendian:
+            data = data[::-1]
+
+         raw = data
+
+      return raw
+
 
 class Data(Field):
    def __init__(self, byte_count, default=''):
@@ -78,3 +105,6 @@ class Data(Field):
       self.setval(packet, raw_data)
 
       return count
+
+   def to_raw(self, packet):
+      return self.getval(packet)

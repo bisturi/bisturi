@@ -35,4 +35,6 @@ class Packet(object):
 
       return offset
          
+   def to_raw(self):
+      return ''.join([f.to_raw(self) for name, f in self.get_fields()])
 

@@ -12,12 +12,12 @@ First, we create a simple packet class
 
 Now, let be the next string of bytes (try to see the values encoded in it)
 
->>> s = '\x02\x00\x00\x00\x03abc'
+>>> s1 = '\x02\x00\x00\x00\x03abc'
 
 You can see what should be the value of 'type' or 'payload'? 
 I hope!. If not, let the packet dissect the string for you
 
->>> p = TLP(s)
+>>> p = TLP(s1)
 >>> p.type
 2
 >>> p.length
@@ -26,8 +26,8 @@ I hope!. If not, let the packet dissect the string for you
 'abc'
 
 And another example
->>> s = '\x01\x00\x00\x00\x01d'
->>> q = TLP(s)
+>>> s2 = '\x01\x00\x00\x00\x01d'
+>>> q = TLP(s2)
 >>> q.type
 1
 >>> q.length
@@ -44,3 +44,11 @@ of each field is keep per instance, so:
 1
 
 are different, which make sense.
+
+Now, from the packet to the string
+
+>>> p.to_raw() == s1
+True
+>>> q.to_raw() == s2
+True
+
