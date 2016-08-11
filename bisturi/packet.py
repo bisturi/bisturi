@@ -31,14 +31,14 @@ class Packet(object):
 
    def unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)
-      for name, f in self.get_fields():
-         try:
+      try:
+         for name, f in self.get_fields():
             offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
-         except Exception, e:
-            import traceback
-            msg = traceback.format_exc()
-            raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
-                                    name, self.__class__.__name__, offset, msg))
+      except Exception, e:
+         import traceback
+         msg = traceback.format_exc()
+         raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
+                                 name, self.__class__.__name__, offset, msg))
       
       self.pop_from_the_stack(stack)
       return offset
