@@ -20,28 +20,15 @@ class Option(Packet):
 
 
 class HopByHop(Packet):
-   __bisturi__ = {'additional_slots': ['_start']}
-
    length      = Int(1)
-   options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + pkt._start )
-
-   def unpack_impl(self, raw, offset, **k):
-      self._start = offset
-      return Packet.unpack_impl(self, raw, offset, **k)
+   options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + k['local_offset'] )
 
 
 class Routing(Packet):
-   __bisturi__ = {'additional_slots': ['_start']}
-
    length       = Int(1)
    type         = Int(1)
    segment_left = Int(1)
-   options      = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 4 + pkt._start)
-
-   def unpack_impl(self, raw, offset=0, **k):
-      self._start = offset
-      return Packet.unpack_impl(self, raw, offset, **k)
-
+   options      = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 4 + k['local_offset'])
 
 class IPAddr(Field):
    def __init__(self, version=4, default=None):
