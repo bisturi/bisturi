@@ -1,4 +1,5 @@
 #little by default. CRC in big endian
+# 380, 404-437
 from packet import Packet
 from field import Int, Data, Bits, Ref
 
@@ -67,13 +68,14 @@ class FrameControl(Packet):
    protected = Bits(1)
    order = Bits(1)
 
+
 class TypeLenValue(Packet):
    type = Int(1)
    length = Int(1)
    value = Data(length)
 
 class Management(Packet):
-   frame_control = Ref(FrameControl)
+   #frame_control = Ref(FrameControl)
    duration = Int(2)
    address_1 = Data(6)  #destination
    address_2 = Data(6)  #source
@@ -84,6 +86,23 @@ class Management(Packet):
    
    #fcs = Int(4)
    
+class DataFrame(Packet):
+   #frame_control = Ref(FrameControl)
+   duration = Int(2)
+   address_1 = Data(6)  #destination
+   address_2 = Data(6)  #source
+   address_3 = Data(6)  #~bssid
+   sequence_control = Int(2)
+   address_4 = Data(6)
+
+   qos_control = Int(2)
+   ht_control = Int(4)
+   
+   body = Data(Packet.END)
+   
+   #fcs = Int(4)
+
+
 class BeaconBody(Packet):
    # 12 bytes fixeds...
    timestamp = Data(8)
@@ -94,3 +113,5 @@ class BeaconBody(Packet):
    parameters = Ref(TypeLenValue).repeated(
          until=lambda packet, raw, offset: offset >= len(raw),
          when=lambda packet, raw, offset: offset < len(raw))
+
+
