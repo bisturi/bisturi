@@ -1,5 +1,5 @@
 import time, struct, sys, copy
-from packet import Packet
+from packet import Packet, Prototype
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 
 
@@ -559,22 +559,25 @@ class Ref(Field):
          self.prototype.compile(field_name=field_name, position=position, fields=[], bisturi_conf=bisturi_conf)
 
       prototype = self.prototype
-      if self.embeb:
-         self.pack   = self.pack_noop
-         self.unpack = self.unpack_noop
-
-      elif isinstance(prototype, Field):
+      if isinstance(prototype, Field):
          self.unpack = prototype.unpack
          self.pack   = prototype.pack
 
       elif isinstance(prototype, Packet):
          self.unpack = self._unpack_referencing_a_packet
-         self.pack   = self._pack_referencing_a_packet 
+         self.pack   = self._pack_referencing_a_packet
+         self.prototype = prototype.as_prototype()
 
       else:
-         assert callable(self.prototype)
-         pass
+         assert callable(prototype)
+         if isinstance(self.default, Prototype):
+             self.default = self.default.as_prototype()
 
+      if self.embeb:
+         self.pack   = self.pack_noop
+         self.unpack = self.unpack_noop
+
+      assert not isinstance(self.prototype, Packet)
       return slots
       
 
@@ -585,18 +588,18 @@ class Ref(Field):
       if isinstance(prototype, Field):
          prototype.init(packet, defaults)
 
-      elif isinstance(prototype, Packet):
+      elif isinstance(prototype, Prototype):
          if self.field_name not in defaults:
-            defaults[self.field_name] = prototype.clone_prototype()
+            defaults[self.field_name] = prototype.clone()
 
          Field.init(self, packet, defaults)
 
       else:
          assert callable(self.prototype)
          default = self.default
-         if isinstance(default, Packet):
+         if isinstance(default, Prototype):
             if self.field_name not in defaults:
-               defaults[self.field_name] = default.clone_prototype()
+               defaults[self.field_name] = default.clone()
 
          Field.init(self, packet, defaults)
 

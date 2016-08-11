@@ -111,19 +111,8 @@ class Packet(object):
    def _build_default_instance_copying(cls):
        return copy.deepcopy(cls.__bisturi__['default_instance'])
 
-   def clone_prototype(self):
-       keyword = hash(hash(self) % time.time())
-       try:
-           obj = pickle.loads(self.__bisturi__['instance_pickled__%s' % keyword])
-       except Exception as e:
-           try:
-               self.__bisturi__['instance_pickled__%s' % keyword] = pickle.dumps(self, -1)
-           except Exception as e:
-               pass
- 
-           obj = copy.deepcopy(self)
-
-       return obj
+   def as_prototype(self):
+      return Prototype(self)
 
    def unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)
@@ -176,4 +165,22 @@ class Packet(object):
          offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
 
       yield offset, "."
-      
+
+class Prototype(object):
+    def __init__(self, pkt):
+       try:
+           self.template = pickle.dumps(pkt, -1)
+           pickle.loads(self.template) # sanity check
+           self.clone = self._clone_from_pickle
+       except Exception as e:
+           self.template = copy.deepcopy(pkt)
+           self.clone = self._clone_from_live_obj
+
+    def clone(self):
+       raise Exception()
+
+    def _clone_from_pickle(self):
+       return pickle.loads(self.template)
+
+    def _clone_from_live_obj(self):
+       return copy.deepcopy(self.template)
