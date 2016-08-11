@@ -1,4 +1,5 @@
 import blocks
+from fragments import Fragments
 
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
@@ -68,8 +69,14 @@ class Packet(object):
       self.pop_from_the_stack(stack)
       return offset
          
-   def pack(self, offset=0):
-      return ''.join([pack(self, offset) for name, f, pack, _ in self.get_fields()])
+   def pack(self, fragments=None):
+      if fragments is None:
+         fragments = Fragments()
+
+      for name, f, pack, _ in self.get_fields():
+         pack(pkt=self, fragments=fragments)
+
+      return fragments
 
    def push_to_the_stack(self, stack):
       if stack:

@@ -37,7 +37,7 @@ class Field(object):
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       raise NotImplementedError()
 
    def repeated(self, count=None, until=None, when=None, default=None):
@@ -197,17 +197,14 @@ class Sequence(Field):
       return offset
 
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       sequence = getattr(pkt, self.field_name)
-      raw = []
       seq_elem_field_name = self.seq_elem_field_name
       for val in sequence:
          setattr(pkt,  seq_elem_field_name, val)
-         r = self.prototype_field.pack(pkt, offset)
-         offset += len(r)
-         raw.append(r)
+         self.prototype_field.pack(pkt, fragments, **k)
 
-      return "".join(raw)
+      return fragments
 
 
 class Optional(Field):
@@ -259,15 +256,15 @@ class Optional(Field):
       return offset
 
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       obj = getattr(pkt, self.field_name)
       opt_elem_field_name = self.opt_elem_field_name
       if obj is not None:
          setattr(pkt,  opt_elem_field_name, obj)
-         return self.prototype_field.pack(pkt, offset)
+         return self.prototype_field.pack(pkt, fragments, **k)
 
       else:
-         return ""
+         return fragments
 
 @defer_operations_of
 class Int(Field):
@@ -305,7 +302,7 @@ class Int(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
    def _unpack_fixed_and_primitive_size(self, pkt, raw, offset=0, **k):
@@ -315,11 +312,12 @@ class Int(Field):
 
       return next_offset
 
-   def _pack_fixed_and_primitive_size(self, pkt, offset):
+   def _pack_fixed_and_primitive_size(self, pkt, fragments, **k):
       integer = getattr(pkt, self.field_name)
       raw = self.struct_obj.pack(integer)
+      fragments.append(raw)
 
-      return raw
+      return fragments
 
    def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
@@ -334,7 +332,7 @@ class Int(Field):
       setattr(pkt, self.field_name, num)
       return next_offset
 
-   def _pack_fixed_size(self, pkt, offset):
+   def _pack_fixed_size(self, pkt, fragments, **k):
       integer = getattr(pkt, self.field_name)
       num = (self.base + integer) if integer < 0 else integer
 
@@ -342,7 +340,8 @@ class Int(Field):
       if not self.is_bigendian:
          data = data[::-1]
 
-      return data
+      fragments.append(data)
+      return fragments
 
 class Data(Field):
    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
@@ -399,8 +398,10 @@ class Data(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
-   def pack(self, pkt, offset):
-      return getattr(pkt, self.field_name) + self.delimiter_to_be_included
+   def pack(self, pkt, fragments, **k):
+      r = getattr(pkt, self.field_name) + self.delimiter_to_be_included
+      fragments.append(r)
+      return fragments
 
    def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
@@ -551,25 +552,25 @@ class Ref(Field):
       return referenced.unpack(raw, offset, **k)
 
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       if isinstance(self.prototype, Field):
-         return self.prototype.pack(pkt, offset)
+         return self.prototype.pack(pkt, fragments, **k)
 
       obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
-         return obj.pack()
+         return obj.pack(fragments=fragments, **k)
 
       # TODO: raise NotImplementedError("We don't know how to pack this. The field '%s' (type '%s') is not a Packet neither the Ref's prototype is a Field/Packet (it is a '%s'). Probably the Ref's prototype is a callable, right? Because that we can't know how to pack this field (which is not pointing to a Packet instance) because we cannot execute the callable during the packing-time." % (self.field_name, str(type(obj)), str(type(self.prototype))))
 
       # we try to know how to pack this value
       assert callable(self.prototype)
-      referenced = self.prototype(pkt=pkt, offset=offset, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[])
          #referenced.init(pkt, {})
 
-         return referenced.pack(pkt, offset)
+         return referenced.pack(pkt, fragments, **k)
 
       # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
       # however, the 'referenced' object IS a Packet and we cannot do anything else
@@ -578,20 +579,20 @@ class Ref(Field):
    def _unpack_referencing_a_packet(self, pkt, **k):
       return getattr(pkt, self.field_name).unpack(**k)
 
-   def _pack_referencing_a_packet(self, pkt, offset):
-      return getattr(pkt, self.field_name).pack()
+   def _pack_referencing_a_packet(self, pkt, fragments, **k):
+      return getattr(pkt, self.field_name).pack(fragments=fragments, **k)
  
-   def _pack_referencing_a_unknow_object(self, pkt, offset):     
+   def _pack_referencing_a_unknow_object(self, pkt, fragments, **k):     
       obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
-         return obj.pack()
+         return obj.pack(fragments=fragments, **k)
 
       # we try to know how to pack this "primitive" value
-      referenced = self.prototype(pkt=pkt, offset=offset, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[])
-         return referenced.pack(pkt)
+         return referenced.pack(pkt, fragments=fragments, **k)
 
       # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
       # however, the 'referenced' object IS a Packet and we cannot do anything else
@@ -665,14 +666,14 @@ class Bits(Field):
       setattr(pkt, self.field_name, (I & self.mask) >> self.shift)
       return offset
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       I = getattr(pkt, self.I.field_name)
       setattr(pkt, self.I.field_name, ((getattr(pkt, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
 
       if self.iam_last:
-         return self.I.pack(pkt, offset=0)
+         return self.I.pack(pkt, fragments=fragments, **k)
       else:
-         return ""
+         return fragments
       
 
 class Move(Field):
@@ -691,7 +692,7 @@ class Move(Field):
       setattr(pkt, self.field_name, raw[offset:next_offset])
       return next_offset
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       garbage = getattr(pkt, self.field_name)
 
       if isinstance(self.absolute_position, Field):
@@ -700,7 +701,8 @@ class Move(Field):
          assert isinstance(self.absolute_position, (int, long))
          next_offset = self.absolute_position
       
-      return garbage + ("\x00" * (next_offset - len(garbage) + offset - 1))
+      fragments.insert(next_offset, garbage)
+      return fragments
 
 
 class Bkpt(Field):
@@ -712,7 +714,7 @@ class Bkpt(Field):
       pdb.set_trace()
       return offset
 
-   def pack(self, pkt, offset):
+   def pack(self, pkt, fragments, **k):
       import pdb
       pdb.set_trace()
-      return ""
+      return fragments
