@@ -285,20 +285,20 @@ class Ref(Field):
       self.require_updated_packet_instance = False
       from packet import Packet
       if isinstance(referenced, type) and issubclass(referenced, Field):
-         def get_packet_instance(packet):
+         def get_packet_instance(**kargs):
             class FieldReferenced(Packet):
                val = referenced(*packet_field_args, **packet_field_kargs)
 
             return FieldReferenced()
 
       elif isinstance(referenced, type) and issubclass(referenced, Packet):
-         def get_packet_instance(packet):
+         def get_packet_instance(**kargs):
             return referenced(*packet_field_args, **packet_field_kargs)
 
       elif callable(referenced):
          self.require_updated_packet_instance = True
-         def get_packet_instance(packet):
-            i = referenced(packet)
+         def get_packet_instance(**kargs):
+            i = referenced(**kargs)
             if isinstance(i, Field):
                class FieldReferenced(Packet):
                   val = i
@@ -317,11 +317,11 @@ class Ref(Field):
       if self.field_name in defaults:
          self.setval(packet, defaults[self.field_name])
       elif not self.require_updated_packet_instance:
-         self.setval(packet, self.get_packet_instance(packet))
+         self.setval(packet, self.get_packet_instance(pkt=packet))
 
    def unpack(self, packet, raw, offset=0):
       if self.require_updated_packet_instance:
-         self.setval(packet, self.get_packet_instance(packet))
+         self.setval(packet, self.get_packet_instance(pkt=packet))
 
       return self.getval(packet).unpack(raw, offset)
 

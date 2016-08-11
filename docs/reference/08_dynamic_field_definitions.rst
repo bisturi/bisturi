@@ -34,11 +34,11 @@ he can dynamically reference to a Packet or another Field using a callable.
 
 >>> class SOCKS(Packet):
 ...    type = Int(1, default=0x01)
-...    address = Ref(lambda p: {
+...    address = Ref(lambda pkt, **k: {
 ...                           0x01: Data(4),    # IP v4
 ...                           0x04: Data(8),    # IP v6
 ...                           0x03: NData(),    # domain name
-...                           }[p.type])
+...                           }[pkt.type])
 
 So, depends on the value of 'type', 'address' will be a Ref to a Data (a Field) or
 to a NData (a Packet)
