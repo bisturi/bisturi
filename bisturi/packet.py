@@ -11,60 +11,97 @@ import traceback, sys
 
 Layer = collections.namedtuple('Layer', ['pkt', 'offset'])
 
+class PacketClassBuilder(object):
+    def __init__(self, metacls, name, bases, attrs):
+        self.metacls = metacls
+        self.name = name
+        self.bases = bases
+        self.attrs = attrs
+
+    def make_configuration(self):
+        self.bisturi_conf = self.attrs.get('__bisturi__', {})
+
+    def collect_the_fields(self):
+      from field import Field
+      self.fields = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
+      self.fields.sort(key=lambda name_val: name_val[1].ctime)
+
+    def make_field_descriptions(self):
+      self.fields = sum([valfield.describe_yourself(namefield, self.bisturi_conf) for namefield, valfield in self.fields], [])
+
+    def compile_fields_and_create_slots(self):
+      # compile each field (speed optimization) and create the slots (memory optimization)
+      additional_slots = self.bisturi_conf.get('additional_slots', [])
+      self.slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, self.fields, self.bisturi_conf), *zip(*enumerate(self.fields))), additional_slots)
+
+    def unroll_fields_with_their_pack_unpack_methods(self):
+      # unroll the fields into the their pack/unpack methods (to avoid lookups)
+      self.fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in self.fields]
+      
+    def remove_fields_from_class_definition(self):
+      for n, _, _, _ in self.fields:
+         if n in self.attrs: # check this, because 'describe_yourself' can add new fields
+            del self.attrs[n]
+
+    def create_class(self):
+      self.attrs['__slots__'] = self.slots
+      self.attrs['__bisturi__'] = self.bisturi_conf
+      
+      self.cls = type.__new__(self.metacls, self.name, self.bases, self.attrs)
+
+    def add_get_fields_class_method(self):
+      @classmethod
+      def get_fields(cls):
+         return self.fields
+
+      self.cls.get_fields = get_fields
+
+    def check_if_we_are_in_debug_mode(self):
+      from field import Bkpt
+      self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in self.fields))
+
+    def create_optimized_code(self):
+      # create code to optimize the pack/unpack
+      # by default, if we are in debug mode, disable the optimization
+      generate_by_default = True if not self.am_in_debug_mode else False
+      generate_for_pack = self.cls.__bisturi__.get('generate_for_pack', generate_by_default)
+      generate_for_unpack = self.cls.__bisturi__.get('generate_for_unpack', generate_by_default)
+      write_py_module = self.cls.__bisturi__.get('write_py_module', False)
+      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
+
+    def create_prototype(self):
+      pkt = self.cls()
+      prototype = Prototype(pkt)
+      self.cls.__bisturi__['clone_default_instance_func'] = prototype.clone
+
+    def get_packet_class(self):
+      return self.cls
+
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
       if name == 'Packet' and bases == (object,):
          attrs['__slots__'] = []
          return type.__new__(metacls, name, bases, attrs) # Packet base class
  
-      # get the configuration, if any
-      bisturi_conf = attrs.get('__bisturi__', {})
+      builder = PacketClassBuilder(metacls, name, bases, attrs)
+    
+      builder.make_configuration()
 
-      # collect the fields (Field)  
-      from field import Field, Bkpt
-      fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
-      fields.sort(key=lambda name_val: name_val[1].ctime)
+      builder.collect_the_fields()
+      builder.make_field_descriptions()
+      builder.compile_fields_and_create_slots()
+      builder.unroll_fields_with_their_pack_unpack_methods()
+      builder.remove_fields_from_class_definition()
 
-      # request to describe yourself to each field
-      fields = sum([valfield.describe_yourself(namefield, bisturi_conf) for namefield, valfield in fields], [])
+      builder.create_class()
+      builder.add_get_fields_class_method()
+
+      builder.check_if_we_are_in_debug_mode()
+
+      builder.create_optimized_code()
+      builder.create_prototype()
       
-      # compile and create the slots (memory optimization)
-      additional_slots = bisturi_conf.get('additional_slots', [])
-      slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields, bisturi_conf), *zip(*enumerate(fields))), additional_slots)
-      
-      # extend the field list with the their pack/unpack methods (to avoid lookups)
-      fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in fields]
-      @classmethod
-      def get_fields(cls):
-         return fields
-
-      attrs['__slots__'] = slots
-      attrs['__bisturi__'] = bisturi_conf
-      
-      # remove the fields from the class definition
-      for n, _, _, _ in fields:
-         if n in attrs: # check this, because 'describe_yourself' can add new fields
-            del attrs[n]
-
-      cls = type.__new__(metacls, name, bases, attrs)
-
-      cls.get_fields = get_fields
-
-      # check if we are 'in debug mode'
-      am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in fields))
-      
-      # create code to optimize the pack/unpack
-      # by default, if we are in debug mode, disable the optimization
-      generate_by_default = True if not am_in_debug_mode else False
-      generate_for_pack = cls.__bisturi__.get('generate_for_pack', generate_by_default)
-      generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', generate_by_default)
-      write_py_module = cls.__bisturi__.get('write_py_module', False)
-      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
- 
-      pkt = cls()
-      prototype = Prototype(pkt)
-      cls.__bisturi__['clone_default_instance_func'] = prototype.clone
-
+      cls = builder.get_packet_class()
       return cls
 
    '''def __getattribute__(self, name):
