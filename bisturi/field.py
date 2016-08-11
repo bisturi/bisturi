@@ -730,9 +730,13 @@ class Move(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       if isinstance(self.absolute_position, Field):
          next_offset = getattr(pkt, self.absolute_position.field_name)
-      else:
-         assert isinstance(self.absolute_position, (int, long))
+
+      elif isinstance(self.absolute_position, (int, long)):
          next_offset = self.absolute_position
+      
+      else:
+         assert callable(self.absolute_position) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
+         next_offset = self.absolute_position(pkt=pkt, raw=raw, offset=offset, **k)
 
       setattr(pkt, self.field_name, raw[offset:next_offset])
       return next_offset
@@ -742,10 +746,14 @@ class Move(Field):
 
       if isinstance(self.absolute_position, Field):
          next_offset = getattr(pkt, self.absolute_position.field_name)
-      else:
-         assert isinstance(self.absolute_position, (int, long))
+ 
+      elif isinstance(self.absolute_position, (int, long)):
          next_offset = self.absolute_position
       
+      else:
+         assert callable(self.absolute_position)
+         next_offset = self.absolute_position(pkt=pkt, fragments=fragments, **k)
+     
       fragments.append(garbage)
       fragments.current_offset = next_offset
       return fragments
