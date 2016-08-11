@@ -1,5 +1,5 @@
 In this example will want to create the Ethernet Packet.
-Using Data and Int its relative simple.
+Using Data and Int it's a relative simple task.
 
 ```python
 >>> from bisturi.field import Data, Int
@@ -93,7 +93,7 @@ about the lib.
 In the other hand, the Ref should not be used to link layers. For example, if you have
 the packet Ethernet and the packet IP, maybe you will be temted to define 
 Ethernet.payload as Ref(IP) but this will bound your Ethernet implementation to IP.
-Exists more flexible solutions to this as i will show you.
+Exists more flexible solutions to this called 'specializations' which i will show you later.
 
 We can do a last improvement. Some times we use sub packets to organize better the
 structure of the big picture but it become annoying the extra level of indirection.

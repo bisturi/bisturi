@@ -109,7 +109,7 @@ But when the raw string is huge or even it is a file, searching in the whole spa
 to load all thoses bytes in memory which can lead to a performance problems.
 Fortunely most of the cases we can expect to find the marker in the first few bytes so we can
 set a maximum search buffer length to avoid the load of the full string in memory (again, this
-makes sense if the raw to be parsed is a file)
+makes sense if the raw to be parsed is a file and its content was not loaded into the memory)
 
 Let see an example:
 
