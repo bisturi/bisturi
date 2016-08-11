@@ -203,13 +203,13 @@ available arguments:
    pkt:     the packet, you can use this to access to others fields or methods
    raw:     the full raw data being be parsed.
    offset:  the current offset of the parsed. raw[offset] means the first byte that should be parsed next
-   stack:   the stack of packets being be parsed: stack[0] is the higher packet and stack[-1] is the lower (stack[-1] == pkt)
+   stack:   the stack of packets being be parsed: stack[0] is the higher layer and stack[-1] is the lower (stack[-1].pkt == pkt)
 
 ```python
 >>> from bisturi.field import Ref
 
 >>> class Lower(Packet):
-...    data = Data(byte_count=lambda stack, **k: stack[0].amount)
+...    data = Data(byte_count=lambda stack, **k: stack[0].pkt.amount)
 
 >>> class Higher(Packet):
 ...    amount = Int(byte_count=1)

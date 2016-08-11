@@ -3,7 +3,7 @@ This is fine, but in some cases it is desired to control where a field begins.
 
 ```python
 >>> from bisturi.packet import Packet
->>> from bisturi.field  import Data, Int 
+>>> from bisturi.field  import Data, Int
 
 >>> class Folder(Packet):
 ...   offset_of_file = Int(1)
@@ -206,6 +206,78 @@ True
 True
 
 ```
+
+The alignation is based in the global offset during the packing/unpacking.
+For example, if we have this:
+
+```python
+>>> class Point(Packet):
+...   x = Int(2)
+...   y = Int(2).aligned(4)
+
+>>> s = '\x00\x01..\x00\x02'
+>>> p = Point(s)
+
+>>> p.pack() == s
+True
+
+```
+
+But if we put this point in another packet, see what happen:
+
+```python
+>>> class NamedPoint(Packet):
+...   name  = Data(until_marker='\0')
+...   point = Ref(Point)
+
+>>> s  = 'f\x00\x00\x01\x00\x02'
+>>> np = NamedPoint(s)
+
+>>> np.pack() == s
+True
+
+```
+
+Note how the field point.y is aligned to 4 without any padding in this case. This
+happens because the alignation is global to the full raw data (and the name attribute
+adds these two extra bytes so point.y is aligned)
+In some applications this is what you want but in others dont.
+
+In those cases, you may want to keep the alignation local to the packet, to the
+fields are aligned inside the packet but not necessary outside:
+
+```python
+>>> class Point(Packet):
+...   x = Int(2)
+...   y = Int(2).aligned(4, local=True)
+
+>>> s = '\x00\x01..\x00\x02'
+>>> p = Point(s)
+
+>>> p.x, p.y
+(1, 2)
+
+>>> p.pack() == s
+True
+
+>>> class NamedPoint(Packet):
+...   name  = Data(until_marker='\0')
+...   point = Ref(Point)
+
+>>> s  = 'f\x00\x00\x01..\x00\x02'
+>>> np = NamedPoint(s)
+
+>>> np.name
+'f'
+
+>>> np.point.x, np.point.y
+(1, 2)
+
+>>> np.pack() == s
+True
+
+```
+
 
 In some cases we also want that the whole packet has a size multiple of 4 for example.
 We can achieve this adding an extra field an the end and aligning it to 4.
