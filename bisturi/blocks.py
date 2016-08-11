@@ -89,10 +89,11 @@ raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
          os.remove(module_compiled_filename)
          os.remove(module_filename)
  
-   if generate_for_pack:  
+   import packet
+   if generate_for_pack and (pkt_class.pack == packet.Packet.pack):
       pkt_class.pack = module.pack
 
-   if generate_for_unpack:
+   if generate_for_unpack and (pkt_class.unpack == packet.Packet.unpack):
       pkt_class.unpack = module.unpack
             
 
