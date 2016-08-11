@@ -38,7 +38,7 @@ class Field(object):
 
 
    def when(self, condition, default=None):
-      return Sequence(prototype=self, count=1, until=None, when=condition, default=None)
+      return Optional(prototype=self, when=condition, default=default)
 
 
 def _get_count(count_arg):
@@ -179,6 +179,59 @@ class Sequence(Field):
          raw.append(self.prototype_field.pack(packet))
 
       return "".join(raw)
+
+
+class Optional(Field):
+   def __init__(self, prototype, when, default=None):
+      Field.__init__(self)
+      self.ctime = prototype.ctime
+      self.default = default
+
+      self.prototype_field = prototype
+      self.when = _get_when(None, when)
+
+      
+   def compile(self, field_name, position, fields):
+      slots = Field.compile(self, field_name, position, fields)
+      self.opt_elem_field_name = "_opt_elem__"+field_name
+      self.prototype_field.compile(field_name=self.opt_elem_field_name, position=-1, fields=[])
+
+      return slots + [self.opt_elem_field_name]
+
+   def init(self, packet, defaults):
+      Field.init(self, packet, defaults)
+      self.prototype_field.init(packet, {})
+      
+   def unpack(self, pkt, raw, offset=0, **k):
+      proceed = self.when(pkt=pkt, raw=raw, offset=offset, **k)
+
+      opt_elem_field_name = self.opt_elem_field_name
+      obj = None
+      if proceed:
+         offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
+
+         obj = getattr(pkt, opt_elem_field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
+         if isinstance(obj, Packet):
+            avoid_deep_copies = obj.__bisturi__.get('avoid_deep_copies', True)
+
+            if avoid_deep_copies:
+               obj = copy.copy(obj)
+            else:
+               obj = copy.deepcopy(obj)
+
+      setattr(pkt, self.field_name, obj)
+      return offset
+
+
+   def pack(self, packet):
+      obj = getattr(packet, self.field_name)
+      opt_elem_field_name = self.opt_elem_field_name
+      if obj is not None:
+         setattr(packet,  opt_elem_field_name, obj)
+         return self.prototype_field.pack(packet)
+
+      else:
+         return ""
 
 
 class Int(Field):

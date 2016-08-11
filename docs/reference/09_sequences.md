@@ -217,3 +217,30 @@ True
 
 Here, 'raw' is the full raw string to be parsed and 'offset' is the position in the string
 where the parsing is taking effect.
+
+As a more expecific case, one field can be optional. In this case we do not 'repeat'
+the field, instead we just mark the field to be there 'when' some condition is meet.
+
+
+```python
+>>> class Option(Packet):
+...    type = Int(1)
+...    num  = Ref(Int).when(lambda pkt, **k: pkt.type != 0)
+
+>>> s = '\x01\x00\x00\x00\x04'
+>>> p = Option(s)
+>>> p.num
+4
+
+>>> p.pack() == s
+True
+
+>>> s = '\x00'
+>>> p = Option(s)
+>>> p.num is None
+True
+
+>>> p.pack() == s
+True
+
+```
