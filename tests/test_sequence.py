@@ -223,6 +223,111 @@ class TestSequence(unittest.TestCase):
          obj_two_second_values = ([17, 18, 19, 20], [21, 22, 23, 24])
       )
 
+   def test_field_repeated_fixed_times_from_field(self):
+      class FieldRepeatedFixedTimes(Packet):
+         amount = Int(1)
+         first  = Int(1).repeated(count=amount)
+         second = Int(1).repeated(count=amount)
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(),
+         one_default_raw = '\x00',
+         two_default_raw = '\x00',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
+         first_raw_for_one =   '\x04\x01\x02\x03\x04\x05\x06\x07\x08',   
+         obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
+         second_raw_for_one = '\x02\x09\x0a\x0b\x0c', 
+         second_raw_for_two = '\x03\x0d\x0e\x0f\x10\x11\x12', 
+         obj_one_second_values = ([9,  10], [11, 12]), 
+         obj_two_second_values = ([13, 14, 15], [16, 17, 18])
+      )
+   
+   def test_field_repeated_fixed_times_from_field_arith_expression(self):
+      class FieldRepeatedFixedTimes(Packet):
+         param  = Int(1)
+         first  = Int(1).repeated(count=param*2)
+         second = Int(1).repeated(count=param*3)
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(),
+         one_default_raw = '\x00',
+         two_default_raw = '\x00',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
+         first_raw_for_one =   '\x02\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a',   
+         obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8, 9, 10]),
+         second_raw_for_one = '\x01\x0b\x0c\x0d\x0e\x0f', 
+         second_raw_for_two = '\x03\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e', 
+         obj_one_second_values = ([11, 12], [13, 14, 15]), 
+         obj_two_second_values = ([16, 17, 18, 19, 20, 21], [22, 23, 24, 25, 26, 27, 28, 29, 30])
+      )
+   
+   def test_field_repeated_fixed_times_from_field_cmp_expression(self):
+      class FieldRepeatedFixedTimes(Packet):
+         param  = Int(1)
+         first  = Int(1).repeated(count=param > 1) # 1 if param > 1; else 0
+         second = Int(1).repeated(count=param > 3) # 1 if param > 3; else 0
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(),
+         one_default_raw = '\x00',
+         two_default_raw = '\x00',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
+         first_raw_for_one =   '\x02\x01',   
+         obj_one_first_values = ([1], []),
+         second_raw_for_one = '\x01', 
+         second_raw_for_two = '\x04\x02\x03', 
+         obj_one_second_values = ([], []), 
+         obj_two_second_values = ([2], [3])
+      )
+   
+   def test_field_repeated_fixed_times_from_field_logical_expression(self):
+      class FieldRepeatedFixedTimes(Packet):
+         param  = Int(1)
+         first  = Int(1).repeated(count=param & 0b0011) # count % 4
+         second = Int(1).repeated(count=param & 0b0001) # count % 2
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(),
+         one_default_raw = '\x00',
+         two_default_raw = '\x00',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
+         first_raw_for_one =   '\x02\x01\x02',   
+         obj_one_first_values = ([1, 2], []),
+         second_raw_for_one = '\x01\x03\x04', 
+         second_raw_for_two = '\x03\x05\x06\x07\x08', 
+         obj_one_second_values = ([3], [4]), 
+         obj_two_second_values = ([5, 6, 7], [8])
+      )
+   
+   def test_field_repeated_fixed_times_from_field_logical_expression2(self):
+      class FieldRepeatedFixedTimes(Packet):
+         param  = Int(1)
+         first  = Int(1).repeated(count=(~param & 0xff))
+         second = Int(1).repeated(count=(~param & 0xff))
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(),
+         one_default_raw = '\x00',
+         two_default_raw = '\x00',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
+         first_raw_for_one =   '\xfe\x01\x02',   
+         obj_one_first_values = ([1], [2]),
+         second_raw_for_one = '\xfd\x03\x04\x05\x06', 
+         second_raw_for_two = '\xfc\x07\x08\x09\x0a\x0b\x0c', 
+         obj_one_second_values = ([3, 4], [5, 6]), 
+         obj_two_second_values = ([7, 8, 9], [10, 11, 12])
+      )
+
    def test_field_ref_repeated_fixed_times(self):
       class FieldRefRepeatedFixedTimes(Packet):
          first  = Ref(Int(1)).repeated(count=4)
