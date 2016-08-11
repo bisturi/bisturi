@@ -239,10 +239,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = FieldSequenceUntil(), 
          obj_two = FieldSequenceUntil(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -259,10 +259,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_packet(
          obj_one = SubpacketSequenceUntil(), 
          obj_two = SubpacketSequenceUntil(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -279,10 +279,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = VariableItemSequenceUntil(), 
          obj_two = VariableItemSequenceUntil(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -301,10 +301,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = FieldSequenceUntilAndWhen(), 
          obj_two = FieldSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -316,10 +316,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = FieldSequenceUntilAndWhen(), 
          obj_two = FieldSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\xff\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([], [0xff, 2, 3, 4, 5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\xee', 
@@ -338,10 +338,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_packet(
          obj_one = SubpacketSequenceUntilAndWhen(), 
          obj_two = SubpacketSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -353,10 +353,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_packet(
          obj_one = SubpacketSequenceUntilAndWhen(), 
          obj_two = SubpacketSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\xff\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([], [0xff, 2, 3, 4, 5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\xee', 
@@ -377,10 +377,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = VariableItemSequenceUntilAndWhen(), 
          obj_two = VariableItemSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\x01\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
@@ -392,10 +392,10 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = VariableItemSequenceUntilAndWhen(), 
          obj_two = VariableItemSequenceUntilAndWhen(),
-         one_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',  TODO check this
-         two_default_raw = '', #'\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
-         obj_two_defaults = ([], []), #([0, 0, 0, 0], [0, 0, 0, 0]), 
+         one_default_raw = '',
+         two_default_raw = '',
+         obj_one_defaults = ([], []),
+         obj_two_defaults = ([], []),
          first_raw_for_one =  '\xff\x02\x03\x04\x05\x06\x07\x08',   
          obj_one_first_values = ([], [0xff, 2, 3, 4, 5, 6, 7, 8]),
          second_raw_for_one = '\x09\x0a\x0b\x0c\xee', 
