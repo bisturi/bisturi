@@ -12,7 +12,7 @@ class Field(object):
 
 
    def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, self.default))
+      self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
 
    def from_raw(self, packet, raw, offset=0):
       raise NotImplementedError()
@@ -20,11 +20,15 @@ class Field(object):
    def to_raw(self, packet):
       raise NotImplementedError()
 
-   def repeated(self, count=None, until=None):
+   def repeated(self, count=None, until=None, when=None):
       assert not (count is None and until is None)
       assert not (count is not None and until is not None)
 
-      return Sequence(prototype=self, count=count, until=until)
+      return Sequence(prototype=self, count=count, until=until, when=when)
+
+
+   def when(self, condition):
+      return Sequence(prototype=self, count=1, until=None, when=condition)
 
 
 def _get_count(count_arg):
@@ -49,7 +53,7 @@ def _get_until(count, until):
 
    if count is not None: #fixed
       outer = {'i': 0}
-      def until_condition(packet):
+      def until_condition(packet, *args):
          outer['i'] += 1
          if outer['i'] >= count(packet):
             return True
@@ -64,12 +68,13 @@ def _get_until(count, until):
 
 
 class Sequence(Field):
-   def __init__(self, prototype, count, until):
+   def __init__(self, prototype, count, until, when):
       Field.__init__(self)
       self.ctime = prototype.ctime
       self.default = []
 
       self.prototype = prototype
+      self.when = when
       self.until_condition = _get_until(_get_count(count), until)
 
 
@@ -79,15 +84,15 @@ class Sequence(Field):
          val = copy.deepcopy(self.prototype)
       
       sequence = self.getval(packet)
-      stop = False
-      
+      stop = False if self.when is None else not self.when(packet, raw, offset)
+
       while not stop:
          elem = Element()
          offset = elem.from_raw(raw, offset)
 
          sequence.append(elem.val)
-
-         stop = self.until_condition(packet)
+         
+         stop = self.until_condition(packet, raw, offset)
 
       self.setval(packet, sequence)
       return offset
