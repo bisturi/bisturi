@@ -16,7 +16,7 @@ if __name__ == '__main__':
    
    raw_message_empty_payload = b16decode('0018f7f6f7fd00000000000c0000', True)
    raw_message_low_payload = b16decode('0018f7f6f7fd00000000000c000141', True)
-   raw_message_high_level_payload = b16decode('0018f7f6f7fd00000000000c05dce11e', True)
+   raw_message_high_level_payload = b16decode('0018f7f6f7fd00000000000c0600e11e', True)
 
    message_empty_payload = Ethernet()
    message_empty_payload.unpack(raw_message_empty_payload)
@@ -43,6 +43,6 @@ if __name__ == '__main__':
    assert message_low_payload.size == 1
    assert message_low_payload.payload == 'A'
 
-   assert message_high_level_payload.size == 1500
+   assert message_high_level_payload.size == 1536
    assert message_high_level_payload.payload == b16decode('e11e', True)
 
