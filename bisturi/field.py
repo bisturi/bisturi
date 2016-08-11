@@ -7,9 +7,14 @@ class Field(object):
    def compile(self, field_name, position, fields):
       del self.ctime
       self.field_name = field_name
-      self.getval = lambda packet: getattr(packet, field_name)
-      self.setval = lambda packet, val: setattr(packet, field_name, val)
+      #self.getval = lambda packet: getattr(packet, field_name)
+      #self.setval = lambda packet, val: setattr(packet, field_name, val)
 
+   def getval(self, packet): #TODO do this INLINE!!
+      return getattr(packet, self.field_name)
+
+   def setval(self, packet, val):
+      return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
       self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
@@ -210,17 +215,21 @@ class Data(Field):
             self.delimiter_to_be_included = byte_count
 
       elif hasattr(byte_count, 'search'):
-         match = byte_count.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
-         if match:
-            if self.include_delimiter:
-               count = match.end()
-            else:
-               count = match.start()
-               if self.consume_delimiter:
-                  extra_count = match.end()-count
-               self.delimiter_to_be_included = match.group()
+         if byte_count.pattern == "$":    # shortcut
+            count = len(raw) - offset
+
          else:
-            count = -1
+            match = byte_count.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
+            if match:
+               if self.include_delimiter:
+                  count = match.end()
+               else:
+                  count = match.start()
+                  if self.consume_delimiter:
+                     extra_count = match.end()-count
+                  self.delimiter_to_be_included = match.group()
+            else:
+               count = -1
       else:
          count = byte_count.getval(packet)
 
