@@ -207,3 +207,46 @@ True
 
 ```
 
+In some cases we also want that the whole packet has a size multiple of 4 for example.
+We can achieve this adding an extra field an the end and aligning it to 4.
+Obviously, this dummy field will not consume any data during the unpacking neither
+will introduce any byte during the packing.
+
+```python
+>>> from bisturi.field  import Em, Bkpt
+
+>>> class Datagram(Packet):
+...   __bisturi__ = {'generate_for_pack': False}
+...   size = Int(1)
+...   data = Data(size)
+...
+...   tail = Em().aligned(4)
+
+>>> # First case, the packet already is multiple of 4
+>>> s = '\x03ABC'
+>>> p = Datagram(s)
+
+>>> p.size
+3
+
+>>> p.data
+'ABC'
+
+>>> p.pack() == s
+True
+
+>>> # No so lucky this time, we need to add 3 bytes to be multiple of 4
+>>> s = '\x04ABCD...'
+>>> p = Datagram(s)
+
+>>> p.size
+4
+
+>>> p.data
+'ABCD'
+
+>>> p.pack() == s
+True
+
+
+```

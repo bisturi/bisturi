@@ -796,6 +796,9 @@ class Move(Field):
 
 
 class Bkpt(Field):
+   def __init__(self):
+      Field.__init__(self)
+
    def init(self, packet, defaults):
       pass
 
@@ -807,4 +810,22 @@ class Bkpt(Field):
    def pack(self, pkt, fragments, **k):
       import pdb
       pdb.set_trace()
+      return fragments
+
+class Em(Field):
+   def __init__(self):
+      Field.__init__(self)
+
+   def init(self, packet, defaults):
+      pass
+   
+   @exec_once
+   def compile(self, field_name, position, fields, bisturi_conf):
+      return []
+
+   def unpack(self, pkt, raw, offset=0, **k):
+      return offset
+
+   def pack(self, pkt, fragments, **k):
+      fragments.append("")
       return fragments

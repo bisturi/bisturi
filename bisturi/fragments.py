@@ -15,8 +15,8 @@ class Fragments(object):
          self.insert(self.current_offset, string)
 
    def insert(self, position, string):
-      if not string:
-         return
+      #if not string:
+      #   return
 
       #if position in self.fragments:
       #   raise Exception("Collision detected at %08x" % position)
