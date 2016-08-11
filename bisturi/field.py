@@ -131,6 +131,7 @@ class Sequence(Field):
 
       from packet import Packet
       class Element(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
          val = copy.deepcopy(self.prototype)
 
          def push_to_the_stack(self, stack):
@@ -366,6 +367,7 @@ class Ref(Field):
       if isinstance(referenced, type) and issubclass(referenced, Field):
          def get_packet_instance(**kargs):
             class FieldReferenced(Packet):
+               __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
                val = referenced(*packet_field_args, **packet_field_kargs)
 
             return FieldReferenced()
@@ -380,6 +382,7 @@ class Ref(Field):
             i = referenced(**kargs)
             if isinstance(i, Field):
                class FieldReferenced(Packet):
+                  __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
                   val = i
 
                return FieldReferenced()
