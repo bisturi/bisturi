@@ -55,8 +55,8 @@ class DataBlock(Packet):
    size_compressed = Int(2)
    size_uncompressed = Int(2)
 
-   reserved_area = Data(lambda stack, **k: stack[0].size_reserved_area_per_datablock)\
-                       .when(lambda stack, **k: stack[0].flags & HeaderFlags.RESERVE_PRESENT)
+   reserved_area = Data(lambda stack, **k: stack[0].pkt.size_reserved_area_per_datablock)\
+                       .when(lambda stack, **k: stack[0].pkt.flags & HeaderFlags.RESERVE_PRESENT)
 
    data = Data(size_compressed)
 
@@ -68,8 +68,8 @@ class Folder(Packet):
    number_of_datablocks = Int(2)
    compression_type = Int(2)
    
-   reserved_area = Data(lambda stack, **k: stack[0].size_reserved_area_per_folder)\
-                       .when(lambda stack, **k: stack[0].flags & HeaderFlags.RESERVE_PRESENT)
+   reserved_area = Data(lambda stack, **k: stack[0].pkt.size_reserved_area_per_folder)\
+                       .when(lambda stack, **k: stack[0].pkt.flags & HeaderFlags.RESERVE_PRESENT)
 
    datablocks = Ref(DataBlock).repeated(number_of_datablocks)\
                   .at(offset_first_datablock)
@@ -92,10 +92,10 @@ class Cabinet(Packet):
    __bisturi__ = {'endianness': 'little'}
 
    header  = Ref(Header, embeb=True)
-   folders = Ref(Folder).repeated(lambda stack, **k: stack[0].number_of_folders)
+   folders = Ref(Folder).repeated(lambda stack, **k: stack[0].pkt.number_of_folders)
 
-   files = Ref(File).repeated(lambda stack, **k: stack[0].number_of_files)\
-            .at(lambda stack, **k: stack[0].offset_first_file)
+   files = Ref(File).repeated(lambda stack, **k: stack[0].pkt.number_of_files)\
+            .at(lambda stack, **k: stack[0].pkt.offset_first_file)
 
 
 if __name__ == '__main__':

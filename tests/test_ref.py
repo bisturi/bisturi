@@ -1,7 +1,7 @@
 import sys
 sys.path.append("../")
 
-from bisturi.packet import Packet
+from bisturi.packet import Packet, Layer
 from bisturi.field  import Ref, Int
 
 import unittest
@@ -355,14 +355,14 @@ class TestRef(unittest.TestCase):
             'pkt': one,
             'raw': raw,
             'offset': 0,
-            'stack': [one],
+            'stack': [Layer(one, 0)],
          }
       
       assert second_call == {
             'pkt': one,
             'raw': raw,
             'offset': 2,
-            'stack': [one],
+            'stack': [Layer(one, 0)],
          }
 
       arguments_per_call.pop()   # cleanup

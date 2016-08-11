@@ -75,7 +75,7 @@ class Extention(Packet):
    val         = Ref(lambda pkt, stack, **k: {
                         0: HopByHop(),
                         1: Routing(),
-                     }[stack[-2].extentions[-1].next_header if stack[-2].extentions else stack[-2].next_header],
+                     }[stack[-2].pkt.extentions[-1].next_header if stack[-2].pkt.extentions else stack[-2].pkt.next_header],
                   default=HopByHop())
 
 class IPv6(Packet):

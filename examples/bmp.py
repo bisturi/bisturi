@@ -45,12 +45,9 @@ class DIB(Packet):
 
 class PixelRow(Packet):
   __bisturi__ = {'endianness': 'little'}
-  pixels = Int(1).repeated(lambda pkt, stack, **k: stack[0].image_width*3)
-  tail = Data(lambda pkt, stack, **k: pkt.pad(stack))
+  pixels = Int(1).repeated(lambda pkt, stack, **k: stack[0].pkt.image_width*3)
 
-  def pad(self, stack):
-     N = stack[0].image_width*3
-     return (4 - (N % 4)) % 4
+  tail = Em().aligned(4, local=True)
 
 class BMP(Packet):
   __bisturi__ = {'endianness': 'little', 'write_py_module': True}
@@ -65,7 +62,7 @@ class BMP(Packet):
 
   dib = Ref(DIB, embeb=True)
 
-  pixel_rows = Ref(PixelRow).repeated(lambda pkt, stack, **k: stack[0].image_height)\
+  pixel_rows = Ref(PixelRow).repeated(lambda pkt, stack, **k: stack[0].pkt.image_height)\
                       .at(offset_pixel_array)
   
 
@@ -103,4 +100,4 @@ if __name__ == '__main__':
                               0,    0,    0, # black
                         ]
 
-    assert img.pack() == raw_img
+    assert str(img.pack()).replace('.', '\0') == raw_img
