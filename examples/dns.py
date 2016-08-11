@@ -26,7 +26,6 @@ class DomainName(Field):
       self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
 
    def unpack(self, packet, raw, offset=0):
-      print "unpack", offset
       we_have_only_one_byte = len(raw[offset:]) == 1
 
       if we_have_only_one_byte:
@@ -40,11 +39,9 @@ class DomainName(Field):
          if partial_name.flags == 0b00:
             partial_name = NotCompressedName() # it wasn't compressed!
             new_offset = partial_name.unpack(raw, offset)
-            print "Normal"
 
          elif partial_name.flags == 0b11:
             #ok, it is compressed
-            print "Compressed", offset
             pass
          else:
             raise NotImplementedError()
@@ -131,10 +128,10 @@ class Message(Packet):
    ns_count = Int(2)
    ar_count = Int(2)
 
-   questions   = Ref(Question).repeated(qd_count, when=lambda pkt, *args: pkt.qd_count > 0)
-   answers     = Ref(ResourceRecord).repeated(an_count, when=lambda pkt, *args: pkt.an_count > 0)
-   authorities = Ref(ResourceRecord).repeated(ns_count, when=lambda pkt, *args: pkt.ns_count > 0)
-   additionals = Ref(ResourceRecord).repeated(ar_count, when=lambda pkt, *args: pkt.ar_count > 0)
+   questions   = Ref(Question).repeated(qd_count)
+   answers     = Ref(ResourceRecord).repeated(an_count)
+   authorities = Ref(ResourceRecord).repeated(ns_count)
+   additionals = Ref(ResourceRecord).repeated(ar_count)
 
 '''
 ID              A 16 bit identifier assigned by the program that
@@ -238,9 +235,9 @@ if __name__ == '__main__':
 
    query = Message(raw_query)
    response = Message()
+
    response.unpack(raw_response)
 
-   print repr(raw_response[264:])
 
    assert query.id == response.id == 0xfabc
    
@@ -261,14 +258,17 @@ if __name__ == '__main__':
    assert response.qd_count == len(response.questions) == 1
    assert response.an_count == len(response.answers) == 6
    assert response.ns_count == len(response.authorities) == 4
-   
-   print response.ar_count, response.additionals
-   for a in response.additionals:
-      inspect(a)
    assert response.ar_count == len(response.additionals) == 5
    
 
-   #questions   = Ref(Question).repeated(qd_count)
-   #answers     = Ref(ResourceRecord).repeated(an_count)
-   #authorities = Ref(ResourceRecord).repeated(ns_count)
-   #additionals = Ref(ResourceRecord).repeated(ar_count)
+   the_question = query.questions[0]
+   assert list(map(lambda n: n.name, the_question.qname.partial_names)) == ['www', 'google', 'com', '']
+
+   the_question = response.questions[0]
+   assert list(map(lambda n: n.name, the_question.qname.partial_names)) == ['www', 'google', 'com', '']
+ 
+   # TODO more tests!
+   #position_of_first_partial_name = raw_query.find('www')
+   #print query.additionals[0].name.offset, position_of_first_partial_name
+   #assert query.additionals[0].name.offset == position_of_first_partial_name
+
