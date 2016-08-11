@@ -442,6 +442,10 @@ class Data(Field):
             assert False
 
       else:
+         self._search_buffer_length = bisturi_conf.get('search_buffer_length')
+         if self._search_buffer_length is not None:
+             assert self._search_buffer_length >= 0 # the length can be 0 or None (means infinite) or a positive number
+
          if isinstance(self.until_marker, basestring):
             self.unpack = self._unpack_with_string_marker
 
@@ -484,7 +488,14 @@ class Data(Field):
 
    def _unpack_with_string_marker(self, pkt, raw, offset=0, **k):
       until_marker = self.until_marker
-      count = raw[offset:].find(until_marker)
+      
+      if self._search_buffer_length:
+          max_next_offset_allowed = offset + self._search_buffer_length
+          search_buffer = raw[offset:max_next_offset_allowed]
+      else:
+          search_buffer = raw[offset:]
+
+      count = search_buffer.find(until_marker)
       assert count >= 0
 
       extra_count = 0
@@ -502,11 +513,18 @@ class Data(Field):
    
    def _unpack_with_regexp_marker(self, pkt, raw, offset=0, **k):
       until_marker = self.until_marker
+      
+      if self._search_buffer_length:
+          max_next_offset_allowed = offset + self._search_buffer_length
+          search_buffer = raw[offset:max_next_offset_allowed]
+      else:
+          search_buffer = raw[offset:]
+
       extra_count = 0
       if until_marker.pattern == "$":    # shortcut
          count = len(raw) - offset
       else:
-         match = until_marker.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
+         match = until_marker.search(search_buffer, 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
          if match:
             if self.include_delimiter:
                count = match.end()

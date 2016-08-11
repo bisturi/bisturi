@@ -103,8 +103,49 @@ True
 
 As you can see, when you use a token as delimiter, the token is added to the result.
 
-A special case arise when the size of the data is not bound to a field only. Instead
-depend on something that can be resolved only when the packet disassmble the byte string.
+By default, the until_marker expresion is used to search the marker in the whole raw string
+starting from the field's offset which it is quite correct.
+But when the raw string is huge or even it is a file, searching in the whole space will require
+to load all thoses bytes in memory which can lead to a performance problems.
+Fortunely most of the cases we can expect to find the marker in the first few bytes so we can
+set a maximum search buffer length to avoid the load of the full string in memory (again, this
+makes sense if the raw to be parsed is a file)
+
+Let see an example:
+
+```python
+>>> class DataWithSearchLengthLimit(Packet):
+...    __bisturi__ = { 'search_buffer_length': 4 }
+...
+...    a = Data(until_marker='\0', include_delimiter=False)
+
+>>> s = 'ab\x00eeee'
+>>> p = DataWithSearchLengthLimit(s)
+>>> p.a
+'ab'
+
+```
+
+But if we set a too short buffer and if the marker is not find there, we will get an exception as
+if the marker does't exist in the whole string
+
+```python
+>>> class DataWithSearchLengthLimitTooShort(Packet):
+...    __bisturi__ = { 'search_buffer_length': 2 }
+...
+...    a = Data(until_marker='\0', include_delimiter=False)
+
+>>> s = 'ab\x00eeee'
+>>> p = DataWithSearchLengthLimitTooShort(s)        # doctest: +ELLIPSIS
+Traceback (most recent call last):
+Exception: ...
+
+```
+
+
+A special case arise when the size of the data is not bound to a field only neither there
+is a marker to search. 
+Instead depend on something that can be resolved only when the packet disassmble the byte string.
 In this case, a callable can be used
 
 ```python
