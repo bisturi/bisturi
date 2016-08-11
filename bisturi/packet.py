@@ -1,5 +1,5 @@
 from field import Field
-
+import blocks
 
 class MetaPacket(type):
    def __init__(cls, name, bases, attrs):
@@ -19,8 +19,15 @@ class MetaPacket(type):
 
       cls.get_fields = get_fields
 
+      generate_for_pack = cls.__bisturi__.get('generate_for_pack', True)
+      generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', True)
+      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack)
+
+
+
 class Packet(object):
    __metaclass__ = MetaPacket
+   __bisturi__ = {}
 
    def __init__(self, bytestring=None, **defaults):
       map(lambda name_val: name_val[1].init(self, defaults), self.get_fields())
