@@ -172,7 +172,5 @@ if __name__ == '__main__':
    assert file2.attributes == 0x0020
    assert file2.name == "welcome.c"
 
-   # TODO: el problema es que las callbacks llamadas en pack tienen una interfaz/parametros distintos al de la llamada en el unpack
-   # esto hace crashear todo: 
    assert cabinet_file.pack() == raw_file
 
