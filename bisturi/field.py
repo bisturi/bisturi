@@ -414,15 +414,22 @@ class Ref(Field):
             defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance (Field.init will copy that object)
 
          Field.init(self, packet, defaults)
-         referenced = defaults[self.field_name]
          
          self.unpack = self._unpack_referencing_a_packet
          self.pack   = self._pack_referencing_a_packet 
 
       else:
          assert callable(self.prototype)
-         Field.init(self, packet, defaults)  #TODO check the examples: default should be a value or a Field?
-         self.pack   = self._pack_referencing_a_unknow_object
+         default = self.default
+         if isinstance(default, Field):
+            default.init(packet, defaults)
+
+         else:
+            assert isinstance(default, Packet)
+            if self.field_name not in defaults:
+               defaults[self.field_name] = copy.deepcopy(default)  # get a new instance (Field.init will copy that object)
+
+            Field.init(self, packet, defaults)
 
 
    def unpack(self, pkt, raw, offset=0, **k):
