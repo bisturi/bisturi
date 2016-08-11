@@ -4,6 +4,7 @@ address itself (the SOCKS packet has more fields but they aren't relevant in thi
 If the type is 0x01, the address is an IP v4, if it is 0x04 is an IP v6.
 This seems to be simple:
 
+```python
 >>> from packet import Packet
 >>> from field  import Data, Int
 
@@ -13,6 +14,8 @@ This seems to be simple:
 ...                           0x01: 4,    # IP v4
 ...                           0x04: 8,    # IP v6
 ...                           }[p.type])
+
+```
 
 But the protocol define another address's type: 0x03, the address is a domain name.
 The problem is that the domain name has the first byte as the size of the domain name.
@@ -26,6 +29,7 @@ a string is the same used by the language Pascal) and the use it with Ref.
 The trick is that Ref not only can reference Packets as Fields, 
 he can dynamically reference to a Packet or another Field using a callable.
 
+```python
 >>> from field  import Data, Int, Ref
 
 >>> class NData(Packet):
@@ -40,11 +44,14 @@ he can dynamically reference to a Packet or another Field using a callable.
 ...                           0x03: NData(),    # domain name
 ...                           }[pkt.type],  default='\x00\x00\x00\x00')
 
+```
+
 So, depends on the value of 'type', 'address' will be a Ref to a Data (a Field) or
 to a NData (a Packet)
 Because the object referenced is determined at unpacking time (using the callable),
 you need to set a default value (this is mandatory)
 
+```python
 >>> s = '\x01\x01\x02\x03\x04'
 >>> p = SOCKS(s)
 >>> p.type
@@ -74,3 +81,4 @@ True
 >>> p.pack() == s
 True
 
+```
