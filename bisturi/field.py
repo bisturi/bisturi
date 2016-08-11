@@ -1,4 +1,4 @@
-import time, struct, sys, copy
+import time, struct, sys, copy, re
 from packet import Packet, Prototype
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 from pattern_matching import Any
@@ -408,7 +408,15 @@ class Int(Field):
       return fragments
    
    def pack_regexp(self, pkt, fragments, **k):
-      fragments.append(".{%i}" % self.byte_count, is_literal=False)
+      value = getattr(pkt, self.field_name)
+      is_literal = not isinstance(value, Any)
+
+      if is_literal:
+          self.pack(pkt, fragments, **k)
+      else:
+          fragments.append(".{%i}" % self.byte_count, is_literal=False)
+
+      return fragments
 
 class Data(Field):
    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
@@ -570,33 +578,40 @@ class Data(Field):
       return next_offset + extra_count
    
    def pack_regexp(self, pkt, fragments, **k):
-      if self.byte_count is not None:
-         if isinstance(self.byte_count, (int, long)):
-            byte_count = self.byte_count
-         
-         elif isinstance(self.byte_count, Field):
-            byte_count = getattr(pkt, self.byte_count.field_name)
+      value = getattr(pkt, self.field_name)
+      is_literal = not isinstance(value, Any)
 
-         elif callable(self.byte_count):
-            try:
-                byte_count = self.byte_count(pkt=pkt, **k)
-            except:
-                byte_count = None
-
-         if byte_count:
-             fragments.append(".{%i}" % byte_count, is_literal=False)
-         else:
-             fragments.append(".*", is_literal=False)
+      if is_literal:
+          self.pack(pkt, fragments, **k)
 
       else:
-         if isinstance(self.until_marker, basestring):
-             fragments.append(".*?%s" % re.escape(self.until_marker), is_literal=False)
+          if self.byte_count is not None:
+             if isinstance(self.byte_count, (int, long)):
+                byte_count = self.byte_count
+             
+             elif isinstance(self.byte_count, Field):
+                byte_count = getattr(pkt, self.byte_count.field_name)
 
-         elif hasattr(self.until_marker, 'search'):
-             fragments.append(self.until_marker.pattern, is_literal=False)
-         
-         else:
-            assert False
+             elif callable(self.byte_count):
+                try:
+                    byte_count = self.byte_count(pkt=pkt, **k)
+                except:
+                    byte_count = None
+
+             if byte_count:
+                 fragments.append(".{%i}" % byte_count, is_literal=False)
+             else:
+                 fragments.append(".*", is_literal=False)
+
+          else:
+             if isinstance(self.until_marker, basestring):
+                 fragments.append(".*?%s" % re.escape(self.until_marker), is_literal=False)
+
+             elif hasattr(self.until_marker, 'search'):
+                 fragments.append(self.until_marker.pattern, is_literal=False)
+             
+             else:
+                assert False
 
       return fragments
 
@@ -787,7 +802,8 @@ class Bits(Field):
             cumshift += f.bit_count
             del f.bit_count
 
-         name_of_members, bit_sequence = zip(*reversed(self.members))
+         self.members.reverse()
+         name_of_members, bit_sequence = zip(*self.members)
 
          if not (cumshift % 8 == 0):
             raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
@@ -829,6 +845,7 @@ class Bits(Field):
           bits = []
           for name, bit_count in self.members:
               is_literal = not isinstance(getattr(pkt, name), Any)
+              
               if is_literal:
                   b = bin(getattr(pkt, name))[2:]
                   zeros = bit_count-len(b)
@@ -842,28 +859,29 @@ class Bits(Field):
           bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)/8)]
 
           for byte in bytes:
-              if byte == "x" * 8:                                 # xxxx xxxx pattern (all dont care)
+              if byte == "x" * 8:                                   # xxxx xxxx pattern (all dont care)
                   fragments.append(".{1}", is_literal=False)
               else:
-                  first_dont_care = byte.index("x")
-                  if first_dont_care == -1:                       # 0000 0000 pattern (all fixed)
+                  first_dont_care = byte.find("x")
+                  if first_dont_care == -1:                         # 0000 0000 pattern (all fixed)
                      char = chr(int(byte, 2))
                      fragments.append(char, is_literal=True)
 
                   elif byte[first_dont_care:] == "x" * len(byte[first_dont_care:]):
-                     dont_care_bits = len(byte[first_dont_care:]) # 00xx xxxx pattern (lower dont care)
-                     lower_char = chr(int(byte[first_dont_care:] + ("0" * dont_care_bits)))
-                     higher_char = chr(int(byte[first_dont_care:] + ("1" * dont_care_bits)))
+                     dont_care_bits = len(byte[first_dont_care:])   # 00xx xxxx pattern (lower dont care)
+                     lower_char = chr(int(byte[:first_dont_care] + ("0" * dont_care_bits),  2))
+                     higher_char = chr(int(byte[:first_dont_care] + ("1" * dont_care_bits), 2))
 
                      lower_literal = re.escape(lower_char)
-                     higher_literal = re.escape(higher_literal)
+                     higher_literal = re.escape(higher_char)
                      fragments.append("[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
                   
-                  else:                                           # 00xx x0x0 pattern (mixed pattern)
-                     all_patterns  = range(256)
-                     fixed_pattern = int(byte.replace("x", "0"), 2)
+                  else:                                             # 00xx x0x0 pattern (mixed pattern)
+                     all_patterns   = range(256)
+                     fixed_pattern  = int(byte.replace("x", "0"), 2) 
+                     dont_care_mask = int(byte.replace("1", "0").replace("x", "1"), 2)
 
-                     mixed_patterns = sorted(set(p & fixed_pattern for p in all_patterns))
+                     mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
                      
                      literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
                      fragments.append("[%s]" % "".join(literal_patterns), is_literal=False)

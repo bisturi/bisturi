@@ -118,15 +118,7 @@ class Packet(object):
 
    def as_regular_expression_impl(self, fragments, stack):
        for name, f, pack, _ in self.get_fields():
-           value = getattr(self, name)
-           if isinstance(value, Any):
-               value.create_regexp(f, self, fragments, stack)
-
-           else:
-               try:
-                   pack(pkt=self, fragments=fragments, stack=stack)
-               except:
-                   f.pack_regexp(self, fragments, stack)
+           f.pack_regexp(self, fragments, stack=stack)
 
 
    def iterative_unpack(self, raw, offset=0, stack=None):
