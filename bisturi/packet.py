@@ -1,4 +1,3 @@
-from field import Field
 import blocks
 
 class MetaPacket(type):
@@ -8,6 +7,7 @@ class MetaPacket(type):
       if name == 'Packet' and bases == (object,):
          return # Packet base class
    
+      from field import Field
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
       

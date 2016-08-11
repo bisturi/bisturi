@@ -1,4 +1,5 @@
 import time, struct, sys, copy
+from packet import Packet
 
 class Field(object):
    def __init__(self):
@@ -129,7 +130,6 @@ class Sequence(Field):
       self.when = _get_when(resolved_count, when)
       self.until_condition = _get_until(resolved_count, until)
 
-      from packet import Packet
       class Element(Packet):
          __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
          val = copy.deepcopy(self.prototype)
@@ -382,7 +382,6 @@ class Ref(Field):
 
       # or it is the prototype or it is a 'default' explicit object
       # in any case, it is a Field  or a Packet instance 
-      from packet import Packet
       assert isinstance(self.default, (Field, Packet))
 
 
@@ -396,19 +395,29 @@ class Ref(Field):
          self.default.compile(field_name=field_name, position=position, fields=[])
 
 
-   def init(self, packet, defaults):
-      if isinstance(self.default, Field):
-         # we are using the default of the self.default object (a field)
-         self.default.init(packet, defaults)
+
+   def init(self, packet, defaults):   #TODO ver el tema de los defaults q viene de la instanciacion del packet
+      prototype = self.prototype
+      if isinstance(prototype, Field):
+         prototype.init(packet, defaults)
+
+         self.unpack = prototype.unpack
+         self.pack   = prototype.pack
+
+      elif isinstance(prototype, Packet):
+         if self.field_name not in defaults:
+            defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance
+
+         Field.init(self, packet, defaults)
+         referenced = defaults[self.field_name]
+         
+         self.unpack = self._unpack_referencing_a_packet
+         self.pack   = self._pack_referencing_a_packet 
 
       else:
-         # we are using our self.default as the default object (a packet)
-         Field.init(self, packet, defaults)  
-         from packet import Packet
-         if isinstance(self.prototype, Packet):
-            self.prototype = copy.deepcopy(self.prototype)
-         else:
-            assert callable(self.prototype)
+         assert callable(self.prototype)
+         Field.init(self, packet, defaults)
+         self.pack   = self._pack_referencing_a_unknow_object
 
 
    def unpack(self, pkt, raw, offset=0, **k):
@@ -423,17 +432,16 @@ class Ref(Field):
 
          return referenced.unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-      from packet import Packet
       assert isinstance(referenced, Packet)
 
       self.setval(pkt, referenced)
       return referenced.unpack(raw, offset, **k)
 
+
    def pack(self, packet):
       if isinstance(self.prototype, Field):
          return self.prototype.pack(packet)
 
-      from packet import Packet
       obj = self.getval(packet)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
          return obj.pack()
@@ -446,6 +454,28 @@ class Ref(Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[])
          #referenced.init(packet, {})
 
+         return referenced.pack(packet)
+
+      # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
+      # however, the 'referenced' object IS a Packet and we cannot do anything else
+      raise NotImplementedError()
+
+   def _unpack_referencing_a_packet(self, pkt, **k):
+      return self.getval(pkt).unpack(**k)
+
+   def _pack_referencing_a_packet(self, packet):
+      return self.getval(packet).pack()
+ 
+   def _pack_referencing_a_unknow_object(self, packet):     
+      obj = self.getval(packet)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+      if isinstance(obj, Packet):
+         return obj.pack()
+
+      # we try to know how to pack this "primitive" value
+      referenced = self.prototype(pkt=packet, packing=True)   # TODO add more parameters, like raw=partial_raw
+
+      if isinstance(referenced, Field):
+         referenced.compile(field_name=self.field_name, position=self.position, fields=[])
          return referenced.pack(packet)
 
       # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
