@@ -3,20 +3,28 @@ as a string of bytes
 
 First, we create a simple packet class
 
+```python
 >>> from packet import Packet
 >>> from field import Int, Data
+
 >>> class TLP(Packet):
 ...    type = Int(1)
 ...    length = Int()
 ...    payload = Data(length)
 
+```
+
 Now, let be the next string of bytes (try to see the values encoded in it)
 
+```python
 >>> s1 = '\x02\x00\x00\x00\x03abc'
+
+```
 
 You can see what should be the value of 'type' or 'payload'? 
 I hope!. If not, let the packet dissect the string for you
 
+```python
 >>> p = TLP(s1)
 >>> p.type
 2
@@ -25,7 +33,11 @@ I hope!. If not, let the packet dissect the string for you
 >>> p.payload
 'abc'
 
+```
+
 And another example
+
+```python
 >>> s2 = '\x01\x00\x00\x00\x01d'
 >>> q = TLP(s2)
 >>> q.type
@@ -35,25 +47,35 @@ And another example
 >>> q.payload
 'd'
 
+```
+
 You can see that 'type' and the other fields are class attributes. However the value
 of each field is keep per instance, so:
 
+```python
 >>> p.type
 2
 >>> q.type
 1
 
+```
+
 are different, which make sense.
 
 Now, from the packet to the string
 
+```python
 >>> p.pack() == s1
 True
 >>> q.pack() == s2
 True
 
+```
+
 Finally, you can set the offset of the string where to start to read. By default is 0.
 However, to use this you need to call unpack directly.
+
+```python
 >>> s2 = 'xxx\x01\x00\x00\x00\x01d'
 >>> q = TLP()
 >>> q.unpack(s2, 3) #ignore the first 3 bytes "xxx"
@@ -64,3 +86,5 @@ However, to use this you need to call unpack directly.
 1
 >>> q.payload
 'd'
+
+```
