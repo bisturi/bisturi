@@ -26,17 +26,51 @@ class Field(object):
 
       return Sequence(prototype=self, count=count, until=until)
 
+
+def _get_count(count_arg):
+   if count_arg is None:
+      return None
+
+   if isinstance(count_arg, (int, long)):
+      return lambda p: count_arg
+
+   if isinstance(count_arg, Field):
+      return lambda p: count_arg.getval(p)
+
+   if callable(count_arg):
+      return count_arg
+
+   raise Exception("Invalid argument for a 'count'. Expected a number, a field or a callable.")
+
+
+def _get_until(count, until):
+   assert not (count is None and until is None)
+   assert not (count is not None and until is not None)
+
+   if count is not None: #fixed
+      outer = {'i': 0}
+      def until_condition(packet):
+         outer['i'] += 1
+         if outer['i'] >= count(packet):
+            return True
+         else:
+            return False
+
+      return until_condition
+   
+   else:
+      assert callable(until)
+      return until
+
+
 class Sequence(Field):
    def __init__(self, prototype, count, until):
       Field.__init__(self)
       self.ctime = prototype.ctime
       self.default = []
 
-      #TODO count can be a number, a field, or a callable.
-      #assume that count is a number equal to 2
       self.prototype = prototype
-      self.count = 2
-      self.until = until
+      self.until_condition = _get_until(_get_count(count), until)
 
 
    def from_raw(self, packet, raw, offset=0):
@@ -46,16 +80,14 @@ class Sequence(Field):
       
       sequence = self.getval(packet)
       stop = False
-      c = 0
       
       while not stop:
          elem = Element()
          offset = elem.from_raw(raw, offset)
 
          sequence.append(elem.val)
-         c += 1
 
-         stop = c >= self.count
+         stop = self.until_condition(packet)
 
       self.setval(packet, sequence)
       return offset
