@@ -1,6 +1,13 @@
 import blocks
 from fragments import Fragments
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+import copy
+
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
       if name == 'Packet' and bases == (object,):
@@ -45,7 +52,8 @@ class MetaPacket(type):
       generate_for_unpack = cls.__bisturi__.get('generate_for_unpack', True)
       write_py_module = cls.__bisturi__.get('write_py_module', False)
       blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
-      
+ 
+
       return cls
 
    '''def __getattribute__(self, name):
@@ -68,12 +76,40 @@ class Packet(object):
    __metaclass__ = MetaPacket
    __bisturi__ = {}
 
+
    def __init__(self, bytestring=None, **defaults):
       map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
       
       if bytestring is not None:
          self.unpack(bytestring)
 
+   @classmethod
+   def build_default_instance(cls):
+       try:
+           obj = cls._build_default_instance_from_picked()
+           cls.build_default_instance = cls._build_default_instance_from_picked
+       except:
+           try:
+               obj = cls._build_default_instance_copying()
+               cls.build_default_instance = cls._build_default_instance_copying
+           except:
+               obj = cls()
+               cls.__bisturi__['default_instance'] = obj
+               
+               try:
+                   cls.__bisturi__['default_instance_pickled'] = pickle.dumps(obj, -1)
+               except:
+                   pass
+
+       return obj
+
+   @classmethod
+   def _build_default_instance_from_picked(cls):
+       return pickle.loads(cls.__bisturi__['default_instance_pickled'])
+
+   @classmethod
+   def _build_default_instance_copying(cls):
+       return copy.deepcopy(cls.__bisturi__['default_instance'])
 
    def unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)

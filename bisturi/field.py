@@ -2,13 +2,14 @@ import time, struct, sys, copy
 from packet import Packet
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 
+
 def exec_once(m):
    ''' Force to execute the method M only once and save its result.
        The next calls will always return the same result, ignoring the parameters. '''
    def wrapper(self, *args, **kargs):
       try:
          return getattr(self, "_%s_cached_result" % m.__name__)
-      except AttributeError:
+      except AttributeError as e:
          r = m(self, *args, **kargs)
          setattr(self, "_%s_cached_result" % m.__name__, r)
          return r
@@ -32,8 +33,11 @@ class Field(object):
          return [("_shift_to_%s" % field_name, Move(self.move_to)), (field_name, self)]
 
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf): 
-      del self.ctime
+   def compile(self, field_name, position, fields, bisturi_conf):
+      # Dont call this from a subclass. Call _compile directly.
+      return self._compile(field_name, position, fields, bisturi_conf)
+
+   def _compile(self, field_name, position, fields, bisturi_conf): 
       self.field_name = field_name
 
       return [field_name]
@@ -45,7 +49,6 @@ class Field(object):
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
-      #import pdb; pdb.set_trace()
       setattr(packet, self.field_name, defaults.get(self.field_name, copy.deepcopy(self.default))) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
@@ -165,12 +168,11 @@ class Sequence(Field):
       
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
       self.seq_elem_field_name = "_seq_elem__"+field_name
       self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[], bisturi_conf=bisturi_conf)
 
       count, until, when = self.tmp
-      del self.tmp
 
       if isinstance(count, (UnaryExpr, BinaryExpr)):
          count = compile_expr_into_callable(count)
@@ -199,20 +201,25 @@ class Sequence(Field):
       stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
       seq_elem_field_name = self.seq_elem_field_name
+      _unpack = self.prototype_field.unpack
+      _append = sequence.append
+      _until  = self.until_condition
       while not stop:
-         offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
+         offset = _unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-         obj = getattr(pkt, seq_elem_field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
+         obj = getattr(pkt, seq_elem_field_name) 
+         
+         _append(obj)
+         stop = _until(pkt=pkt, raw=raw, offset=offset, **k)
+
          if isinstance(obj, Packet):
-            avoid_deep_copies = obj.__bisturi__.get('avoid_deep_copies', True)
+             # if this is a Packet instance, obj is the same object each iteration, 
+             # so we need a copy, a fresh object for the next round
+             setattr(pkt, seq_elem_field_name, obj.__class__.build_default_instance())
+         elif not isinstance(obj, (int, long, basestring)): 
+             # Other object no constant should be copied too: TODO will this work all the times?
+             setattr(pkt, seq_elem_field_name, copy.deepcopy(obj))
 
-            if avoid_deep_copies:
-               obj = copy.copy(obj)
-            else:
-               obj = copy.deepcopy(obj)
-
-         sequence.append(obj)
-         stop = self.until_condition(pkt=pkt, raw=raw, offset=offset, **k)
 
       # self.setval(pkt, sequence), we don't need this, because the sequence is already there
       return offset
@@ -240,7 +247,7 @@ class Optional(Field):
       
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
       self.opt_elem_field_name = "_opt_elem__"+field_name
       self.prototype_field.compile(field_name=self.opt_elem_field_name, position=-1, fields=[], bisturi_conf=bisturi_conf)
 
@@ -266,13 +273,6 @@ class Optional(Field):
          offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
          obj = getattr(pkt, opt_elem_field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
-         if isinstance(obj, Packet):
-            avoid_deep_copies = obj.__bisturi__.get('avoid_deep_copies', True)
-
-            if avoid_deep_copies:
-               obj = copy.copy(obj)
-            else:
-               obj = copy.deepcopy(obj)
 
       setattr(pkt, self.field_name, obj)
       return offset
@@ -300,7 +300,7 @@ class Int(Field):
 
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
       
       if self.endianness is None:
          self.endianness = bisturi_conf.get('endianness', 'big') # try to get the default from the Packet class; big endian by default
@@ -392,7 +392,7 @@ class Data(Field):
 
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
 
       if self.byte_count is not None:
          if isinstance(self.byte_count, (int, long)):
@@ -529,7 +529,7 @@ class Ref(Field):
 
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
 
       self.position = position
       if isinstance(self.prototype, Field): 
@@ -657,7 +657,7 @@ class Bits(Field):
    
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field.compile(self, field_name, position, fields, bisturi_conf)
+      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
 
       if position == 0 or not isinstance(fields[position-1][1], Bits):
          self.iam_first = True
