@@ -44,6 +44,22 @@ class MetaPacket(type):
       
       return cls
 
+   '''def __getattribute__(self, name):
+      """ Let be
+          class P(Packet):
+            f = Field()
+
+          f is a Field, but P.f is a member_descriptor. This happen because
+          Packet implements the __slots__ attribute and hides the fields.
+          To restore this we need to do this ugly and inefficient lookup."""
+      obj = type.__getattribute__(self, name)
+      try:
+         # try to find the Field if any
+         return [f for n, f, _, _ in obj.__objclass__.get_fields() if n == name][0]
+      except:
+         pass
+      return obj'''
+
 class Packet(object):
    __metaclass__ = MetaPacket
    __bisturi__ = {}

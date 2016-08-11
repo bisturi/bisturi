@@ -18,8 +18,7 @@ class Field(object):
       else:
          return [("_shift_to_%s" % field_name, Move(self.move_to)), (field_name, self)]
 
-   def compile(self, field_name, position, fields):
-      del self.ctime
+   def compile(self, field_name, position, fields): #TODO ensure that we can call 'compile' several times
       self.field_name = field_name
 
       return [field_name]
@@ -39,6 +38,12 @@ class Field(object):
 
    def pack(self, pkt, fragments, **k):
       raise NotImplementedError()
+
+   def unpack_noop(self, pkt, raw, offset, **k):
+      return offset
+
+   def pack_noop(self, pkt, fragments, **k):
+      return fragments
 
    def repeated(self, count=None, until=None, when=None, default=None):
       assert not (count is None and until is None)
@@ -463,7 +468,7 @@ class Data(Field):
       return next_offset + extra_count
 
 class Ref(Field):
-   def __init__(self, prototype, default=None): # TODO we don't support Bits fields
+   def __init__(self, prototype, default=None, embeb=False): # TODO we don't support Bits fields
       Field.__init__(self)
 
       self.prototype = prototype # TODO should we copy this prototype and/or its default?
@@ -485,8 +490,18 @@ class Ref(Field):
          else:
             assert isinstance(self.prototype, Field)
             self.default = getattr(self.prototype, 'default', None)
-            
 
+      if embeb and not isinstance(self.prototype, Packet):
+         raise ValueError("The prototype must be a Packet if you want to embeb it.")
+            
+      self.embeb = embeb
+   
+   def describe_yourself(self, field_name):
+      desc = Field.describe_yourself(self, field_name)
+      if self.embeb:
+         desc.extend([(fname, f) for fname, f, _, _ in self.prototype.get_fields()])
+
+      return desc
 
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
@@ -496,7 +511,11 @@ class Ref(Field):
          self.prototype.compile(field_name=field_name, position=position, fields=[])
 
       prototype = self.prototype
-      if isinstance(prototype, Field):
+      if self.embeb:
+         self.pack   = self.pack_noop
+         self.unpack = self.unpack_noop
+
+      elif isinstance(prototype, Field):
          self.unpack = prototype.unpack
          self.pack   = prototype.pack
 

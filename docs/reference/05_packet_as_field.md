@@ -95,3 +95,20 @@ the packet Ethernet and the packet IP, maybe you will be temted to define
 Ethernet.payload as Ref(IP) but this will bound your Ethernet implementation to IP.
 Exists more flexible solutions to this as i will show you.
 
+We can do a last improvement. Some times we use sub packets to organize better the
+structure of the big picture but it become annoying the extra level of indirection.
+To makes this more easy to use we can 'embeb' the fields of the referenced sub packet
+into the packet container:
+
+```python
+>>> class Frame(Packet):
+...    address = Ref(Ethernet, embeb=True)
+
+>>> p = Frame()
+>>>
+>>> p.destination.nic  # direct access, no p.address.destination
+'\xff\xff\x01'
+>>> p.source.nic
+'\xff\xff\x02'
+
+```
