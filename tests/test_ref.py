@@ -330,16 +330,42 @@ class TestRef(unittest.TestCase):
       )
 
 
-'''
-class RefVariableCorrectParameters(Packet):
-   first  = Ref(first_callable,  default=Int())
-   second = Ref(second_callable, default=Int())
+   def test_ref_variable_callback_parameter(self):
+      arguments_per_call = []
+      def get_prototype(**k):
+         arguments_per_call.append(k)
+         arguments_per_call[-1]['stack'] = list(arguments_per_call[-1]['stack'])
+         return Int(2)
 
-   @staticmethod
-   def first_callable(**k):
-      pass
+      class RefVariableCorrectParameters(Packet):
+         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
+         first  = Ref(get_prototype, default=0)
+         second = Ref(get_prototype, default=0)
 
-   @staticmethod
-   def second_callable(**k):
-      pass
-'''
+      one = RefVariableCorrectParameters()
+
+      assert len(arguments_per_call) == 0 # no called
+   
+      raw = '\x00\x00\x00\x01'
+      one.unpack(raw)
+      assert len(arguments_per_call) == 2
+      first_call, second_call = arguments_per_call
+
+      assert first_call == {
+            'pkt': one,
+            'raw': raw,
+            'offset': 0,
+            'stack': [one],
+         }
+      
+      assert second_call == {
+            'pkt': one,
+            'raw': raw,
+            'offset': 2,
+            'stack': [one],
+         }
+
+      arguments_per_call.pop()   # cleanup
+      arguments_per_call.pop()
+      
+      # TODO add more tests on packing
