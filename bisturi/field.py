@@ -51,25 +51,36 @@ def _get_count(count_arg):
 
    raise Exception("Invalid argument for a 'count'. Expected a number, a field or a callable.")
 
-
 def _get_until(count, until):
    assert not (count is None and until is None)
    assert (count is None or until is None)
 
    if count is not None: #fixed
-      outer = {'i': 0}
-      def until_condition(packet, *args):
-         outer['i'] += 1
-         if outer['i'] >= count(packet):
-            return True
-         else:
-            return False
+      class _Until(object):
+         counter = 0
+         
+         def __call__(self, packet, *args):
+            _Until.counter += 1
+            if _Until.counter >= count(packet):
+               return True
+            else:
+               return False
 
-      return until_condition
+         def reset(self):
+            _Until.counter = 0
+
+      return _Until()
    
    else:
       assert callable(until)
-      return until
+
+      class _Until(object):
+         def __call__(self, *args, **kargs):
+            return until(*args, **kargs)
+         def reset(self):
+            pass
+
+      return _Until()
 
 def _get_when(count, when):
    if count is not None and when is None: #fixed
@@ -106,6 +117,8 @@ class Sequence(Field):
 
 
    def unpack(self, packet, raw, offset=0):
+      self.until_condition.reset()
+
       from packet import Packet
       class Element(Packet):
          val = copy.deepcopy(self.prototype)
