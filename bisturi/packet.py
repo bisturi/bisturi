@@ -48,12 +48,10 @@ class Packet(object):
    __bisturi__ = {}
 
 
-   def __init__(self, bytestring=None, **defaults):
-      map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
-      
-      if bytestring is not None:
-         raise Exception("NO")
-         self.unpack(bytestring)
+   def __init__(self, _initialize_fields=True, **defaults):
+      assert _initialize_fields in (True, False)
+      if _initialize_fields:
+         map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
 
    @classmethod
    def build_default_instance(cls):
@@ -64,7 +62,7 @@ class Packet(object):
 
    @classmethod
    def create_from(cls, raw, offset=0, silent=False):
-     pkt = cls()
+     pkt = cls(_initialize_fields=False)
      try:
          pkt.unpack(raw, offset)
          return pkt

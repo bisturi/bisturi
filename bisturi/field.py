@@ -795,6 +795,12 @@ class Ref(Field):
 
 
    def _unpack_referencing_a_packet(self, pkt, **k):
+      p = getattr(pkt, self.field_name, None)
+      if p is not None:
+          return p.unpack_impl(**k)
+
+      # Workaround if the init method wasn't call
+      setattr(pkt, self.field_name, self.prototype.clone())
       return getattr(pkt, self.field_name).unpack_impl(**k)
 
    def _pack_referencing_a_packet(self, pkt, fragments, **k):
