@@ -23,14 +23,15 @@ class Field(object):
       self.struct_code = None
       self.is_bigendian = True
 
-      self.move_to = None
+      self.move_arg = None
+      self.movement_type = None
 
    def describe_yourself(self, field_name):
-      if self.move_to is None:
+      if self.move_arg is None:
          return [(field_name, self)]
 
       else:
-         return [("_shift_to_%s" % field_name, Move(self.move_to)), (field_name, self)]
+         return [("_shift_to_%s" % field_name, Move(self.move_arg, self.movement_type)), (field_name, self)]
 
    @exec_once
    def compile(self, field_name, position, fields, bisturi_conf):
@@ -68,18 +69,24 @@ class Field(object):
    def pack_noop(self, pkt, fragments, **k):
       return fragments
 
-   def repeated(self, count=None, until=None, when=None, default=None):
+   def repeated(self, count=None, until=None, when=None, default=None, aligned=None):
       assert not (count is None and until is None)
       assert not (count is not None and until is not None)
 
-      return Sequence(prototype=self, count=count, until=until, when=when, default=default)
+      return Sequence(prototype=self, count=count, until=until, when=when, default=default, aligned=aligned)
 
 
    def when(self, condition, default=None):
       return Optional(prototype=self, when=condition, default=default)
 
-   def at(self, position):
-      self.move_to = position
+   def at(self, position, movement_type='absolute'):
+      self.move_arg = position
+      self.movement_type = movement_type
+      return self
+
+   def aligned(self, to):
+      self.move_arg = to
+      self.movement_type = 'align'
       return self
 
 def _get_count(count_arg):
@@ -161,12 +168,13 @@ def _get_when(count, when):
       
 
 class Sequence(Field):
-   def __init__(self, prototype, count, until, when, default=None):
+   def __init__(self, prototype, count, until, when, default=None, aligned=None):
       Field.__init__(self)
       self.ctime = prototype.ctime
       self.default = default if default is not None else []
 
       self.prototype_field = prototype
+      self.aligned_to = 1 if aligned is None else aligned
 
       self.tmp = (count, until, when)
 
@@ -209,8 +217,10 @@ class Sequence(Field):
       _unpack = self.prototype_field.unpack
       _append = sequence.append
       _until  = self.until_condition
+      _aligned_to = self.aligned_to
       while not stop:
-         offset = _unpack(pkt=pkt, raw=raw, offset=offset, **k)
+         offset += (_aligned_to - (offset % _aligned_to)) % _aligned_to
+         offset =  _unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
          obj = getattr(pkt, seq_elem_field_name) 
          
@@ -233,8 +243,10 @@ class Sequence(Field):
    def pack(self, pkt, fragments, **k):
       sequence = getattr(pkt, self.field_name)
       seq_elem_field_name = self.seq_elem_field_name
+      _aligned_to = self.aligned_to
       for val in sequence:
          setattr(pkt,  seq_elem_field_name, val)
+         fragments.current_offset += (_aligned_to - (fragments.current_offset % _aligned_to)) % _aligned_to
          self.prototype_field.pack(pkt, fragments, **k)
 
       return fragments
@@ -731,26 +743,32 @@ class Bits(Field):
       
 
 class Move(Field):
-   def __init__(self, to):
+   def __init__(self, move_arg, movement_type):
       Field.__init__(self)
-      self.absolute_position = to
+      self.move_arg = move_arg 
+      self.movement_type = movement_type
       self.default = ''
 
    def unpack(self, pkt, raw, offset=0, **k):
-      if isinstance(self.absolute_position, Field):
-         next_offset = getattr(pkt, self.absolute_position.field_name)
+      if isinstance(self.move_arg, Field):
+         move_value = getattr(pkt, self.move_arg.field_name)
 
-      elif isinstance(self.absolute_position, (int, long)):
-         next_offset = self.absolute_position
+      elif isinstance(self.move_arg, (int, long)):
+         move_value = self.move_arg
       
       else:
-         assert callable(self.absolute_position) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
-         next_offset = self.absolute_position(pkt=pkt, raw=raw, offset=offset, **k)
+         assert callable(self.move_arg) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
+         move_value = self.move_arg(pkt=pkt, raw=raw, offset=offset, **k)
 
       # TODO we need to disable this, the data may be readed by other field
       # in the future and then the packet will have duplicated data (but see pack())
-      #setattr(pkt, self.field_name, raw[offset:next_offset])
-      return next_offset
+      #setattr(pkt, self.field_name, raw[offset:move_value])
+      if self.movement_type == 'absolute':
+          return move_value
+      elif self.movement_type == 'relative':
+          return offset + move_value
+      elif self.movement_type == 'align':
+          return offset + ((move_value - (offset % move_value)) % move_value)
    
    def init(self, packet, defaults):
       pass
@@ -758,21 +776,27 @@ class Move(Field):
    def pack(self, pkt, fragments, **k):
       #garbage = getattr(pkt, self.field_name)
 
-      if isinstance(self.absolute_position, Field):
-         next_offset = getattr(pkt, self.absolute_position.field_name)
+      if isinstance(self.move_arg, Field):
+         move_value = getattr(pkt, self.move_arg.field_name)
  
-      elif isinstance(self.absolute_position, (int, long)):
-         next_offset = self.absolute_position
+      elif isinstance(self.move_arg, (int, long)):
+         move_value = self.move_arg
       
       else:
-         assert callable(self.absolute_position)
-         next_offset = self.absolute_position(pkt=pkt, fragments=fragments, **k)
+         assert callable(self.move_arg)
+         move_value = self.move_arg(pkt=pkt, fragments=fragments, **k)
      
       # TODO because the "garbage" could be readed by another field in the future,
       # this may not be garbage and if  we try to put here, the other field will
       # try to put the same data in the same place and we get a collission.
       #fragments.append(garbage)
-      fragments.current_offset = next_offset
+      if self.movement_type == 'absolute':
+          fragments.current_offset = move_value
+      elif self.movement_type == 'relative':
+          fragments.current_offset += move_value
+      elif self.movement_type == 'align':
+          fragments.current_offset += (move_value - (fragments.current_offset % move_value)) % move_value
+
       return fragments
 
 
