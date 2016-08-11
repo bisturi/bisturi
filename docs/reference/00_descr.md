@@ -5,8 +5,8 @@ We can do type checking or value checking to a field to ensure that compliances
 we some restriction.
 
 To do that, we can replace the value of a field (a simple python object) by a descriptor.
-A descriptor implement the __get__ and __set__ methods which are accessors for the datum
-behiam.
+A descriptor implements the __get__ and __set__ methods which are accessors for the datum
+behind.
 
 The lib has few descriptors that you can use but you are encouraged to implement the yours.
 

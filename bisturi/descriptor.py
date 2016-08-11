@@ -1,26 +1,29 @@
 
 class AutoLength(object):
-    def __init__(self, length_of, is_enabled_autolength_from_start=True):
+    def __init__(self, length_of):
         self.length_of = length_of
-        self.is_enabled_autolength_from_start = is_enabled_autolength_from_start
+
+    def compile(self, field_name, descriptor_name, bisturi_conf):
+        self.iam_enabled_attr_name = "_is_descriptor_%s_enabled" % descriptor_name
+        return [self.iam_enabled_attr_name]
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        
-        real_value = getattr(instance, self.real_field_name) 
-        if real_value is None:
+ 
+        iam_enabled = getattr(instance, self.iam_enabled_attr_name, True)
+        if iam_enabled:
             return len(getattr(instance, self.length_of))
         else:
+            real_value = getattr(instance, self.real_field_name) 
             return real_value
 
     def __set__(self, instance, val):
+        iam_enabled = val is None
+        setattr(instance, self.iam_enabled_attr_name, iam_enabled)
         setattr(instance, self.real_field_name, val)
 
     def sync_before_pack(self, instance):
-        self.__set__(instance, self.__get__(instance, type(instance)))
-
-    def sync_after_unpack(self, instance):
-        if self.is_enabled_autolength_from_start:
-            self.__set__(instance, None) # set to None so __get__ returns the computed value and not the stored
+        val = self.__get__(instance, type(instance)) # this can be calculated or not, we don't care
+        setattr(instance, self.real_field_name, val) # we only care that the real field has the same value
 

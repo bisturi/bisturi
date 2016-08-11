@@ -29,6 +29,11 @@ class PacketClassBuilder(object):
       # compile each field (speed optimization) and create the slots (memory optimization)
       additional_slots = self.bisturi_conf.get('additional_slots', [])
       self.slots = sum(map(lambda position, name_val: name_val[1].compile(position, self.fields, self.bisturi_conf), *zip(*enumerate(self.fields))), additional_slots)
+    
+    def compile_descriptors_and_extend_slots(self):
+      self.slots += sum((field.descriptor.compile(field_name, field.descriptor_name, self.bisturi_conf) for field_name, field in self.fields
+               if field.descriptor is not None and hasattr(field.descriptor, 'compile')), [])
+
 
     def unroll_fields_with_their_pack_unpack_methods(self):
       # unroll the fields into the their pack/unpack methods (to avoid lookups)
@@ -147,6 +152,8 @@ class MetaPacket(type):
       builder.collect_the_fields()
       builder.make_field_descriptions()
       builder.compile_fields_and_create_slots()
+      builder.compile_descriptors_and_extend_slots()
+
       builder.unroll_fields_with_their_pack_unpack_methods()
       builder.remove_fields_from_class_definition()
       builder.add_descriptors_to_class_definition()
