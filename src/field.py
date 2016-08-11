@@ -1,4 +1,4 @@
-import time, struct, sys
+import time, struct, sys, copy
 
 class Field(object):
    def __init__(self):
@@ -24,8 +24,6 @@ class Field(object):
       assert not (count is None and until is None)
       assert not (count is not None and until is not None)
 
-      #TODO count can be a number, a field, or a callable.
-      #assume that count is a number
       return Sequence(prototype=self, count=count, until=until)
 
 class Sequence(Field):
@@ -34,23 +32,49 @@ class Sequence(Field):
       self.ctime = prototype.ctime
       self.default = []
 
+      #TODO count can be a number, a field, or a callable.
+      #assume that count is a number equal to 2
       self.prototype = prototype
-      self.count = count
+      self.count = 2
       self.until = until
-
-   def compile(self, field_name, position, fields):
-      Field.compile(self, field_name, position, fields)
-      self.prototype.compile("self", position, fields)
 
 
    def from_raw(self, packet, raw, offset=0):
-      obj = prototype.copy() # TODO
+      from packet import Packet
+      class Element(Packet):
+         val = copy.deepcopy(self.prototype)
       
-      obj.from_raw(packet, raw, offset)
+      sequence = self.getval(packet)
+      stop = False
+      c = 0
+      
+      while not stop:
+         elem = Element()
+         offset = elem.from_raw(raw, offset)
+
+         sequence.append(elem.val)
+         c += 1
+
+         stop = c >= self.count
+
+      self.setval(packet, sequence)
+      return offset
 
 
    def to_raw(self, packet):
-      raise NotImplementedError()
+      from packet import Packet
+      class Element(Packet):
+         val = copy.deepcopy(self.prototype)
+
+      sequence = self.getval(packet)
+      raw = []
+      for val in sequence:
+         elem = Element()
+         elem.val = val
+
+         raw.append(elem.to_raw())
+
+      return "".join(raw)
 
 
 class Int(Field):
