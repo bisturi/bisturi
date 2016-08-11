@@ -92,6 +92,9 @@ class Field(object):
       self.movement_type = 'align-local' if local else 'align-global'
       return self
 
+   def pack_regexp(self, pkt, fragments, **k):
+      raise NotImplementedError()
+
 def _get_count(count_arg):
    '''Return a callable from count_arg so you can invoke that callable
       and the count of byte will be retrived. 
@@ -403,6 +406,9 @@ class Int(Field):
 
       fragments.append(data)
       return fragments
+   
+   def pack_regexp(self, pkt, fragments, **k):
+      fragments.append(".{%i}" % self.byte_count, is_literal=False)
 
 class Data(Field):
    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
@@ -562,6 +568,37 @@ class Data(Field):
       setattr(pkt, self.field_name, raw[offset:next_offset])
 
       return next_offset + extra_count
+   
+   def pack_regexp(self, pkt, fragments, **k):
+      if self.byte_count is not None:
+         if isinstance(self.byte_count, (int, long)):
+            byte_count = self.byte_count
+         
+         elif isinstance(self.byte_count, Field):
+            byte_count = getattr(pkt, self.byte_count.field_name)
+
+         elif callable(self.byte_count):
+            try:
+                byte_count = self.byte_count(pkt=pkt, **k)
+            except:
+                byte_count = None
+
+         if byte_count:
+             fragments.append(".{%i}" % byte_count, is_literal=False)
+         else:
+             fragments.append(".*", is_literal=False)
+
+      else:
+         if isinstance(self.until_marker, basestring):
+             fragments.append(".*?%s" % re.escape(self.until_marker), is_literal=False)
+
+         elif hasattr(self.until_marker, 'search'):
+             fragments.append(self.until_marker.pattern, is_literal=False)
+         
+         else:
+            assert False
+
+      return fragments
 
 class Ref(Field):
    def __init__(self, prototype, default=None, embeb=False): # TODO we don't support Bits fields
@@ -709,6 +746,7 @@ class Ref(Field):
       return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
  
 
+@defer_operations_of
 class Bits(Field):
    class ByteBoundaryError(Exception):
       def __init__(self, str):
@@ -735,8 +773,7 @@ class Bits(Field):
       if self.iam_last:
          cumshift = 0
          I = Int()
-         name_of_members = []
-         seq = []
+         self.members = []
          for n, f in reversed(fields[:position+1]):
             if not isinstance(f, Bits):
                break
@@ -745,14 +782,15 @@ class Bits(Field):
             f.mask = ((2**f.bit_count) - 1) << f.shift
             f.I = I
 
-            name_of_members.append(n)
-            seq.append(f.bit_count)
+            self.members.append((n, f.bit_count))
             
             cumshift += f.bit_count
             del f.bit_count
 
+         name_of_members, bit_sequence = zip(*self.members)
+
          if not (cumshift % 8 == 0):
-            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(reversed(seq))), cumshift))
+            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(reversed(bit_sequence))), cumshift))
 
          I.byte_count = cumshift / 8
          fname = "_bits__"+"_".join(reversed(name_of_members))
@@ -786,6 +824,8 @@ class Bits(Field):
       else:
          return fragments
       
+   def pack_regexp(self, pkt, fragments, **k):
+       pass
 
 class Move(Field):
    def __init__(self, move_arg, movement_type):
