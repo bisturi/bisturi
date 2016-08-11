@@ -1,8 +1,7 @@
 from packet import Packet
-from field import Int, Data, Bits
+from field import Int, Data, Bits, Ref
 
 #RFC 1928
-#socks port 1080
 class ClientHello(Packet):
    version = Int(1, default=0x05)
    num_of_methods = Int(1)
@@ -20,6 +19,10 @@ class ServerHello(Packet):
                         #  Compliant implementations MUST support GSSAPI and SHOULD support
                         #  USERNAME/PASSWORD authentication methods.
 
+class _PascalString(Packet):
+   length = Int(1)
+   val = Data(length)
+
 class Request(Packet):
    version = Int(1, default=0x05)
    command = Int(1, default=0x01)   #  CONNECT X'01'
@@ -27,18 +30,13 @@ class Request(Packet):
                                     #  UDP ASSOCIATE X'03'
    rsv = Int(1, default=0)
    address_type = Int(1, default=0x03) 
-   destination = Data(lambda p: p.destination_length())
+   destination = Ref(lambda p: {
+      0x01: Data(4),                #  IP V4 address: X'01'
+      0x03: _PascalString(),        #  DOMAINNAME: X'03'  
+      0x04: Data(8),                #  IP V6 address: X'04'
+      }[p.address_type])
    port = Int(2)
 
-   def destination_length(self):
-      return {
-            0x01: 4,                #  IP V4 address: X'01'
-            0x03: 0, # <-- TODO     #  DOMAINNAME: X'03'  
-                                       #  TODO: the address field contains a fully-qualified domain name.  The first
-                                       #        octet of the address field contains the number of octets of name that
-                                       #        follow, there is no terminating NUL octet.
-            0x04: 8,                #  IP V6 address: X'04'
-            }[self.address_type] 
 
 class Reply(Packet):
    version = Int(1, default=0x05)
@@ -55,37 +53,26 @@ class Reply(Packet):
 
    rsv = Int(1, default=0)
    address_type = Int(1)
-   bound_address = Data(lambda p: p.destination_length())
+   bound_address = Ref(lambda p: {
+      0x01: Data(4),                #  IP V4 address: X'01'
+      0x03: _PascalString(),        #  DOMAINNAME: X'03'  
+      0x04: Data(8),                #  IP V6 address: X'04'
+      }[p.address_type])
    bound_port = Int(2)
    
-   def destination_length(self):
-      return {
-            0x01: 4,                #  IP V4 address: X'01'
-            0x03: 0, # <-- TODO     #  DOMAINNAME: X'03'  
-                                       #  TODO: the address field contains a fully-qualified domain name.  The first
-                                       #        octet of the address field contains the number of octets of name that
-                                       #        follow, there is no terminating NUL octet.
-            0x04: 8,                #  IP V6 address: X'04'
-            }[self.address_type] 
 
 class UDPMessage(Packet):
    rsv = Int(2, default=0x0)
    end_of_fragments = Bits(1)
    fragment_position = Bits(7)
    address_type = Int(1)
-   destination = Data(lambda p: p.destination_length())
+   destination = Ref(lambda p: {
+      0x01: Data(4),                #  IP V4 address: X'01'
+      0x03: _PascalString(),        #  DOMAINNAME: X'03'  
+      0x04: Data(8),                #  IP V6 address: X'04'
+      }[p.address_type])
    port = Int(2)
    data = Data(Packet.END)
    
-   def destination_length(self):
-      return {
-            0x01: 4,                #  IP V4 address: X'01'
-            0x03: 0, # <-- TODO     #  DOMAINNAME: X'03'  
-                                       #  TODO: the address field contains a fully-qualified domain name.  The first
-                                       #        octet of the address field contains the number of octets of name that
-                                       #        follow, there is no terminating NUL octet.
-            0x04: 8,                #  IP V6 address: X'04'
-            }[self.address_type] 
-
    def is_not_fragmented(self):
       return self.end_of_fragments == self.fragment_position == 0
