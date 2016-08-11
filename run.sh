@@ -1,10 +1,8 @@
 #PYTHON="coverage run --branch -p" # or python
 PYTHON="python"
 
-pushd .
-cd bisturi
 
-for t in ../docs/reference/$1*.md
+for t in docs/reference/$1*.md
 do
    if [ -e $t ]
    then
@@ -12,6 +10,9 @@ do
       $PYTHON -m doctest $t
    fi
 done
+
+pushd .
+cd bisturi
 
 for t in ../examples/$1*.py
 do
