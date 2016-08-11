@@ -26,8 +26,17 @@ class PacketError(Exception):
     def __str__(self):
         phase = "unpacking" if self.was_error_found_in_unpacking_phase else "packing"
         
-        stack_details = "\n".join(["    %08x %s %16s%s" % (offset, packet_class_name, ".", field_name) 
-                                    for offset, field_name, packet_class_name in reversed(self.fields_stack)])
+        stack_details = []       
+        for offset, field_name, packet_class_name in reversed(self.fields_stack):
+            offset_and_pkt_class = "    %08x %s" % (offset, packet_class_name)
+            first_part_len = len(offset_and_pkt_class)
+
+            space = " " * max(44 - first_part_len, 1)
+
+            line = "%s%s.%s" % (offset_and_pkt_class, space, field_name)
+            stack_details.append(line)
+
+        stack_details = "\n".join(stack_details)
 
         closer_field_offset, closer_field_name, closer_packet_class_name = self.fields_stack[0]
         msg = "Error when %s the field '%s' of packet %s at %08x: %s\nPacket stack details: \n%s\nField's exception:\n%s" % (
