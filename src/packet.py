@@ -12,7 +12,7 @@ class MetaPacket(type):
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
       fields.sort(key=lambda name_val: name_val[1].ctime)
       
-      map(lambda name_val: name_val[1].compile(name_val[0]), fields)
+      map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields), *zip(*enumerate(fields)))
 
       @classmethod
       def get_fields(cls):

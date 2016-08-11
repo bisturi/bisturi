@@ -4,7 +4,7 @@ class Field(object):
    def __init__(self):
       self.ctime = time.time()
 
-   def compile(self, field_name):
+   def compile(self, field_name, position, fields):
       del self.ctime
       self.field_name = field_name
       self.getval = lambda packet: getattr(packet, field_name)
@@ -30,8 +30,8 @@ class Int(Field):
       self.is_signed = signed
       self.is_bigendian = (endianess in ('big', 'network')) or (endianess == 'local' and sys.byteorder == 'big')
 
-   def compile(self, field_name):
-      Field.compile(self, field_name)
+   def compile(self, field_name, position, fields):
+      Field.compile(self, field_name, position, fields)
       
       if self.byte_count in (1, 2, 4, 8): 
          code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
@@ -155,4 +155,80 @@ class Ref(Field):
 
    def to_raw(self, packet):
       return self.getval(packet).to_raw()
+
+class Bits(Field):
+   class ByteBoundaryError(Exception):
+      def __init__(self, str):
+         Exception.__init__(self, str)
+
+   def __init__(self, bit_count, default=0):
+      Field.__init__(self)
+      self.default = default
+      self.mask = (2**bit_count)-1
+      self.bit_count = bit_count
+
+      self.iam_first = self.iam_last = False
+   
+   def compile(self, field_name, position, fields):
+      Field.compile(self, field_name, position, fields)
+
+      if position == 0 or not isinstance(fields[position-1][1], Bits):
+         self.iam_first = True
+
+      if position == len(fields)-1 or not isinstance(fields[position+1][1], Bits):
+         self.iam_last = True
+
+      if self.iam_last:
+         cumshift = 0
+         I = Int()
+         name_of_members = []
+         seq = []
+         for n, f in reversed(fields[:position+1]):
+            if not isinstance(f, Bits):
+               break
+
+            f.shift = cumshift
+            f.mask = ((2**f.bit_count) - 1) << f.shift
+            f.I = I
+
+            name_of_members.append(n)
+            seq.append(f.bit_count)
+            
+            cumshift += f.bit_count
+            del f.bit_count
+
+         if not (cumshift % 8 == 0):
+            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(reversed(seq))), cumshift))
+
+         I.byte_count = cumshift / 8
+         I.compile(field_name="_bits__"+"_".join(reversed(name_of_members)), position=-1, fields=[])
+   
+
+   def init(self, packet, defaults):
+      if self.iam_first:
+         self.I.setval(packet, 0)
+
+      Field.init(self, packet, defaults)
+
+
+   def from_raw(self, packet, raw, offset=0):
+      if self.iam_first:
+         consumed = self.I.from_raw(packet, raw, offset)
+      else:
+         consumed = 0
+
+      I = self.I.getval(packet)
+
+      self.setval(packet, (I & self.mask) >> self.shift)
+      return consumed
+
+   def to_raw(self, packet):
+      I = self.I.getval(packet)
+      self.I.setval(packet, ((self.getval(packet) << self.shift) & self.mask) | (I & (~self.mask)))
+
+      if self.iam_last:
+         return self.I.to_raw(packet)
+      else:
+         return ""
+      
 
