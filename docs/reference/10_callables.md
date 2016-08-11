@@ -6,6 +6,7 @@ This is a summary:
 ----------- | ----- | ---- | ------- | ------------- | ---------- | ---------
 Fixed       | true  | true | true(*) | true          | no apply   | no apply
 Other field | false | true | false   | true          | no apply   | no apply
+Expr field  | false | true | false   | true          | no apply   | no apply
 A callable  | false | true | false   | true          | true       | true
 
 
@@ -57,7 +58,7 @@ For sequence of objects you can set the amount of objects to be extracted:
 But fixed amounts it is just the begin. You can define a variable amount using several
 methods.
 The simplest is using another field, tipically an Int.
-Note how you can use this for Data an Sequence fields but not for Int, Bits or Ref fields.
+Note how you can use this for Data and Sequence fields but not for Int, Bits or Ref fields.
 
 ```python
 >>> class AllVariable(Packet):
@@ -81,6 +82,36 @@ Note how you can use this for Data an Sequence fields but not for Int, Bits or R
 
 >>> pkt.pack()
 '\x02AA\x01\x02'
+
+```
+
+Nice, but it's very common to need to express some amount of bytes in terms of
+simple expressions involving one or more fields; not just one field like above.
+
+For example
+
+```python
+>>> class AllVariable(Packet):
+...    triplet = Int(byte_count=1)
+...    data    = Data(byte_count=triplet * 3)
+...    seq     = Int(byte_count=1).repeated(count=triplet * 3)
+
+
+>>> raw = "\x01ABC\x01\x02\x03"
+>>> pkt = AllVariable(raw)
+>>> pkt.data, pkt.seq
+('ABC', [1, 2, 3])
+
+>>> pkt.pack()
+'\x01ABC\x01\x02\x03'
+
+>>> raw = "\x02ABCDEF\x01\x02\x03\x04\x05\x06"
+>>> pkt = AllVariable(raw)
+>>> pkt.data, pkt.seq
+('ABCDEF', [1, 2, 3, 4, 5, 6])
+
+>>> pkt.pack()
+'\x02ABCDEF\x01\x02\x03\x04\x05\x06'
 
 ```
 

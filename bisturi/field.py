@@ -128,15 +128,29 @@ class Sequence(Field):
 
       self.prototype_field = prototype
 
-      resolved_count = None if count is None else _get_count(count)
-      self.when = _get_when(resolved_count, when)
-      self.until_condition = _get_until(resolved_count, until)
+      self.tmp = (count, until, when)
 
       
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
       self.seq_elem_field_name = "_seq_elem__"+field_name
       self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[])
+
+      count, until, when = self.tmp
+      del self.tmp
+
+      if isinstance(count, (UnaryExpr, BinaryExpr)):
+         count = compile_expr_into_callable(count)
+
+      #if isinstance(until, (UnaryExpr, BinaryExpr)):
+      #   until = compile_expr_into_callable(until)
+      
+      #if isinstance(when, (UnaryExpr, BinaryExpr)):
+      #   when = compile_expr_into_callable(when)
+
+      resolved_count = None if count is None else _get_count(count)
+      self.when = _get_when(resolved_count, when)
+      self.until_condition = _get_until(resolved_count, until)
 
       return slots + [self.seq_elem_field_name]
 
@@ -189,7 +203,7 @@ class Optional(Field):
       self.default = default
 
       self.prototype_field = prototype
-      self.when = _get_when(None, when)
+      self.tmp = when
 
       
    def compile(self, field_name, position, fields):
@@ -197,6 +211,13 @@ class Optional(Field):
       self.opt_elem_field_name = "_opt_elem__"+field_name
       self.prototype_field.compile(field_name=self.opt_elem_field_name, position=-1, fields=[])
 
+      when = self.tmp
+      del self.tmp
+      
+      #if isinstance(when, (UnaryExpr, BinaryExpr)):
+      #   when = compile_expr_into_callable(when)
+
+      self.when = _get_when(None, when)
       return slots + [self.opt_elem_field_name]
 
    def init(self, packet, defaults):
