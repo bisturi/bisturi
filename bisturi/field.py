@@ -2,6 +2,19 @@ import time, struct, sys, copy
 from packet import Packet
 from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 
+def exec_once(m):
+   ''' Force to execute the method M only once and save its result.
+       The next calls will always return the same result, ignoring the parameters. '''
+   def wrapper(self, *args, **kargs):
+      try:
+         return getattr(self, "_%s_cached_result" % m.__name__)
+      except AttributeError:
+         r = m(self, *args, **kargs)
+         setattr(self, "_%s_cached_result" % m.__name__, r)
+         return r
+
+   return wrapper
+
 class Field(object):
    def __init__(self):
       self.ctime = time.time()
@@ -18,7 +31,9 @@ class Field(object):
       else:
          return [("_shift_to_%s" % field_name, Move(self.move_to)), (field_name, self)]
 
-   def compile(self, field_name, position, fields): #TODO ensure that we can call 'compile' several times
+   @exec_once
+   def compile(self, field_name, position, fields): 
+      del self.ctime
       self.field_name = field_name
 
       return [field_name]
@@ -148,6 +163,7 @@ class Sequence(Field):
       self.tmp = (count, until, when)
 
       
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
       self.seq_elem_field_name = "_seq_elem__"+field_name
@@ -222,6 +238,7 @@ class Optional(Field):
       self.tmp = when
 
       
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
       self.opt_elem_field_name = "_opt_elem__"+field_name
@@ -281,6 +298,7 @@ class Int(Field):
       self.is_bigendian = (endianess in ('big', 'network')) or (endianess == 'local' and sys.byteorder == 'big')
       self.is_fixed = True
 
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
       
@@ -367,6 +385,7 @@ class Data(Field):
       self.consume_delimiter = consume_delimiter #XXX document this!
       self.is_fixed = isinstance(byte_count, (int, long))
 
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
 
@@ -503,6 +522,7 @@ class Ref(Field):
 
       return desc
 
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
 
@@ -630,6 +650,7 @@ class Bits(Field):
 
       self.iam_first = self.iam_last = False
    
+   @exec_once
    def compile(self, field_name, position, fields):
       slots = Field.compile(self, field_name, position, fields)
 
