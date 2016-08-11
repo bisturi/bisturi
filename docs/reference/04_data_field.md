@@ -138,7 +138,8 @@ if the marker does't exist in the whole string
 >>> s = 'ab\x00eeee'
 >>> p = DataWithSearchLengthLimitTooShort(s)        # doctest: +ELLIPSIS
 Traceback (most recent call last):
-Exception: ...
+...
+PacketError: Error when unpacking the field 'a' of packet DataWithSearchLengthLimitTooShort at 00000000...
 
 ```
 

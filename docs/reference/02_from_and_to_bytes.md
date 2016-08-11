@@ -88,3 +88,45 @@ However, to use this you need to call unpack directly.
 'd'
 
 ```
+
+If a field cannot be unpacked, an exception is raised with the full stack of packets and offsets:
+
+```python
+>>> class VariablePayload(Packet):
+...    length = Int(1)
+...    payload = Data(length)
+
+>>> def some_function(raw):
+...    q = VariablePayload()
+...    q.unpack(raw)
+
+>>> s = '\x04a'
+>>> some_function(s)                                         #doctest: +ELLIPSIS
+Traceback (most recent call last):
+...
+PacketError: Error when unpacking the field 'payload' of packet VariablePayload at 00000001: Unpacked 1 bytes but expected 4
+Packet stack details: 
+    00000001 VariablePayload                .payload
+Field's exception:
+...
+Exception: Unpacked 1 bytes but expected 4...
+
+```
+
+The same is true if the packet cannot be packed into a string:
+
+```python
+>>> p = VariablePayload()
+>>> p.length = "invalid"
+
+>>> p.pack()                                    #doctest: +ELLIPSIS
+Traceback (most recent call last):
+...
+PacketError: Error when packing the field 'length' of packet VariablePayload at 00000000: cannot convert argument to integer
+Packet stack details: 
+    00000000 VariablePayload                .length
+Field's exception:
+...
+error: cannot convert argument to integer...
+
+```

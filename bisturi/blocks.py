@@ -20,26 +20,23 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
       pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
-from bisturi.packet import Layer
+from bisturi.packet import Layer, PacketError
 
 def pack_impl(pkt, fragments, stack, **k):
    stack.append(Layer(pkt, fragments.current_offset))
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
+   except PacketError, e:
+      e.add_parent_field_and_packet(fragments.current_offset, name, pkt.__class__.__name__)
+      raise e
    except Exception, e:
-%(except_block)s
+      raise PacketError(False, name, pkt.__class__.__name__, fragments.current_offset, str(e))
 
    stack.pop()
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
-      'except_block': indent('''
-import traceback
-msg = traceback.format_exc()
-raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
-                              name, pkt.__class__.__name__, fragments.current_offset, msg))
-''', level=2)
    }
    else:
       pack_code = ""
@@ -47,23 +44,24 @@ raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
    if generate_for_unpack:
       unpack_code = ('''
 from struct import pack as StructPack, unpack as StructUnpack
+from bisturi.fragments import Fragments
+from bisturi.packet import Layer, PacketError
+
 def unpack_impl(pkt, raw, offset, stack, **k):
    stack.append(Layer(pkt, offset))
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
+   except PacketError, e:
+      e.add_parent_field_and_packet(offset, name, pkt.__class__.__name__)
+      raise e
    except Exception, e:
-%(except_block)s
+      raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
+   
    stack.pop()
    return offset
 ''' % {
       'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
-      'except_block': indent('''
-import traceback
-msg = traceback.format_exc()
-raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
-                              name, pkt.__class__.__name__, offset, msg))
-''', level=2)
    })
    else:
       unpack_code = ""

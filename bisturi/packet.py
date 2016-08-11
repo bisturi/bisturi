@@ -7,6 +7,7 @@ except ImportError:
     import pickle
 
 import copy, time, collections
+import traceback, sys
 
 Layer = collections.namedtuple('Layer', ['pkt', 'offset'])
 
@@ -82,6 +83,37 @@ class MetaPacket(type):
          pass
       return obj'''
 
+
+class PacketError(Exception):
+    def __init__(self, was_error_found_in_unpacking_phase, field_name, packet_class_name, offset, original_error_message):
+        Exception.__init__(self, "asasasa")
+        self.original_traceback = "".join(traceback.format_exception(*sys.exc_info())[2:])
+
+        self.was_error_found_in_unpacking_phase = was_error_found_in_unpacking_phase
+        self.fields_stack = [(offset, field_name, packet_class_name)]
+        self.original_error_message = original_error_message
+
+    def add_parent_field_and_packet(self, offset, field_name, packet_class_name):
+        self.fields_stack.append((offset, field_name, packet_class_name))
+
+    def __str__(self):
+        phase = "unpacking" if self.was_error_found_in_unpacking_phase else "packing"
+        
+        stack_details = "\n".join(["    %08x %s %16s%s" % (offset, packet_class_name, ".", field_name) 
+                                    for offset, field_name, packet_class_name in reversed(self.fields_stack)])
+
+        closer_field_offset, closer_field_name, closer_packet_class_name = self.fields_stack[0]
+        msg = "Error when %s the field '%s' of packet %s at %08x: %s\nPacket stack details: \n%s\nField's exception:\n%s" % (
+                                 phase, 
+                                 closer_field_name, closer_packet_class_name,
+                                 closer_field_offset,
+                                 self.original_error_message,
+                                 stack_details,
+                                 self.original_traceback)
+
+        return msg
+
+
 class Packet(object):
    __metaclass__ = MetaPacket
    __bisturi__ = {}
@@ -103,7 +135,10 @@ class Packet(object):
 
    def unpack(self, raw, offset=0):
       stack = []
-      return self.unpack_impl(raw, offset, stack)
+      try:
+         return self.unpack_impl(raw, offset, stack)
+      except PacketError, e:
+         raise e
 
 
    def unpack_impl(self, raw, offset, stack):
@@ -111,11 +146,11 @@ class Packet(object):
       try:
          for name, f, _, unpack in self.get_fields():
             offset = unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+      except PacketError, e:
+         e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
+         raise
       except Exception, e:
-         import traceback
-         msg = traceback.format_exc()
-         raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
-                                 name, self.__class__.__name__, offset, msg))
+         raise PacketError(True, name, self.__class__.__name__, offset, str(e))
       
       stack.pop()
       return offset
@@ -123,7 +158,10 @@ class Packet(object):
    def pack(self):
       fragments = Fragments()
       stack = []
-      return self.pack_impl(fragments, stack)
+      try:
+         return self.pack_impl(fragments, stack)
+      except PacketError, e:
+         raise e
          
 
    def pack_impl(self, fragments, stack):
@@ -132,11 +170,11 @@ class Packet(object):
       try:
          for name, f, pack, _ in self.get_fields():
             pack(pkt=self, fragments=fragments, stack=stack)
+      except PacketError, e:
+         e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
+         raise
       except Exception, e:
-         import traceback
-         msg = traceback.format_exc()
-         raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
-                                 name, self.__class__.__name__, fragments.current_offset, msg))
+         raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
       
       stack.pop()
       return fragments
