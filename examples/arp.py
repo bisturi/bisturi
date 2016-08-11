@@ -18,8 +18,6 @@ class ARP(Packet):
    target_prot_addr = Data(prot_len)
 
 class ARP_EthIP(Packet):
-   __bisturi__ = dict(write_py_module=True)
-
    hw_type   = Int(2, default=0x0001)
    prot_type = Int(2, default=0x0800)
    hw_len    = Int(1, default=6)

@@ -7,6 +7,7 @@ from bisturi.field  import Bits, Int, Data, Field, Ref, Bkpt
 from bisturi.ipaddress import IPv4Address, IPv6Address
 
 import struct
+import base64
 
 
 class len_val(Packet):
@@ -55,11 +56,7 @@ class IPAddr(Field):
    def unpack(self, pkt, raw, offset=0, **k):
       raw_data = raw[offset:offset+self.byte_count]
       
-      chunks = []
-      import base64
-      for i in range(0, len(raw_data), 2):
-         chunks.append(base64.b16encode(raw_data[i:i+2]))
-
+      chunks = [base64.b16encode(raw_data[i:i+2]) for i in range(0, len(raw_data), 2)]
       ip_address = self.cls_address(":".join(chunks)) # work around for Python 2.7
 
       self.setval(pkt, ip_address)
@@ -76,7 +73,7 @@ class Extention(Packet):
                         0: HopByHop(),
                         1: Routing(),
                      }[root.extentions[-1].next_header if root.extentions else root.next_header],
-                  default=HopByHop())
+                     default=HopByHop())
 
 class IPv6(Packet):
    version        = Bits(4)
@@ -89,8 +86,8 @@ class IPv6(Packet):
    src_addr    = IPAddr(version=6)
    dst_addr    = IPAddr(version=6)
 
-   extentions  = Ref(Extention).repeated(until=lambda pkt, **k: pkt.extentions[-1].next_header == 59,
-                                         when =next_header != 59)
+   extentions  = Ref(Extention).repeated(until = lambda pkt, **k: pkt.extentions[-1].next_header in (59, 6),
+                                           when = lambda pkt, **k: pkt.next_header not in (59, 6))
 
    payload     = Data(0) # TODO aca debe ir un pkt.length-len(pkt.extentions)
 
