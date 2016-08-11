@@ -16,7 +16,6 @@ class UDP(Packet):
 
 if __name__ == '__main__':
    from base64 import b16decode
-   from utils import inspect, hd
 
    raw_query = b16decode('a4d9003500331c7c' + 'e11e' * 11 * 2, True)
    raw_response = b16decode('0035a4d9010be2fe' + 'e11e' * 65 * 2, True)

@@ -19,7 +19,6 @@ class ARP(Packet):
 
 if __name__ == '__main__':
    from base64 import b16decode
-   from utils import inspect, hd
 
    raw_query = b16decode('00010800060400010018f7f6f7fdc0a80103000000000000c0a8010c', True)
    raw_response = b16decode('0001080006040002002f6f5fdfdfc0a8010c0018f7f6f7fdc0a80103', True)
