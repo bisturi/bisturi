@@ -57,7 +57,6 @@ def _defer_method(target, methodname, op, is_binary):
    
 
 def defer_operations_of(cls):
-   # TODO - revisar todos los nombres
    for binary_op in [
             # arith ------------------------------------
             operator.add,         operator.sub,
@@ -88,7 +87,7 @@ def defer_operations_of(cls):
             operator.neg,
 
             # logical ----------------------------------
-            operator.not_,        operator.inv,
+            operator.inv,
             ]:
       
       op_name = unary_op.__name__
