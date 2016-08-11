@@ -6,7 +6,9 @@ try:
 except ImportError:
     import pickle
 
-import copy, time
+import copy, time, collections
+
+Layer = collections.namedtuple('Layer', ['pkt', 'offset'])
 
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
@@ -103,7 +105,7 @@ class Packet(object):
       return Prototype(self)
 
    def unpack(self, raw, offset=0, stack=None):
-      stack = self.push_to_the_stack(stack)
+      stack = self.push_to_the_stack(stack, offset)
       try:
          for name, f, _, unpack in self.get_fields():
             offset = unpack(pkt=self, raw=raw, offset=offset, stack=stack)
@@ -117,10 +119,10 @@ class Packet(object):
       return offset
          
    def pack(self, fragments=None, stack=None):
-      stack = self.push_to_the_stack(stack)
-
       if fragments is None:
          fragments = Fragments()
+
+      stack = self.push_to_the_stack(stack, fragments.current_offset)
 
       try:
          for name, f, pack, _ in self.get_fields():
@@ -135,11 +137,12 @@ class Packet(object):
 
       return fragments
 
-   def push_to_the_stack(self, stack):
+   def push_to_the_stack(self, stack, offset):
+      l = Layer(self, offset)
       if stack:
-         stack.append(self)
+         stack.append(l)
       else:
-         stack = [self]
+         stack = [l]
 
       return stack
 
@@ -147,6 +150,7 @@ class Packet(object):
       stack.pop()
 
    def iterative_unpack(self, raw, offset=0, stack=None):
+      raise NotImplementedError()
       stack = self.push_to_the_stack(stack)
       for name, f, _, _ in self.get_fields():
          yield offset, name

@@ -21,9 +21,9 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 def pack(pkt, fragments=None, stack=None, **k):
-   stack = pkt.push_to_the_stack(stack)
    if fragments is None:
       fragments = Fragments()
+   stack = pkt.push_to_the_stack(stack, fragments.current_offset)
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
@@ -48,7 +48,7 @@ raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
       unpack_code = ('''
 from struct import pack as StructPack, unpack as StructUnpack
 def unpack(pkt, raw, offset=0, stack=None, **k):
-   stack = pkt.push_to_the_stack(stack)
+   stack = pkt.push_to_the_stack(stack, offset)
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s

@@ -87,9 +87,9 @@ class Field(object):
       self.movement_type = movement_type
       return self
 
-   def aligned(self, to):
+   def aligned(self, to, local=False):
       self.move_arg = to
-      self.movement_type = 'align'
+      self.movement_type = 'align-local' if local else 'align-global'
       return self
 
 def _get_count(count_arg):
@@ -772,8 +772,17 @@ class Move(Field):
           return move_value
       elif self.movement_type == 'relative':
           return offset + move_value
-      elif self.movement_type == 'align':
-          return offset + ((move_value - (offset % move_value)) % move_value)
+      elif self.movement_type.startswith('align-'):
+          if self.movement_type == 'align-global':
+              start = 0
+          elif self.movement_type == 'align-local':
+              start = k['stack'][-1].offset
+          else:
+              raise Exception()
+
+          return offset + ((move_value - ((offset-start) % move_value)) % move_value)
+      else:     
+          raise Exception()
    
    def init(self, packet, defaults):
       pass
@@ -799,8 +808,18 @@ class Move(Field):
           fragments.current_offset = move_value
       elif self.movement_type == 'relative':
           fragments.current_offset += move_value
-      elif self.movement_type == 'align':
-          fragments.current_offset += (move_value - (fragments.current_offset % move_value)) % move_value
+      elif self.movement_type.startswith('align-'):
+          offset = fragments.current_offset
+          if self.movement_type == 'align-global':
+              start = 0
+          elif self.movement_type == 'align-local':
+              start = k['stack'][-1].offset
+          else:
+              raise Exception()
+
+          fragments.current_offset += ((move_value - ((offset-start) % move_value)) % move_value)
+      else:
+          raise Exception()
 
       return fragments
 
