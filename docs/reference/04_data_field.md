@@ -4,6 +4,7 @@ or can be determined by the presence of a token.
 In that  case, the Data will consume all the string until it find the token which can
 be a simple byte, a more complex string or even a regexp.
 
+```python
 >>> from packet import Packet
 >>> from field  import Data, Int
 >>> import re
@@ -17,8 +18,11 @@ be a simple byte, a more complex string or even a regexp.
 ...    e = Data(until_marker=re.compile('X+|$'))
 ...    f = Data(until_marker=re.compile('X+|$'))
 
+```
+
 Let see what happen when the packet is built from this string
 
+```python
 >>> s = '\x01abCddd\x00eeeeoffghiXjk'
 >>> p = DataExample(s)
 >>> p.length
@@ -39,10 +43,12 @@ Let see what happen when the packet is built from this string
 >>> p.pack() == s
 True
 
+```
+
 Note that a sutil problem is raises with the delimiters. If the delimiter is a regexp,
 there isn't a good default for it. So, be careful with that. The only 'safe' default
 is used when the size is fixed:
-
+```python
 >>> q = DataExample()
 >>> q.length
 0
@@ -59,9 +65,11 @@ is used when the size is fixed:
 >>> q.f
 ''
 
+```
 
 If you need that the token be in the result, you can use the keyword 'include_delimiter'
 
+```python
 >>> class DataExample(Packet):
 ...    length = Int(1)
 ...    a = Data(2)
@@ -91,20 +99,26 @@ If you need that the token be in the result, you can use the keyword 'include_de
 >>> p.pack() == s
 True
 
+```
+
 As you can see, when you use a token as delimiter, the token is added to the result.
 
 A special case arise when the size of the data is not bound to a field only. Instead
 depend on something that can be resolved only when the packet disassmble the byte string.
 In this case, a callable can be used
 
+```python
 >>> class DataExample(Packet):
 ...    size = Int(1)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size < 255 else len(raw)-offset)
+
+```
 
 In this example, the size of the 'payload' is determined by the value of 'size' only if it 
 is not equal to 255. When 'size' is 255, the payload will consume all the bytes until the
 end of the packet.
 
+```python
 >>> s1 = '\x01a'
 >>> s2 = '\x02ab'
 >>> s3 = '\x01abc'
@@ -126,3 +140,5 @@ end of the packet.
 True
 >>> DataExample(s5).pack() == s5
 True
+
+```
