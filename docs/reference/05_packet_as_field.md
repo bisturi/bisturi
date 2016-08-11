@@ -1,6 +1,7 @@
 In this example will want to create the Ethernet Packet.
 Using Data and Int its relative simple.
 
+```python
 >>> from field import Data, Int
 >>> from packet import Packet
 
@@ -10,10 +11,13 @@ Using Data and Int its relative simple.
 ...    size = Int(2)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
+```
+
 The problem with this is that the fields 'destination' and 'source' are not randoms bytes.
 In fact they are the MAC of the statations.
 It should be nice to create a packet for MAC and utilize it in Ethernet.
 
+```python
 >>> from field import Ref
 >>> class MAC(Packet):
 ...    oui = Data(3)
@@ -25,8 +29,11 @@ It should be nice to create a packet for MAC and utilize it in Ethernet.
 ...    size = Int(1)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
+```
+
 So, we can do this
 
+```python
 >>> s1 = '\x00\x01\x01\x00\x00\x01\x00\x01\x01\x00\x00\x02\x05hello'
 >>> s2 = '\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
 >>>
@@ -56,10 +63,13 @@ True
 >>> q.pack() == s2
 True
 
+```
+
 The Ref field accept a Packet subclass or a Field subclass, but if you need 
 to set defaults parameters to the referenced object, you need to pass it instead.
 (In other words Ref(MAC) is the same that Ref(MAC()), the first is just a shortcut)
 
+```python
 >>> class Ethernet(Packet):
 ...    destination = Ref(MAC(nic='\xff\xff\x01'))
 ...    source = Ref(MAC(nic='\xff\xff\x02'))
@@ -72,6 +82,8 @@ to set defaults parameters to the referenced object, you need to pass it instead
 '\xff\xff\x01'
 >>> p.source.nic
 '\xff\xff\x02'
+
+```
 
 The use of Ref is most like a shortcut instead of create a new class which extends Field
 but at the cost of another level of indirection.
