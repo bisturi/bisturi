@@ -28,17 +28,12 @@ class Label(Packet):
       if not self.is_compressed():
          return self.name
       else:
-         class Builder(Packet):
-            name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
-         
-         builder = Builder.unpack(raw, offset=self.offset())
-
-         names = []
-         for n in builder.name:
-            names.append(n.uncompressed_name(raw, offset))
-
-         return ".".join(names)
+         builder = _Builder.unpack(raw, offset=self.offset())
+         return ".".join(n.uncompressed_name(raw, offset) for n in builder.name)
             
+class _Builder(Packet):
+    name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+         
 
 class ResourceRecord(Packet):
    name   = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
