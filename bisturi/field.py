@@ -115,23 +115,26 @@ class Sequence(Field):
       self.when = _get_when(resolved_count, when)
       self.until_condition = _get_until(resolved_count, until)
 
+      from packet import Packet
+      class Element(Packet):
+         val = copy.deepcopy(self.prototype)
+
+      self._Element = Element
+      
 
    def unpack(self, packet, raw, offset=0):
       self.until_condition.reset()
 
-      from packet import Packet
-      class Element(Packet):
-         val = copy.deepcopy(self.prototype)
-      
-      sequence = self.getval(packet)
+      sequence = [] 
+      self.setval(packet, sequence)
       stop = False if self.when is None else not self.when(packet, raw, offset)
 
       while not stop:
-         elem = Element()
+         elem = self._Element()
          offset = elem.unpack(raw, offset)
 
          sequence.append(elem.val)
-         
+
          stop = self.until_condition(packet, raw, offset)
 
       self.setval(packet, sequence)
@@ -139,14 +142,10 @@ class Sequence(Field):
 
 
    def pack(self, packet):
-      from packet import Packet
-      class Element(Packet):
-         val = copy.deepcopy(self.prototype)
-
       sequence = self.getval(packet)
       raw = []
       for val in sequence:
-         elem = Element()
+         elem = self._Element()
          elem.val = val
 
          raw.append(elem.pack())
@@ -403,3 +402,16 @@ class Bits(Field):
          return ""
       
 
+class Bkpt(Field):
+   def init(self, packet, defaults):
+      pass
+
+   def unpack(self, packet, raw, offset=0):
+      import pdb
+      pdb.set_trace()
+      return offset
+
+   def pack(self, packet):
+      import pdb
+      pdb.set_trace()
+      return ""
