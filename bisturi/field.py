@@ -717,7 +717,8 @@ class Ref(Field):
       elif isinstance(prototype, Packet):
          self.unpack = self._unpack_referencing_a_packet
          self.pack   = self._pack_referencing_a_packet
-         self.prototype = prototype.as_prototype()
+         self.prototype   = prototype.as_prototype()
+         self.proto_class = prototype.__class__
 
       else:
          assert callable(prototype)
@@ -795,13 +796,9 @@ class Ref(Field):
 
 
    def _unpack_referencing_a_packet(self, pkt, **k):
-      p = getattr(pkt, self.field_name, None)
-      if p is not None:
-          return p.unpack_impl(**k)
-
-      # Workaround if the init method wasn't call
-      setattr(pkt, self.field_name, self.prototype.clone())
-      return getattr(pkt, self.field_name).unpack_impl(**k)
+      p = self.proto_class(_initialize_fields=False)
+      setattr(pkt, self.field_name, p)
+      return p.unpack_impl(**k)
 
    def _pack_referencing_a_packet(self, pkt, fragments, **k):
       return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
