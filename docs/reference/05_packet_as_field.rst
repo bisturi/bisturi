@@ -56,12 +56,13 @@ True
 >>> q.pack() == s2
 True
 
-Of course, you can set any parameter to Ref and those will be used to create the packet
-(MAC in this case), like the defaults
+The Ref field accept a Packet subclass or a Field subclass, but if you need 
+to set defaults parameters to the referenced object, you need to pass it instead.
+(In other words Ref(MAC) is the same that Ref(MAC()), the first is just a shortcut)
 
 >>> class Ethernet(Packet):
-...    destination = Ref(MAC, nic='\xff\xff\x01')
-...    source = Ref(MAC, nic='\xff\xff\x02')
+...    destination = Ref(MAC(nic='\xff\xff\x01'))
+...    source = Ref(MAC(nic='\xff\xff\x02'))
 ...    size = Int(1)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 

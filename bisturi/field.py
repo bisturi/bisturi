@@ -359,56 +359,98 @@ class Data(Field):
       return next_offset + extra_count
 
 class Ref(Field):
-   def __init__(self, referenced, *packet_field_args, **packet_field_kargs):
+   def __init__(self, prototype, default=None): # TODO we don't support Bits fields
       Field.__init__(self)
 
-      self.require_updated_packet_instance = False
+      self.prototype = prototype # TODO should we copy this prototype and/or its default?
+      self.default = default
+
+      if isinstance(self.prototype, type):
+         self.prototype = self.prototype() # get an object
+      
+      if isinstance(self.default, type):
+         self.default = self.default() # get an object
+
+      if callable(self.prototype) and default is None:
+         raise ValueError("We need a default object!")
+
+      if not callable(self.prototype) and default is not None:
+         raise ValueError("We don't need a default object, we will be using the prototype object instead.")
+
+      if self.default is None:
+         self.default = self.prototype
+
+      # or it is the prototype or it is a 'default' explicit object
+      # in any case, it is a Field  or a Packet instance 
       from packet import Packet
-      if isinstance(referenced, type) and issubclass(referenced, Field):
-         def get_packet_instance(**kargs):
-            class FieldReferenced(Packet):
-               __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
-               val = referenced(*packet_field_args, **packet_field_kargs)
+      assert isinstance(self.default, (Field, Packet))
 
-            return FieldReferenced()
 
-      elif isinstance(referenced, type) and issubclass(referenced, Packet):
-         def get_packet_instance(**kargs):
-            return referenced(*packet_field_args, **packet_field_kargs)
+   def compile(self, field_name, position, fields):
+      # TODO should we call Field.compile here?
+      assert callable(self.prototype) or self.default == self.prototype
 
-      elif callable(referenced):
-         self.require_updated_packet_instance = True
-         def get_packet_instance(**kargs):
-            i = referenced(**kargs)
-            if isinstance(i, Field):
-               class FieldReferenced(Packet):
-                  __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
-                  val = i
-
-               return FieldReferenced()
-            else:
-               return i #a packet instance
-
-      else:
-         raise ValueError("Unknow referenced object.")
-
-      self.get_packet_instance = get_packet_instance
+      self.position = position
+      self.field_name = field_name
+      if isinstance(self.default, Field): # this will compile the prototype too if the prototype is not a callable
+         self.default.compile(field_name=field_name, position=position, fields=[])
 
 
    def init(self, packet, defaults):
-      if self.field_name in defaults:
-         self.setval(packet, defaults[self.field_name])
-      elif not self.require_updated_packet_instance:
-         self.setval(packet, self.get_packet_instance(pkt=packet))
+      if isinstance(self.default, Field):
+         # we are using the default of the self.default object (a field)
+         self.default.init(packet, defaults)
+
+      else:
+         # we are using our self.default as the default object (a packet)
+         Field.init(self, packet, defaults)  
+         from packet import Packet
+         if isinstance(self.prototype, Packet):
+            self.prototype = copy.deepcopy(self.prototype)
+         else:
+            assert callable(self.prototype)
+
 
    def unpack(self, pkt, raw, offset=0, **k):
-      if self.require_updated_packet_instance:
-         self.setval(pkt, self.get_packet_instance(pkt=pkt, raw=raw, offset=offset, **k))
+      if callable(self.prototype):
+         referenced = self.prototype(pkt=pkt, raw=raw, offset=offset, **k)
+      else:
+         referenced = self.prototype
 
-      return self.getval(pkt).unpack(raw, offset, **k)
+      if isinstance(referenced, Field):
+         referenced.compile(field_name=self.field_name, position=self.position, fields=[])
+         referenced.init(pkt, {})
+
+         return referenced.unpack(pkt=pkt, raw=raw, offset=offset, **k)
+
+      from packet import Packet
+      assert isinstance(referenced, Packet)
+
+      self.setval(pkt, referenced)
+      return referenced.unpack(raw, offset, **k)
 
    def pack(self, packet):
-      return self.getval(packet).pack()
+      if isinstance(self.prototype, Field):
+         return self.prototype.pack(packet)
+
+      from packet import Packet
+      obj = self.getval(packet)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
+      if isinstance(obj, Packet):
+         return obj.pack()
+
+      # we try to know how to pack this value
+      assert callable(self.prototype)
+      referenced = self.prototype(pkt=packet, packing=True)   # TODO add more parameters, like raw=partial_raw
+
+      if isinstance(referenced, Field):
+         referenced.compile(field_name=self.field_name, position=self.position, fields=[])
+         #referenced.init(packet, {})
+
+         return referenced.pack(packet)
+
+      # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
+      # however, the 'referenced' object IS a Packet and we cannot do anything else
+      raise NotImplementedError()
 
 class Bits(Field):
    class ByteBoundaryError(Exception):

@@ -12,7 +12,7 @@ class Label(Packet):
    name   = Ref(lambda pkt, **k: {
                   0x00: Data(pkt.length),
                   0xc0: Int(1),
-               }[pkt.length & 0xc0])
+               }[pkt.length & 0xc0],  default=Data(length))
 
    def is_root(self):
       return self.length == 0
@@ -24,11 +24,11 @@ class Label(Packet):
       if not self.is_compressed():
          raise Exception()
 
-      return (self.length & (~0xc0) << 8) + self.name.val
+      return (self.length & (~0xc0) << 8) + self.name
 
    def uncompressed_name(self, raw, offset=0):
       if not self.is_compressed():
-         return self.name.val
+         return self.name
       else:
          class Builder(Packet):
             name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
@@ -79,7 +79,7 @@ RDATA           a variable length string of octets that describes the
 '''
 
 class Question(Packet):
-   name  = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+   name   = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
    type_  = Int(2, default=1)
    class_ = Int(2, default=1)
 
@@ -122,6 +122,7 @@ class Message(Packet):
    authorities = Ref(ResourceRecord).repeated(ns_count)
    additionals = Ref(ResourceRecord).repeated(ar_count)
 
+DNS = Message #alias
 '''
 ID              A 16 bit identifier assigned by the program that
                 generates any kind of query.  This identifier is copied
@@ -252,10 +253,10 @@ if __name__ == '__main__':
    
 
    the_question = query.questions[0]
-   assert list(map(lambda n: n.name.val, the_question.name)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name, the_question.name)) == ['www', 'google', 'com', '']
 
    the_question = response.questions[0]
-   assert list(map(lambda n: n.name.val, the_question.name)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name, the_question.name)) == ['www', 'google', 'com', '']
  
    BASE = "google.com."
    W    = "www." + BASE

@@ -38,16 +38,18 @@ he can dynamically reference to a Packet or another Field using a callable.
 ...                           0x01: Data(4),    # IP v4
 ...                           0x04: Data(8),    # IP v6
 ...                           0x03: NData(),    # domain name
-...                           }[pkt.type])
+...                           }[pkt.type],  default=Data(4))
 
 So, depends on the value of 'type', 'address' will be a Ref to a Data (a Field) or
 to a NData (a Packet)
+Because the object referenced is determined at unpacking time (using the callable),
+you need to set a default (this is mandatory)
 
 >>> s = '\x01\x01\x02\x03\x04'
 >>> p = SOCKS(s)
 >>> p.type
 1
->>> p.address.val
+>>> p.address
 '\x01\x02\x03\x04'
 >>> p.pack() == s
 True
@@ -56,7 +58,7 @@ True
 >>> p = SOCKS(s)
 >>> p.type
 4
->>> p.address.val
+>>> p.address
 '\x01\x02\x03\x04\x05\x06\x07\x08'
 >>> p.pack() == s
 True
@@ -71,9 +73,4 @@ True
 11
 >>> p.pack() == s
 True
-
-Note that when Ref is referencing to a Field, the address (the value of the field) has
-one level of indirection and to access to this value, the attribute 'val' must be used.
-When Ref is referencing a Packet, the same level of indirection exists but the names
-of the attributes are the same that were defined in the Packet.
 

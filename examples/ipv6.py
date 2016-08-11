@@ -15,7 +15,7 @@ class len_val(Packet):
 
 class Option(Packet):
    type     = Int(1)
-   payload  = Ref(lambda pkt, **k: len_val() if pkt.type != 0 else Data(0))
+   payload  = Ref(lambda pkt, **k: len_val() if pkt.type != 0 else Data(0), default=Data(0))
 
 
 class HopByHop(Packet):
@@ -73,7 +73,8 @@ class Extention(Packet):
    val         = Ref(lambda pkt, stack, **k: {
                         0: HopByHop(),
                         1: Routing(),
-                     }[stack[-2].extentions[-1].next_header if stack[-2].extentions else stack[-2].next_header])
+                     }[stack[-2].extentions[-1].next_header if stack[-2].extentions else stack[-2].next_header],
+                  default=HopByHop())
 
 class IPv6(Packet):
    version        = Bits(4)
