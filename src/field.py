@@ -144,20 +144,50 @@ class Data(Field):
       return self.getval(packet) + self.delimiter_to_be_included
 
 class Ref(Field):
-   def __init__(self, packet_class, *packet_args, **packet_kargs):
+   def __init__(self, referenced, *packet_field_args, **packet_field_kargs):
       Field.__init__(self)
-      self.packet_class = packet_class
-      self.packet_args = packet_args
-      self.packet_kargs = packet_kargs
+
+      self.require_updated_packet_instance = False
+      from packet import Packet
+      if isinstance(referenced, type) and issubclass(referenced, Field):
+         def get_packet_instance(packet):
+            class FieldReferenced(Packet):
+               val = referenced(*packet_field_args, **packet_field_kargs)
+
+            return FieldReferenced()
+
+      elif isinstance(referenced, type) and issubclass(referenced, Packet):
+         def get_packet_instance(packet):
+            return referenced(*packet_field_args, **packet_field_kargs)
+
+      elif callable(referenced):
+         self.require_updated_packet_instance = True
+         def get_packet_instance(packet):
+            i = referenced(packet)
+            if isinstance(i, Field):
+               class FieldReferenced(Packet):
+                  val = i
+
+               return FieldReferenced()
+            else:
+               return i #a packet instance
+
+      else:
+         raise ValueError("Unknow referenced object.")
+
+      self.get_packet_instance = get_packet_instance
 
 
    def init(self, packet, defaults):
       if self.field_name in defaults:
          self.setval(packet, defaults[self.field_name])
-      else:
-         self.setval(packet, self.packet_class(*self.packet_args, **self.packet_kargs))
+      elif not self.require_updated_packet_instance:
+         self.setval(packet, self.get_packet_instance(packet))
 
    def from_raw(self, packet, raw, offset=0):
+      if self.require_updated_packet_instance:
+         self.setval(packet, self.get_packet_instance(packet))
+
       return self.getval(packet).from_raw(raw, offset)
 
    def to_raw(self, packet):
