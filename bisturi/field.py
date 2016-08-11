@@ -28,6 +28,7 @@ class Field(object):
       self.movement_type = None
 
    def describe_yourself(self, field_name, bisturi_conf):
+      self.field_name = field_name
       if self.move_arg is None and 'align' in bisturi_conf:
          self.aligned(to=bisturi_conf['align'])
 
@@ -35,17 +36,17 @@ class Field(object):
          return [(field_name, self)]
 
       else:
-         return [("_shift_to_%s" % field_name, Move(self.move_arg, self.movement_type)), (field_name, self)]
+         m = Move(self.move_arg, self.movement_type)
+         m.field_name = field_name
+         return [("_shift_to_%s" % field_name, m), (field_name, self)]
 
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
+   def compile(self, position, fields, bisturi_conf):
       # Dont call this from a subclass. Call _compile directly.
-      return self._compile(field_name, position, fields, bisturi_conf)
+      return self._compile(position, fields, bisturi_conf)
 
-   def _compile(self, field_name, position, fields, bisturi_conf): 
-      self.field_name = field_name
-
-      return [field_name]
+   def _compile(self, position, fields, bisturi_conf): 
+      return [self.field_name]
 
    def getval(self, packet): #TODO do this INLINE!!
       return getattr(packet, self.field_name)
@@ -189,16 +190,17 @@ class Sequence(Field):
 
       
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
       if self.aligned_to is None:
           self.aligned_to = bisturi_conf.get('align', 1)
 
       # XXX we are propagating the 'align' attribute (in bisturi_conf) to
       # the prototype packet. This is valid ...but inelegant
       # This happen in others fields like Optional and Ref
-      self.seq_elem_field_name = "_seq_elem__"+field_name
-      self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[], bisturi_conf=bisturi_conf)
+      self.seq_elem_field_name = "_seq_elem__"+self.field_name
+      self.prototype_field.field_name = self.seq_elem_field_name
+      self.prototype_field.compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
       count, until, when = self.tmp
 
@@ -301,10 +303,11 @@ class Optional(Field):
 
       
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
-      self.opt_elem_field_name = "_opt_elem__"+field_name
-      self.prototype_field.compile(field_name=self.opt_elem_field_name, position=-1, fields=[], bisturi_conf=bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
+      self.opt_elem_field_name = "_opt_elem__"+self.field_name
+      self.prototype_field.field_name = self.opt_elem_field_name
+      self.prototype_field.compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
       when = self.tmp
       del self.tmp
@@ -372,8 +375,8 @@ class Int(Field):
       self.is_fixed = True
 
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
       
       if self.endianness is None:
          self.endianness = bisturi_conf.get('endianness', 'big') # try to get the default from the Packet class; big endian by default
@@ -478,8 +481,8 @@ class Data(Field):
       self.is_fixed = isinstance(byte_count, (int, long))
 
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
 
       if self.byte_count is not None:
          if isinstance(self.byte_count, (int, long)):
@@ -702,12 +705,13 @@ class Ref(Field):
       return desc
 
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
 
       self.position = position
-      if isinstance(self.prototype, Field): 
-         self.prototype.compile(field_name=field_name, position=position, fields=[], bisturi_conf=bisturi_conf)
+      if isinstance(self.prototype, Field):
+         self.prototype.field_name = self.field_name
+         self.prototype.compile(position=position, fields=[], bisturi_conf=bisturi_conf)
 
       prototype = self.prototype
       if isinstance(prototype, Field):
@@ -763,7 +767,8 @@ class Ref(Field):
       referenced = self.prototype(pkt=pkt, raw=raw, offset=offset, **k)
 
       if isinstance(referenced, Field):
-         referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
+         referenced.field_name=self.field_name
+         referenced.compile(position=self.position, fields=[], bisturi_conf={})
          referenced.init(pkt, {})
 
          return referenced.unpack(pkt=pkt, raw=raw, offset=offset, **k)
@@ -785,7 +790,8 @@ class Ref(Field):
       referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
-         referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
+         referenced.field_name = self.field_name
+         referenced.compile(position=self.position, fields=[], bisturi_conf={})
          #referenced.init(pkt, {})
 
          return referenced.pack(pkt, fragments, **k)
@@ -819,8 +825,8 @@ class Bits(Field):
       self.iam_first = self.iam_last = False
    
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
-      slots = Field._compile(self, field_name, position, fields, bisturi_conf)
+   def compile(self, position, fields, bisturi_conf):
+      slots = Field._compile(self, position, fields, bisturi_conf)
 
       if position == 0 or not isinstance(fields[position-1][1], Bits):
          self.iam_first = True
@@ -853,7 +859,8 @@ class Bits(Field):
 
          I.byte_count = cumshift / 8
          fname = "_bits__"+"_".join(name_of_members)
-         I.compile(field_name=fname, position=-1, fields=[], bisturi_conf={})
+         I.field_name = fname
+         I.compile(position=-1, fields=[], bisturi_conf={})
 
          slots.append(fname)
       return slots
@@ -1036,7 +1043,7 @@ class Em(Field):
       pass
    
    @exec_once
-   def compile(self, field_name, position, fields, bisturi_conf):
+   def compile(self, position, fields, bisturi_conf):
       return []
 
    def unpack(self, pkt, raw, offset=0, **k):

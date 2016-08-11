@@ -28,7 +28,7 @@ class PacketClassBuilder(object):
     def compile_fields_and_create_slots(self):
       # compile each field (speed optimization) and create the slots (memory optimization)
       additional_slots = self.bisturi_conf.get('additional_slots', [])
-      self.slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, self.fields, self.bisturi_conf), *zip(*enumerate(self.fields))), additional_slots)
+      self.slots = sum(map(lambda position, name_val: name_val[1].compile(position, self.fields, self.bisturi_conf), *zip(*enumerate(self.fields))), additional_slots)
 
     def unroll_fields_with_their_pack_unpack_methods(self):
       # unroll the fields into the their pack/unpack methods (to avoid lookups)
