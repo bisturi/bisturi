@@ -1,4 +1,5 @@
-from fragments import Fragments
+from fragments import Fragments, FragmentsOfRegexps
+from pattern_matching import Any
 
 try:
     import cPickle as pickle
@@ -6,7 +7,7 @@ except ImportError:
     import pickle
 
 import copy, collections
-import traceback, sys
+import traceback, sys, re
 
 import packet_builder
 
@@ -106,6 +107,27 @@ class Packet(object):
       
       stack.pop()
       return fragments
+
+   def as_regular_expression(self, debug=False):
+      fragments = FragmentsOfRegexps()
+      stack = []
+      self.as_regular_expression_impl(fragments, stack)
+
+      return re.compile(fragments.assemble_regexp(), re.DEBUG if debug else 0)
+
+
+   def as_regular_expression_impl(self, fragments, stack):
+       for name, f, pack, _ in self.get_fields():
+           value = getattr(self, name)
+           if isinstance(value, Any):
+               value.create_regexp(f, self, fragments, stack)
+
+           else:
+               try:
+                   pack(pkt=self, fragments=fragments, stack=stack)
+               except:
+                   f.pack_regexp(self, fragments, stack)
+
 
    def iterative_unpack(self, raw, offset=0, stack=None):
       raise NotImplementedError()

@@ -1,4 +1,5 @@
 from bisect import insort, bisect_left, bisect_right
+import re
 
 class Fragments(object):
    def __init__(self, fill='.'):
@@ -61,3 +62,51 @@ class Fragments(object):
           return str(self) == other
        else:
           return str(self) == str(other)
+
+
+class FragmentRegEx(object):
+    def __init__(self, regexp, length):
+        self.length = length if length else 1
+        self.regexp = regexp
+
+    def __len__(self):
+        return self.length
+
+class FragmentsOfRegexps(Fragments):
+    def __init__(self, *args, **kargs):
+        Fragments.__init__(self, *args, **kargs)
+        self.regexp_by_position = {}
+
+    def append(self, string, is_literal=True):
+        self.insert(self.current_offset, string, is_literal)
+
+    def extend(self, iterable, is_literal=True):
+        for string in iterable:
+            self.insert(self.current_offset, string, is_literal)
+
+    def insert(self, position, string, is_literal=True):
+        if is_literal:
+            regexp = re.escape(string)
+
+        else:
+            regexp = string
+            string = "x"
+
+        Fragments.insert(self, position, string)
+
+        self.regexp_by_position[position] = regexp
+
+    def assemble_regexp(self):
+        begin = 0
+        result = []
+        for p, regexp in sorted(self.regexp_by_position.iteritems()):
+            offset, string  = p, self.fragments[p]
+
+            hole_length = (offset-begin)
+            if hole_length > 0:
+                result.append("(?:.{%i})" % hole_length)
+
+            result.append(regexp)
+            begin = offset + len(string)
+
+        return ''.join(result)
