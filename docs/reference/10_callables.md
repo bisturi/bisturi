@@ -2,19 +2,21 @@ All the fields accept different ways to define how much they will consume.
 
 This is a summary:
 
-                  Int      Data     Bits     Sequence
-                           count             count(**)   until       when
-   Fixed          true     true     true(*)  true        no apply    no apply
-   Other field    false    true     false    true        no apply    no apply
-   A callable     false    true     false    true        true        true
+            | Int   | Data | Bits    | Seq count(**) | Seq until  | Seq when
+----------- | ----- | ---- | ------- | ------------- | ---------- | ---------
+Fixed       | true  | true | true(*) | true          | no apply   | no apply
+Other field | false | true | false   | true          | no apply   | no apply
+A callable  | false | true | false   | true          | true       | true
 
-Notes: (*) The amount set in a Bits fields is the amount of bits, no of bytes, and must be multiple of 8.
-      (**) The amount set in a Sequence, is the amount of objects, no of bytes.
+
+Notes: (\*) The amount set in a Bits fields is the amount of bits, no of bytes, and must be multiple of 8.
+      (\*\*) The amount set in a Sequence, is the amount of objects, no of bytes.
 
 
 First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 however, there isn't a fixed amount of bytes to be set for referenced objects or sequences:
 
+```python
 >>> from packet import Packet
 >>> from field import Int, Data, Bits
 
@@ -32,9 +34,11 @@ however, there isn't a fixed amount of bytes to be set for referenced objects or
 >>> pkt.pack()
 '\x01\x02\x03'
 
+```
 
 For sequence of objects you can set the amount of objects to be extracted:
 
+```python
 >>> from field import Sequence
 
 >>> class FixedSeq(Packet):
@@ -48,12 +52,14 @@ For sequence of objects you can set the amount of objects to be extracted:
 >>> pkt.pack()
 '\x01\x02\x03'
 
+```
 
 But fixed amounts it is just the begin. You can define a variable amount using several
 methods.
 The simplest is using another field, tipically an Int.
 Note how you can use this for Data an Sequence fields but not for Int, Bits or Ref fields.
 
+```python
 >>> class AllVariable(Packet):
 ...    amount = Int(byte_count=1)
 ...    data   = Data(byte_count=amount)
@@ -76,10 +82,13 @@ Note how you can use this for Data an Sequence fields but not for Int, Bits or R
 >>> pkt.pack()
 '\x02AA\x01\x02'
 
+```
+
 The more flexible method is to use a callable which will be invoked during the
 parsing to know how much to consume.
 You can use any kind of callable, functions, methods or lambdas.
 
+```python
 >>> class VariableUsingCallable(Packet):
 ...    amount = Int(byte_count=1)
 ...    data   = Data(byte_count=lambda pkt, **k: pkt.amount * 2)
@@ -102,6 +111,7 @@ You can use any kind of callable, functions, methods or lambdas.
 >>> pkt.pack()
 '\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
 
+```
 
 The callable needs to accept a variable keyword-arguments. These are the current
 available arguments:
@@ -111,6 +121,7 @@ available arguments:
    offset:  the current offset of the parsed. raw[offset] means the first byte that should be parsed next
    stack:   the stack of packets being be parsed: stack[0] is the higher packet and stack[-1] is the lower (stack[-1] == pkt)
 
+```python
 >>> from field import Ref
 
 >>> class Lower(Packet):
@@ -128,3 +139,4 @@ available arguments:
 >>> pkt.pack()
 '\x02AA'
 
+```
