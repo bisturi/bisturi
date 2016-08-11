@@ -20,17 +20,17 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
       pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
-def pack(pkt, fragments=None, stack=None, **k):
-   if fragments is None:
-      fragments = Fragments()
-   stack = pkt.push_to_the_stack(stack, fragments.current_offset)
+from bisturi.packet import Layer
+
+def pack_impl(pkt, fragments, stack, **k):
+   stack.append(Layer(pkt, fragments.current_offset))
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
    except Exception, e:
 %(except_block)s
 
-   pkt.pop_from_the_stack(stack)
+   stack.pop()
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
@@ -47,14 +47,14 @@ raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
    if generate_for_unpack:
       unpack_code = ('''
 from struct import pack as StructPack, unpack as StructUnpack
-def unpack(pkt, raw, offset=0, stack=None, **k):
-   stack = pkt.push_to_the_stack(stack, offset)
+def unpack_impl(pkt, raw, offset, stack, **k):
+   stack.append(Layer(pkt, offset))
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
    except Exception, e:
 %(except_block)s
-   pkt.pop_from_the_stack(stack)
+   stack.pop()
    return offset
 ''' % {
       'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
@@ -103,11 +103,11 @@ raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
          os.remove(module_filename)
  
    import packet
-   if generate_for_pack and (pkt_class.pack == packet.Packet.pack):
-      pkt_class.pack = module.pack
+   if generate_for_pack and (pkt_class.pack_impl == packet.Packet.pack_impl):
+      pkt_class.pack_impl = module.pack_impl
 
-   if generate_for_unpack and (pkt_class.unpack == packet.Packet.unpack):
-      pkt_class.unpack = module.unpack
+   if generate_for_unpack and (pkt_class.unpack_impl == packet.Packet.unpack_impl):
+      pkt_class.unpack_impl = module.unpack_impl
             
 
 def generate_code_for_fixed_fields(fields):

@@ -173,6 +173,8 @@ def _get_when(count, when):
 class Sequence(Field):
    def __init__(self, prototype, count, until, when, default=None, aligned=None):
       Field.__init__(self)
+      assert isinstance(prototype, Field)
+
       self.ctime = prototype.ctime
       self.default = default if default is not None else []
 
@@ -264,6 +266,8 @@ class Sequence(Field):
 class Optional(Field):
    def __init__(self, prototype, when, default=None):
       Field.__init__(self)
+      assert isinstance(prototype, Field)
+
       self.ctime = prototype.ctime
       self.default = default
 
@@ -656,12 +660,12 @@ class Ref(Field):
       assert isinstance(referenced, Packet)
 
       setattr(pkt, self.field_name, referenced)
-      return referenced.unpack(raw, offset, **k)
+      return referenced.unpack_impl(raw, offset, **k)
 
    def _pack_with_callable(self, pkt, fragments, **k):
       obj = getattr(pkt, self.field_name)  # this can be a Packet or can be anything (but not a Field: it could be a 'int' for example but not a 'Int')
       if isinstance(obj, Packet):
-         return obj.pack(fragments=fragments, **k)
+         return obj.pack_impl(fragments=fragments, **k)
 
       # TODO: raise NotImplementedError("We don't know how to pack this. The field '%s' (type '%s') is not a Packet neither the Ref's prototype is a Field/Packet (it is a '%s'). Probably the Ref's prototype is a callable, right? Because that we can't know how to pack this field (which is not pointing to a Packet instance) because we cannot execute the callable during the packing-time." % (self.field_name, str(type(obj)), str(type(self.prototype))))
 
@@ -681,10 +685,10 @@ class Ref(Field):
 
 
    def _unpack_referencing_a_packet(self, pkt, **k):
-      return getattr(pkt, self.field_name).unpack(**k)
+      return getattr(pkt, self.field_name).unpack_impl(**k)
 
    def _pack_referencing_a_packet(self, pkt, fragments, **k):
-      return getattr(pkt, self.field_name).pack(fragments=fragments, **k)
+      return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
  
 
 class Bits(Field):

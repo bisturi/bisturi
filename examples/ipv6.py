@@ -24,9 +24,9 @@ class HopByHop(Packet):
    length      = Int(1)
    options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + pkt._start )
 
-   def unpack(self, raw, offset=0, **k):
+   def unpack_impl(self, raw, offset, **k):
       self._start = offset
-      return Packet.unpack(self, raw, offset, **k)
+      return Packet.unpack_impl(self, raw, offset, **k)
 
 
 class Routing(Packet):

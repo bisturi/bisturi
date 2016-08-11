@@ -100,8 +100,14 @@ class Packet(object):
    def as_prototype(self):
       return Prototype(self)
 
-   def unpack(self, raw, offset=0, stack=None):
-      stack = self.push_to_the_stack(stack, offset)
+
+   def unpack(self, raw, offset=0):
+      stack = []
+      return self.unpack_impl(raw, offset, stack)
+
+
+   def unpack_impl(self, raw, offset, stack):
+      stack.append(Layer(self, offset))
       try:
          for name, f, _, unpack in self.get_fields():
             offset = unpack(pkt=self, raw=raw, offset=offset, stack=stack)
@@ -111,14 +117,17 @@ class Packet(object):
          raise Exception("Error when parsing field '%s' of packet %s at %08x: %s" % (
                                  name, self.__class__.__name__, offset, msg))
       
-      self.pop_from_the_stack(stack)
+      stack.pop()
       return offset
-         
-   def pack(self, fragments=None, stack=None):
-      if fragments is None:
-         fragments = Fragments()
 
-      stack = self.push_to_the_stack(stack, fragments.current_offset)
+   def pack(self):
+      fragments = Fragments()
+      stack = []
+      return self.pack_impl(fragments, stack)
+         
+
+   def pack_impl(self, fragments, stack):
+      stack.append(Layer(self, fragments.current_offset))
 
       try:
          for name, f, pack, _ in self.get_fields():
@@ -129,25 +138,11 @@ class Packet(object):
          raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
                                  name, self.__class__.__name__, fragments.current_offset, msg))
       
-      self.pop_from_the_stack(stack)
-
-      return fragments
-
-   def push_to_the_stack(self, stack, offset):
-      l = Layer(self, offset)
-      if stack:
-         stack.append(l)
-      else:
-         stack = [l]
-
-      return stack
-
-   def pop_from_the_stack(self, stack):
       stack.pop()
+      return fragments
 
    def iterative_unpack(self, raw, offset=0, stack=None):
       raise NotImplementedError()
-      stack = self.push_to_the_stack(stack)
       for name, f, _, _ in self.get_fields():
          yield offset, name
          offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
