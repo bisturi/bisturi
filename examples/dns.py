@@ -2,60 +2,38 @@ import sys
 sys.path.append("../")
 
 from bisturi.packet import Packet
-from bisturi.field  import Bits, Int, Data, Field, Ref
+from bisturi.field  import Bits, Int, Data, Field, Ref, Bkpt
 
 import copy
 
-class CompressedName(Packet):
-   flags  = Bits(2)
-   offset = Bits(14)
+# RFC 1034, 1035
+class Label(Packet):
+   length = Int(1)
+   name   = Ref(lambda pkt, *args: {
+                  0x00: Data(pkt.length),
+                  0xc0: Int(1),
+               }[pkt.length & 0xc0])
 
-class NotCompressedName(Packet):
-   class Label(Packet):
-      length = Int(1)
-      name   = Data(length)
+   def is_root(self):
+      return self.length == 0
 
-   partial_names = Ref(Label).repeated(until=lambda pkt, *args: pkt.partial_names[-1].length == 0)
+   def is_compressed(self):
+      return self.length & 0xc0 == 0xc0
 
-class DomainName(Field):
-   def __init__(self, default=NotCompressedName()):
-      Field.__init__(self)
-      self.default = default
+   def offset(self):
+      if not self.is_compressed():
+         raise Exception()
 
-   def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
+      return (self.length & (~0xc0) << 8) + self.name.val
 
-   def unpack(self, packet, raw, offset=0):
-      we_have_only_one_byte = len(raw[offset:]) == 1
-
-      if we_have_only_one_byte:
-         compressed = False
-         partial_name = NotCompressedName()
-         new_offset = partial_name.unpack(raw, offset)
-         assert partial_name.length == 0
+   def uncompressed_name(self, raw, offset=0):
+      if not self.is_compressed():
+         return self.name.val
       else:
-         partial_name = CompressedName()   # assume that is compressed, for now
-         new_offset = partial_name.unpack(raw, offset)
-         if partial_name.flags == 0b00:
-            partial_name = NotCompressedName() # it wasn't compressed!
-            new_offset = partial_name.unpack(raw, offset)
-
-         elif partial_name.flags == 0b11:
-            #ok, it is compressed
-            pass
-         else:
-            raise NotImplementedError()
-
-      self.setval(packet, partial_name)
-      return new_offset
-   
-   def pack(self, packet):
-      partial_name = self.getval(packet)
-      return partial_name.pack()
-         
+         return #TODO
 
 class ResourceRecord(Packet):
-   name   = DomainName()
+   name   = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
    type_  = Int(2, default=1)
    class_ = Int(2, default=1)
    ttl    = Int(4)
@@ -90,7 +68,7 @@ RDATA           a variable length string of octets that describes the
 '''
 
 class Question(Packet):
-   qname  = DomainName()
+   qname  = Ref(Label).repeated(until=lambda pkt, *args: pkt.qname[-1].is_root() or pkt.qname[-1].is_compressed())
    qtype  = Int(2, default=1)
    qclass = Int(2, default=1)
 
@@ -233,9 +211,10 @@ if __name__ == '__main__':
    raw_query = b16decode('fabc010000010000000000010377777706676f6f676c6503636f6d00000100010000291000000000000000', True)
    raw_response = b16decode('fabc818000010006000400050377777706676f6f676c6503636f6d0000010001c00c000100010000006400044a7d8368c00c000100010000006400044a7d8369c00c000100010000006400044a7d836ac00c000100010000006400044a7d8393c00c000100010000006400044a7d8363c00c000100010000006400044a7d8367c010000200010000016f0006036e7331c010c010000200010000016f0006036e7332c010c010000200010000016f0006036e7334c010c010000200010000016f0006036e7333c010c08c000100010001397d0004d8ef200ac09e000100010000b3600004d8ef220ac0c20001000100010a7a0004d8ef240ac0b0000100010000db710004d8ef260a0000291000000000000000', True)
 
-   query = Message(raw_query)
+   query = Message()
    response = Message()
 
+   query.unpack(raw_query)
    response.unpack(raw_response)
 
 
@@ -254,7 +233,7 @@ if __name__ == '__main__':
    assert query.an_count == len(query.answers) == 0
    assert query.ns_count == len(query.authorities) == 0
    assert query.ar_count == len(query.additionals) == 1
-   
+ 
    assert response.qd_count == len(response.questions) == 1
    assert response.an_count == len(response.answers) == 6
    assert response.ns_count == len(response.authorities) == 4
@@ -262,13 +241,19 @@ if __name__ == '__main__':
    
 
    the_question = query.questions[0]
-   assert list(map(lambda n: n.name, the_question.qname.partial_names)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
 
    the_question = response.questions[0]
-   assert list(map(lambda n: n.name, the_question.qname.partial_names)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
  
-   # TODO more tests!
-   #position_of_first_partial_name = raw_query.find('www')
-   #print query.additionals[0].name.offset, position_of_first_partial_name
-   #assert query.additionals[0].name.offset == position_of_first_partial_name
+   for resource_records in (response.answers, response.authorities, response.additionals):
+      for one_record in resource_records:
+         for label in one_record.name:
+            if label.is_compressed():
+               print hex(label.offset())
+   
+   #position_of_first_partial_name = raw_response.find('www')
+   #inspect(response)
+   #print response.additionals[0].name.offset, position_of_first_partial_name
+   #assert response.additionals[0].name.offset == position_of_first_partial_name
 
