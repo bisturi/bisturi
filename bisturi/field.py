@@ -13,11 +13,11 @@ class Field(object):
    def getval(self, packet): #TODO do this INLINE!!
       return getattr(packet, self.field_name)
 
-   def setval(self, packet, val):
+   def setval(self, packet, val): #TODO do this INLINE!!
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
+      self.setval(packet, defaults.get(self.field_name, self.default if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
@@ -224,11 +224,12 @@ class Int(Field):
 
 
    def unpack(self, pkt, raw, offset=0, **k):
-      raw_data = raw[offset:offset+self.byte_count]
+      next_offset = offset + self.byte_count
+      raw_data = raw[offset:next_offset]
       integer = self._unpack(raw_data)
       self.setval(pkt, integer)
 
-      return self.byte_count + offset
+      return next_offset
 
    def pack(self, packet):
       integer = self.getval(packet)
@@ -246,59 +247,105 @@ class Data(Field):
       if not default and isinstance(byte_count, (int, long)):
          self.default = "\x00" * byte_count
       
-      self.byte_count = _get_count(byte_count) if byte_count is not None else None
+      self.byte_count = byte_count 
       self.until_marker = until_marker
 
       self.include_delimiter = include_delimiter
-      self.delimiter_to_be_included = ""#self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
+      self.delimiter_to_be_included = self.until_marker if isinstance(self.until_marker, basestring) and not include_delimiter else ''
 
       assert not (consume_delimiter == False and include_delimiter == True)
       self.consume_delimiter = consume_delimiter #XXX document this!
 
+   def compile(self, field_name, position, fields):
+      Field.compile(self, field_name, position, fields)
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      extra_count = 0
       if self.byte_count is not None:
-         count = self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)# if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
+         if isinstance(self.byte_count, (int, long)):
+            self.unpack = self._unpack_fixed_size
+         
+         elif isinstance(self.byte_count, Field):
+            self.unpack = self._unpack_variable_size_field
+
+         elif callable(self.byte_count):
+            self.unpack = self._unpack_variable_size_callable
+
+         else:
+            assert False
 
       else:
-         until_marker = self.until_marker
-         if isinstance(until_marker, basestring):
-            if self.include_delimiter:
-               count = raw[offset:].find(until_marker) + len(until_marker)
-            else:
-               count = raw[offset:].find(until_marker)
-               if self.consume_delimiter:
-                  extra_count = len(until_marker)
-               self.delimiter_to_be_included = until_marker
+         if isinstance(self.until_marker, basestring):
+            self.unpack = self._unpack_with_string_marker
 
-         elif hasattr(until_marker, 'search'):
-            if until_marker.pattern == "$":    # shortcut
-               count = len(raw) - offset
+         elif hasattr(self.until_marker, 'search'):
+            self.unpack = self._unpack_with_regexp_marker
+         
+         else:
+            assert False
 
-            else:
-               match = until_marker.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
-               if match:
-                  if self.include_delimiter:
-                     count = match.end()
-                  else:
-                     count = match.start()
-                     if self.consume_delimiter:
-                        extra_count = match.end()-count
-                     self.delimiter_to_be_included = match.group()
-               else:
-                  count = -1
-
-      if count < 0:
-         raise IndexError()
-
-      raw_data = raw[offset:offset+count]
-      self.setval(pkt, raw_data)
-
-      return count + extra_count + offset
+   def unpack(self, pkt, raw, offset=0, **k):
+      raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
 
    def pack(self, packet):
       return self.getval(packet) + self.delimiter_to_be_included
+
+   def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
+      next_offset = offset + self.byte_count
+      self.setval(pkt, raw[offset:next_offset])
+      
+      return next_offset
+   
+   def _unpack_variable_size_field(self, pkt, raw, offset=0, **k):
+      next_offset = offset + self.byte_count.getval(pkt)
+      self.setval(pkt, raw[offset:next_offset])
+      
+      return next_offset
+   
+   def _unpack_variable_size_callable(self, pkt, raw, offset=0, **k):
+      next_offset = offset + self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)
+      self.setval(pkt, raw[offset:next_offset])
+      
+      return next_offset
+
+   def _unpack_with_string_marker(self, pkt, raw, offset=0, **k):
+      until_marker = self.until_marker
+      count = raw[offset:].find(until_marker)
+      assert count >= 0
+
+      extra_count = 0
+      if self.include_delimiter:
+         count += len(until_marker)
+      else:
+         self.delimiter_to_be_included = until_marker
+         if self.consume_delimiter:
+            extra_count = len(until_marker)
+
+      next_offset = offset + count
+      self.setval(pkt, raw[offset:next_offset])
+
+      return next_offset + extra_count
+   
+   def _unpack_with_regexp_marker(self, pkt, raw, offset=0, **k):
+      until_marker = self.until_marker
+      extra_count = 0
+      if until_marker.pattern == "$":    # shortcut
+         count = len(raw) - offset
+      else:
+         match = until_marker.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
+         if match:
+            if self.include_delimiter:
+               count = match.end()
+            else:
+               count = match.start()
+               if self.consume_delimiter:
+                  extra_count = match.end()-count
+               self.delimiter_to_be_included = match.group()
+         else:
+            assert False
+      
+      next_offset = offset + count
+      self.setval(pkt, raw[offset:next_offset])
+
+      return next_offset + extra_count
 
 class Ref(Field):
    def __init__(self, referenced, *packet_field_args, **packet_field_kargs):
