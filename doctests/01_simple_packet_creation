@@ -41,3 +41,18 @@ Of course, 'my defaults' may be aren't yours, so you can change them:
 >>> p.payload
 ''
 
+This is very convenient but may be it is not the optimal of the default of 'type' is 2
+for all the packets that you need. In that case, you can redefine the class and set the
+default in the field itself.
+
+>>> class TLP(Packet):
+...    type = Int(1, default=2)
+...    length = Int()
+...    payload = Data(length)
+>>> p = TLP() 
+>>> p.type
+2
+>>> p.length
+0
+>>> p.payload
+''

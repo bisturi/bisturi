@@ -19,16 +19,18 @@ class Field(object):
 
 
 class Int(Field):
-   def __init__(self, byte_count=4, signed=False, endianess='big'):
+   def __init__(self, byte_count=4, signed=False, endianess='big', default=0):
       Field.__init__(self)
+      self.default = default
 
    def init(self, packet, field_name, defaults):
-      setattr(packet, field_name, defaults.get(field_name, 0))
+      setattr(packet, field_name, defaults.get(field_name, self.default))
 
 
 class Data(Field):
-   def __init__(self, byte_count):
+   def __init__(self, byte_count, default=''):
       Field.__init__(self)
+      self.default = default
 
    def init(self, packet, field_name, defaults):
-      setattr(packet, field_name, defaults.get(field_name, ''))
+      setattr(packet, field_name, defaults.get(field_name, self.default))
