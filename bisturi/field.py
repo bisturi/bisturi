@@ -540,8 +540,7 @@ class Ref(Field):
 
       if embeb and not isinstance(self.prototype, Packet):
          raise ValueError("The prototype must be a Packet if you want to embeb it.")
- 
-      #assert not isinstance(self.prototype, Field)
+            
       self.embeb = embeb
    
    def describe_yourself(self, field_name):
