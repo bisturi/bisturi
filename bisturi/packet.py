@@ -17,14 +17,19 @@ class PacketClassBuilder(object):
         self.name = name
         self.bases = bases
         self.attrs = attrs
+        
+    def bisturi_configuration_default(self):
+        return {}
 
     def make_configuration(self):
-        self.bisturi_conf = self.attrs.get('__bisturi__', {})
+        self.bisturi_conf = self.attrs.get('__bisturi__', self.bisturi_configuration_default())
 
     def collect_the_fields(self):
       from field import Field
       self.fields = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
       self.fields.sort(key=lambda name_val: name_val[1].ctime)
+
+      self.original_fields = list(self.fields)
 
     def make_field_descriptions(self):
       self.fields = sum([valfield.describe_yourself(namefield, self.bisturi_conf) for namefield, valfield in self.fields], [])
@@ -44,6 +49,8 @@ class PacketClassBuilder(object):
             del self.attrs[n]
 
     def create_class(self):
+      self.bisturi_conf['original_fields'] = self.original_fields
+
       self.attrs['__slots__'] = self.slots
       self.attrs['__bisturi__'] = self.bisturi_conf
       
@@ -77,13 +84,45 @@ class PacketClassBuilder(object):
     def get_packet_class(self):
       return self.cls
 
+class PacketSpecializationClassBuilder(PacketClassBuilder):
+    def __init__(self, metacls, name, bases, attrs):
+        self.super_class = attrs['__bisturi__']['specialization_of']
+        assert isinstance(self.super_class, Packet)
+
+        original_fields = self.super_class.__bisturi__['original_fields']
+        specialized_fields = self.specialize_fields(attrs, original_fields)
+
+        PacketClassBuilder.__init__(self, metacls, name, bases, specialized_attrs)
+
+    def bisturi_configuration_default(self):
+        return copy.deepcopy(self.super_class.__bisturi__)
+
+    def specialize_fields(self, specialization_attrs, original_fields):
+        for attrname, attrvalue in specialization_attrs:
+            if isinstance(attrvalue, Field) and attrname not in original_fields:
+                raise Exception("You cannot add new fields like '%s'." % attrname)
+
+            if isinstance(attrvalue, (int, long, basestring)) and attrname in original_fields:
+                original_fields[attrname].default = attrvalue  # TODO the default or a constant??
+
+            if isinstance(attrvalue, Field) and attrname in original_fields:
+                attrvalue.ctime = original_fields[attrname].ctime # override the creation time to keep the same order
+                original_fields[attrname] = attrvalue
+
+        return original_fields
+
 class MetaPacket(type):
    def __new__(metacls, name, bases, attrs):
       if name == 'Packet' and bases == (object,):
          attrs['__slots__'] = []
          return type.__new__(metacls, name, bases, attrs) # Packet base class
- 
-      builder = PacketClassBuilder(metacls, name, bases, attrs)
+
+      specialization_of = attrs.get('__bisturi__', {}).get('specialization_of', None)
+      if specialization_of:
+          builder = PacketSpecializationClassBuilder(metacls, name, bases, attrs)
+
+      else:
+          builder = PacketClassBuilder(metacls, name, bases, attrs)
     
       builder.make_configuration()
 
