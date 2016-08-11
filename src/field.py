@@ -89,24 +89,46 @@ class Int(Field):
 
 
 class Data(Field):
-   def __init__(self, byte_count, default=''):
+   def __init__(self, byte_count, include_delimiter=False, default=''):
       Field.__init__(self)
       self.default = default
       self.byte_count = byte_count
+      self.include_delimiter = include_delimiter
 
    def init(self, packet, defaults):
       self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
+      extra_count = 0
       if isinstance(self.byte_count, int):
          count = self.byte_count
+      elif isinstance(self.byte_count, basestring):
+         if self.include_delimiter:
+            count = raw[offset:].find(self.byte_count) + len(self.byte_count)
+         else:
+            count = raw[offset:].find(self.byte_count)
+            extra_count = len(self.byte_count)
+
+      elif hasattr(self.byte_count, 'search'):
+         match = self.byte_count.search(raw, offset)
+         if match:
+            if self.include_delimiter:
+               count = match.end()
+            else:
+               count = match.start()
+               extra_count = match.end()-count
+         else:
+            count = -1
       else:
          count = self.byte_count.getval(packet)
+
+      if count < 0:
+         raise IndexError()
 
       raw_data = raw[offset:offset+count]
       self.setval(packet, raw_data)
 
-      return count
+      return count + extra_count
 
    def to_raw(self, packet):
       return self.getval(packet)

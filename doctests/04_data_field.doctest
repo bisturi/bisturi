@@ -1,0 +1,67 @@
+The Data field is very simple. It is just a piece of bytes.
+The interesting part of Data is that its size can be defined by another field
+or can be determined by the presence of a token.
+In that  case, the Data will consume all the string until it find the token which can
+be a simple byte, a more complex string or even a regexp.
+
+>>> from packet import Packet
+>>> from field  import Data, Int
+>>> import re
+
+>>> class DataExample(Packet):
+...    length = Int(1)
+...    a = Data(2)
+...    b = Data(length)
+...    c = Data('\0')
+...    d = Data('eof')
+...    e = Data(re.compile('X+|$'))
+...    f = Data(re.compile('X+|$'))
+
+Let see what happen when the packet is built from this string
+
+>>> s = '\x01abCddd\x00eeeeoffghiXjk'
+>>> p = DataExample(s)
+>>> p.length
+1
+>>> p.a
+'ab'
+>>> p.b
+'C'
+>>> p.c
+'ddd'
+>>> p.d
+'eee'
+>>> p.e
+'fghi'
+>>> p.f
+'jk'
+
+If you need that the token be in the result, you can use the keyword 'include_delimiter'
+
+>>> class DataExample(Packet):
+...    length = Int(1)
+...    a = Data(2)
+...    b = Data(length)
+...    c = Data('\0', include_delimiter=True)
+...    d = Data('eof', include_delimiter=True)
+...    e = Data(re.compile('X+|$'), include_delimiter=True)
+...    f = Data(re.compile('X+|$'), include_delimiter=True)
+
+>>> s = '\x01abCddd\x00eeeeoffghiXjk'
+>>> p = DataExample(s)
+>>> p.length
+1
+>>> p.a
+'ab'
+>>> p.b
+'C'
+>>> p.c
+'ddd\x00'
+>>> p.d
+'eeeeof'
+>>> p.e
+'fghiX'
+>>> p.f
+'jk'
+
+As you can see, when you use a token as delimiter, the token is added to the result.
