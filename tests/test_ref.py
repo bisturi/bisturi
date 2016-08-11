@@ -1,7 +1,7 @@
 import sys
 sys.path.append("../")
 
-from bisturi.packet import Packet, Layer
+from bisturi.packet import Packet
 from bisturi.field  import Ref, Int
 
 import unittest

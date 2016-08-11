@@ -11,11 +11,9 @@ import traceback, sys, re
 
 import packet_builder
 
-Layer = collections.namedtuple('Layer', ['pkt', 'offset'])
-
 class PacketError(Exception):
     def __init__(self, was_error_found_in_unpacking_phase, field_name, packet_class_name, offset, original_error_message):
-        Exception.__init__(self, "asasasa")
+        Exception.__init__(self, "")
         self.original_traceback = "".join(traceback.format_exception(*sys.exc_info())[2:])
 
         self.was_error_found_in_unpacking_phase = was_error_found_in_unpacking_phase

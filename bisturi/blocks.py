@@ -20,7 +20,7 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
       pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
-from bisturi.packet import Layer, PacketError
+from bisturi.packet import PacketError
 
 def pack_impl(pkt, fragments, **k):
 %(sync_descriptors_code)s
@@ -46,7 +46,7 @@ def pack_impl(pkt, fragments, **k):
       unpack_code = ('''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
-from bisturi.packet import Layer, PacketError
+from bisturi.packet import PacketError
 
 def unpack_impl(pkt, raw, offset, **k):
    k['local_offset'] = offset
