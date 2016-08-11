@@ -27,18 +27,28 @@ class Field(object):
       self.move_arg = None
       self.movement_type = None
 
+      self.descriptor = None
+      self.descriptor_name = None
+
    def describe_yourself(self, field_name, bisturi_conf):
       self.field_name = field_name
       if self.move_arg is None and 'align' in bisturi_conf:
          self.aligned(to=bisturi_conf['align'])
+
+      if self.descriptor:
+          self.descriptor_name = field_name
+
+          self.field_name = "_described_%s" % field_name
+          field_name = self.field_name
+
 
       if self.move_arg is None:
          return [(field_name, self)]
 
       else:
          m = Move(self.move_arg, self.movement_type)
-         m.field_name = field_name
-         return [("_shift_to_%s" % field_name, m), (field_name, self)]
+         m.field_name = "_shift_to_%s" % field_name
+         return [(m.field_name, m), (field_name, self)]
 
    @exec_once
    def compile(self, position, fields, bisturi_conf):
@@ -96,6 +106,10 @@ class Field(object):
 
    def pack_regexp(self, pkt, fragments, **k):
       raise NotImplementedError("The pack_regexp method is not implemented for this field.")
+
+   def describe(self, descriptor):
+      self.descriptor = descriptor
+      return self
 
 def _get_count(count_arg):
    '''Return a callable from count_arg so you can invoke that callable
