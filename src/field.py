@@ -93,6 +93,8 @@ class Data(Field):
    def __init__(self, byte_count, include_delimiter=False, consume_delimiter=True, default=''):
       Field.__init__(self)
       self.default = default
+      if not default and isinstance(byte_count, (int, long)):
+         self.default = "\x00" * byte_count
       self.byte_count = byte_count
       self.include_delimiter = include_delimiter
       self.delimiter_to_be_included = self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''

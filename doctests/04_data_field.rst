@@ -40,13 +40,14 @@ Let see what happen when the packet is built from this string
 True
 
 Note that a sutil problem is raises with the delimiters. If the delimiter is a regexp,
-there isn't a good default for it. So, be careful with that:
+there isn't a good default for it. So, be careful with that. The only 'safe' default
+is used when the size is fixed:
 
 >>> q = DataExample()
 >>> q.length
 0
 >>> q.a
-''
+'\x00\x00'
 >>> q.b
 ''
 >>> q.c
