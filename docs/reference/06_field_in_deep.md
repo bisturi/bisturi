@@ -2,12 +2,15 @@
 Now, we need to think, what are the responsabilities of one Field? Well, it has only one:
 given a string of bytes create from them a 'python object' and given a 'python object'
 return a string of bytes.
+
 This is the only responsability of each Field like Int, Data and Ref.
 But what it is this 'python object'? This depends of the Field.
+
 For example, Int can use as its 'python object' an 'int' or a 'long'.
 The difference between Int and 'int' is that you are almost always interacting with 'int',
 the 'python object' of Int and not with the Int itself.
 
+```python
 >>> from field import Int, Field
 >>> from packet import Packet
 >>> class Ethernet(Packet):
@@ -30,6 +33,8 @@ False
 >>> isinstance(p.size, (int, long))
 True
 
+```
+
 So, when you do something like p.size + 1 you are working with native python objects (int).
 No more.
 The same happens with Data and Ref.
@@ -46,6 +51,7 @@ cannot be used as fields using Ref.
 
 So we need to create our own field.
 
+```python
 >>> from field import Field
 >>> from ipaddress import IPv4Address, IPv6Address
 >>> import struct
@@ -76,7 +82,8 @@ So we need to create our own field.
 ...       raw = ip_address.packed
 ... 
 ...       return raw
-...
+
+```
 
 Ok, lets see. 
  - First we inherent from Field. 
@@ -88,6 +95,7 @@ Ok, lets see.
  - Similar for 'pack'. We get the val using 'getval' and transform the ip address to
    its binary representation which is returned
 
+```python
 >>> class IP_Example(Packet):
 ...    destination = IP(4)
 ...    source = IP()
@@ -112,11 +120,14 @@ True
 >>> p.pack() == s
 True
 
+```
+
 This is really useful because you can use almost any python object and transform it
 into a field. The benefice of that is that you can reuse a lot of code already implemented
 instead of creation you own objects.
 Take a look of the interface of IPv4Address/IPv6Address for free!
 
+```python
 >>> p.source.is_loopback
 False
 >>> p.source.is_private
@@ -124,6 +135,8 @@ True
 >>> from ipaddress import IPv4Network
 >>> p.source in IPv4Network("192.168.0.0/16")
 True
+
+```
 
 Keep this idea. Find some python code that it is useful for you. Then write a small
 class to extend Field and thats all!
