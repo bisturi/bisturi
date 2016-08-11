@@ -236,11 +236,7 @@ if __name__ == '__main__':
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 0000 0104aaaaaaaa 0001 0107bbbbbbbbbbbbbb 0000000000 3b00 0102cccc 0000'.replace(' ', ''), True)
    
    ip = IPv6()
-   import utils
-   utils.hd(raw, full=True)
    ip.unpack(raw)
-
-   utils.inspect(ip)
 
    assert ip.length == 0
    assert ip.next_header == 0

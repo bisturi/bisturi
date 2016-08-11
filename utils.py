@@ -63,15 +63,15 @@ def mark_with_color(color, attr=None, bg=None):
 
    return "".join([fmt % code for code in codes])
 
+import bisturi.field as F
 def xx(raw, packet, offset=0):
-   from bisturi.field import *
    colours_by_class = {
-      Int:  [mark_with_color('red'),   mark_with_color('red', 'bold')],
-      Bits: [mark_with_color('yellow'),  mark_with_color('yellow')],
-      Data: [mark_with_color('magenta'), mark_with_color('magenta', 'bold')],
-      Ref:  [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
+      F.Int:  [mark_with_color('red'),   mark_with_color('red', 'bold')],
+      F.Bits: [mark_with_color('yellow'),  mark_with_color('yellow')],
+      F.Data: [mark_with_color('magenta'), mark_with_color('magenta', 'bold')],
+      F.Ref:  [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
       None: [mark_with_color('green'),    mark_with_color('green', 'bold')],
-      Sequence: [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
+      F.Sequence: [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
       }
 
    for k in colours_by_class.keys():
