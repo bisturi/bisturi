@@ -54,7 +54,7 @@ def _get_count(count_arg):
 
 def _get_until(count, until):
    assert not (count is None and until is None)
-   assert not (count is not None and until is not None)
+   assert (count is None or until is None)
 
    if count is not None: #fixed
       outer = {'i': 0}
@@ -71,6 +71,26 @@ def _get_until(count, until):
       assert callable(until)
       return until
 
+def _get_when(count, when):
+   if count is not None and when is None: #fixed
+      def when_condition(packet, *args):
+         return count(packet) > 0
+
+   elif count is not None and when is not None: #fixed but conditional
+      assert callable(when)
+      def when_condition(packet, *args):
+         return count(packet) > 0 and when(packet, *args)
+
+   elif count is None and when is not None:
+      assert callable(when)
+      when_condition = when
+
+   else:
+      assert count is None and when is None
+      when_condition = None
+
+   return when_condition
+      
 
 class Sequence(Field):
    def __init__(self, prototype, count, until, when):
@@ -79,8 +99,10 @@ class Sequence(Field):
       self.default = []
 
       self.prototype = prototype
-      self.when = when
-      self.until_condition = _get_until(_get_count(count), until)
+
+      resolved_count = _get_count(count)
+      self.when = _get_when(resolved_count, when)
+      self.until_condition = _get_until(resolved_count, until)
 
 
    def unpack(self, packet, raw, offset=0):
