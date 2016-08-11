@@ -2,7 +2,7 @@ import sys
 sys.path.append("../")
 
 from bisturi.packet import Packet
-from bisturi.field  import Bits, Int, Data, Field, Ref, Bkpt
+from bisturi.field  import Int, Data
 
 # RFC  826
 class ARP(Packet):
