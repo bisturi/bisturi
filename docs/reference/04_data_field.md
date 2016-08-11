@@ -142,3 +142,32 @@ True
 True
 
 ```
+
+But if the length is just a simple expression, we can avoid the use of a callable
+writing the expression directly:
+
+```python
+
+>>> class DataWithExpr(Packet):
+...    size = Int(1)
+...    payload = Data(size * 2)
+
+>>> s1 = '\x01aazzxx'
+>>> s2 = '\x02abcdzz'
+>>> s3 = '\x01aabb'
+
+>>> DataWithExpr(s1).payload
+'aa'
+>>> DataWithExpr(s2).payload
+'abcd'
+>>> DataWithExpr(s3).payload
+'aa'
+
+>>> DataWithExpr(s1).pack() == s1[:-4]
+True
+>>> DataWithExpr(s2).pack() == s2[:-2]
+True
+>>> DataWithExpr(s3).pack() == s3[:-2]
+True
+
+```

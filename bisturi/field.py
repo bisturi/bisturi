@@ -1,5 +1,6 @@
 import time, struct, sys, copy
 from packet import Packet
+from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
 
 class Field(object):
    def __init__(self):
@@ -233,7 +234,7 @@ class Optional(Field):
       else:
          return ""
 
-
+@defer_operations_of
 class Int(Field):
    def __init__(self, byte_count=4, signed=False, endianess='big', default=0):
       Field.__init__(self)
@@ -339,6 +340,10 @@ class Data(Field):
             self.unpack = self._unpack_variable_size_field
 
          elif callable(self.byte_count):
+            self.unpack = self._unpack_variable_size_callable
+
+         elif isinstance(self.byte_count, (UnaryExpr, BinaryExpr)):
+            self.byte_count = compile_expr_into_callable(self.byte_count)
             self.unpack = self._unpack_variable_size_callable
 
          else:
