@@ -79,9 +79,9 @@ RDATA           a variable length string of octets that describes the
 '''
 
 class Question(Packet):
-   qname  = Ref(Label).repeated(until=lambda pkt, *args: pkt.qname[-1].is_root() or pkt.qname[-1].is_compressed())
-   qtype  = Int(2, default=1)
-   qclass = Int(2, default=1)
+   name  = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+   type_  = Int(2, default=1)
+   class_ = Int(2, default=1)
 
 '''
 QNAME           a domain name represented as a sequence of labels, where
@@ -252,10 +252,10 @@ if __name__ == '__main__':
    
 
    the_question = query.questions[0]
-   assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name.val, the_question.name)) == ['www', 'google', 'com', '']
 
    the_question = response.questions[0]
-   assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
+   assert list(map(lambda n: n.name.val, the_question.name)) == ['www', 'google', 'com', '']
  
    BASE = "google.com."
    W    = "www." + BASE
@@ -270,7 +270,7 @@ if __name__ == '__main__':
       
       assert len(resource_records) == len(expecteds)
       for one_record, expected_name in zip(resource_records, expecteds):
-         labels = one_record.name if hasattr(one_record, 'name') else one_record.qname
+         labels = one_record.name 
          name = ".".join([label.uncompressed_name(raw_response) for label in labels])
          
          assert name == expected_name
