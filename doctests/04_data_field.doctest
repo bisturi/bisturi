@@ -122,3 +122,7 @@ This special attribute is just a shortcut for 're.compile("$")'.
 >>> DataExample(s5).payload
 'abc'
 
+>>> DataExample(s1).to_raw() == s1
+True
+>>> DataExample(s5).to_raw() == s5
+True
