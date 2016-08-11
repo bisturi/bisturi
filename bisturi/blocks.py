@@ -20,7 +20,8 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
       pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
-def pack(pkt, fragments=None, **k):
+def pack(pkt, fragments=None, stack=None, **k):
+   stack = pkt.push_to_the_stack(stack)
    if fragments is None:
       fragments = Fragments()
    fields = pkt.get_fields()
@@ -29,6 +30,7 @@ def pack(pkt, fragments=None, **k):
    except Exception, e:
 %(except_block)s
 
+   pkt.pop_from_the_stack(stack)
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
@@ -158,7 +160,7 @@ def generate_code_for_fixed_fields_without_struct_code(group):
 def generate_code_for_loop_pack(group):
    return ''.join(['''
 name, _, pack, _ = fields[%(field_index)i]
-pack(pkt=pkt, fragments=fragments)
+pack(pkt=pkt, fragments=fragments, stack=stack, **k)
 ''' % {
       'field_index': field_index
    } for field_index in range(group[0][0], group[-1][0]+1)])

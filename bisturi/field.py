@@ -608,7 +608,7 @@ class Ref(Field):
 
       # we try to know how to pack this value
       assert callable(self.prototype)
-      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
@@ -632,7 +632,7 @@ class Ref(Field):
          return obj.pack(fragments=fragments, **k)
 
       # we try to know how to pack this "primitive" value
-      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True)   # TODO add more parameters, like raw=partial_raw
+      referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)   # TODO add more parameters, like raw=partial_raw
 
       if isinstance(referenced, Field):
          referenced.compile(field_name=self.field_name, position=self.position, fields=[], bisturi_conf={})
@@ -738,7 +738,9 @@ class Move(Field):
          assert callable(self.absolute_position) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
          next_offset = self.absolute_position(pkt=pkt, raw=raw, offset=offset, **k)
 
-      setattr(pkt, self.field_name, raw[offset:next_offset])
+      # TODO we need to disable this, the data may be readed by other field
+      # in the future and then the packet will have duplicated data (but see pack())
+      #setattr(pkt, self.field_name, raw[offset:next_offset])
       return next_offset
 
    def pack(self, pkt, fragments, **k):
@@ -754,7 +756,10 @@ class Move(Field):
          assert callable(self.absolute_position)
          next_offset = self.absolute_position(pkt=pkt, fragments=fragments, **k)
      
-      fragments.append(garbage)
+      # TODO because the "garbage" could be readed by another field in the future,
+      # this may not be garbage and if  we try to put here, the other field will
+      # try to put the same data in the same place and we get a collission.
+      #fragments.append(garbage)
       fragments.current_offset = next_offset
       return fragments
 

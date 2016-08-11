@@ -89,12 +89,22 @@ class Packet(object):
       self.pop_from_the_stack(stack)
       return offset
          
-   def pack(self, fragments=None):
+   def pack(self, fragments=None, stack=None):
+      stack = self.push_to_the_stack(stack)
+
       if fragments is None:
          fragments = Fragments()
 
-      for name, f, pack, _ in self.get_fields():
-         pack(pkt=self, fragments=fragments)
+      try:
+         for name, f, pack, _ in self.get_fields():
+            pack(pkt=self, fragments=fragments, stack=stack)
+      except Exception, e:
+         import traceback
+         msg = traceback.format_exc()
+         raise Exception("Error when packing field '%s' of packet %s at %08x: %s" % (
+                                 name, self.__class__.__name__, fragments.current_offset, msg))
+      
+      self.pop_from_the_stack(stack)
 
       return fragments
 

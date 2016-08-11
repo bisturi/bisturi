@@ -23,7 +23,7 @@ The name will have the form of '_shift_to_...'.
 >>> p.offset_of_file
 4
 
->>> p._shift_to_file_data
+>>> p._shift_to_file_data  # fail: see the code of Move
 'XXX'
 
 >>> p.file_data
@@ -48,7 +48,7 @@ The name will have the form of '_shift_to_...'.
 '\x04...ABCD'
 
 >>> p._shift_to_file_data = 'XX'
->>> str(p.pack())
+>>> str(p.pack())  # fail: see the code of Move
 '\x04XX.ABCD'
 
 ```
@@ -103,7 +103,7 @@ So good so far, but if we try to pack this...
 
 >>> p.pack()                                # doctest: +ELLIPSIS
 Traceback (most recent call last):
-Exception: Error when packing field 'file_data' of packet Folder at 00000004...Collision detected with previous fragment 00000000-00000009...
+Exception: Error when packing field 'file_data' of packet Folder at 00000004...Collision detected with previous fragment 00000...-00000009...
 
 ```
 
