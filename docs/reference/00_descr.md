@@ -49,16 +49,6 @@ True
 
 ```
 
-If we want to access to the real length value, we can do this:
-
-```python
->>> p._described_length     # the real value of length, extracted during the unpack phase
-2
->>> p.length                # the value of the property, computed from the length of the field "a"
-3
-
-```
-
 Notice how the real value still has the original value of 2. This is fine until we need
 to pack. The real value will be used instead of the computed one.
 In some how, we need to synchronize both attributes. 
@@ -72,8 +62,19 @@ The AutoLength descriptor implement sync_before_pack so th pack method works as 
 
 ```
 
->>> q = DataExample(length=3)
+AutoLength support to force a value disabling the auto-functionality
+
+>>> q = DataExample(length=3, a='ab')
 >>> q.length
-0
->>> q._described_length
 3
+>>> q.a
+'ab'
+
+You can reenable it setting the field to None:
+
+>>> q.length = None
+>>> q.length
+2
+>>> q.a
+'ab'
+

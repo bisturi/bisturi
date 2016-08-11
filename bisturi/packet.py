@@ -51,7 +51,16 @@ class Packet(object):
    def __init__(self, _initialize_fields=True, **defaults):
       assert _initialize_fields in (True, False)
       if _initialize_fields:
-         map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
+          for field_name, field, _, _ in self.__class__.get_fields():
+              field.init(self, defaults)
+              try:
+                  descriptor_name = field.descriptor_name
+                  default_value = defaults[descriptor_name]
+                  setattr(self, descriptor_name, default_value)
+              except AttributeError:
+                  pass
+              except KeyError:
+                  pass
 
    def as_prototype(self):
       return Prototype(self)
