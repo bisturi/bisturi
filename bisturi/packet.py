@@ -1,5 +1,4 @@
 from field import Field
-import re
 
 
 class MetaPacket(type):
