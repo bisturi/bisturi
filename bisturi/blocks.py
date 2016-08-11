@@ -116,6 +116,7 @@ def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
 
    lookup_fields  = " ".join([('pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
    unpack_code = '''
+name = "%(name)s" 
 next_offset = offset + %(advance)s
 %(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
 offset = next_offset
@@ -123,13 +124,16 @@ offset = next_offset
          'lookup_fields': lookup_fields,
          'fmt': fmt,
          'advance': struct.calcsize(fmt),
+         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
       }
 
    pack_code = '''
+name = "%(name)s" 
 chunks_raw.append(StructPack("%(fmt)s", %(lookup_fields)s))
 ''' % {
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
+         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
       }
    
    return pack_code, unpack_code
