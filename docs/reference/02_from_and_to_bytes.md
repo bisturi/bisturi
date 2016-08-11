@@ -22,7 +22,7 @@ Now, let be the next string of bytes (try to see the values encoded in it)
 ```
 
 You can see what should be the value of 'type' or 'payload'? 
-I hope!. If not, let the packet dissect the string for you
+I hope!. If not, let the packet dissect the string for you using the classmethod 'unpack'
 
 ```python
 >>> p = TLP.unpack(s1)
@@ -37,43 +37,8 @@ I hope!. If not, let the packet dissect the string for you
 
 And another example
 
-```python
->>> s2 = '\x01\x00\x00\x00\x01d'
->>> q = TLP.unpack(s2)
->>> q.type
-1
->>> q.length
-1
->>> q.payload
-'d'
-
-```
-
-You can see that 'type' and the other fields are class attributes. However the value
-of each field is keep per instance, so:
-
-```python
->>> p.type
-2
->>> q.type
-1
-
-```
-
-are different, which make sense.
-
-Now, from the packet to the string
-
-```python
->>> p.pack() == s1
-True
->>> q.pack() == s2
-True
-
-```
-
-Finally, you can set the offset of the string where to start to read. By default is 0.
-However, to use this you need to call unpack directly.
+If you need it, you can set the offset of the string where to start to read. Here is another
+example
 
 ```python
 >>> s2 = 'xxx\x01\x00\x00\x00\x01d'
@@ -84,6 +49,36 @@ However, to use this you need to call unpack directly.
 1
 >>> q.payload
 'd'
+
+```
+
+You can see from the class definition that 'type' and the other fields are class's attributes. However the value
+of each field is keep per instance, they aren't class's attributes:
+
+```python
+>>> p.type
+2
+>>> q.type
+1
+
+```
+
+Both are different. Under the hood, those object's attributes are optimized and saved in the object without
+using the __dict__ dictionary of a standar python object:
+
+```
+>>> hasattr(p, '__dict__')
+False
+
+```
+
+Now, lets do the reverse operation, from the packet to the string of bytes
+
+```python
+>>> p.pack() == s1
+True
+>>> q.pack() == s2[3:]
+True
 
 ```
 

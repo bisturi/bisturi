@@ -1,4 +1,4 @@
-In this case we want create simple packet TLP (Type-Length-Payload) with the next format
+In this case we want to create a simple packet TLP (Type-Length-Payload) with the next format
  - type: 1 byte
  - length: 4 bytes (big endian, unsigned)
  - payload: 'length' bytes
@@ -16,10 +16,17 @@ We translate this into a python's class
 
 ```
 
-You can see more about Int and Data in the next session, for now, both Ints are unsigned and
-in big endian. The first has only 1 byte. The second has 4 (its default)
-The field Data is a little more complicate, its size is not fixed and depend of the value
-of the field 'length'
+One of the primary goals of bisturi is to be simple and easy to read. In the best cases
+reading a packet class is almost the same as reading the specification of the format, protocol
+or RFC.
+
+You can see more about Int and Data in the next sections, but for now we will keep the things
+simple: both Ints are unsigned and in big endian which it is the default in bisturi. 
+
+The first Int has only 1 byte. The second has 4 (its default).
+
+The field Data is a little more interesting because its size is not fixed and depends of the value
+of the field 'length'.
 
 To check that all the fields were correctly created, we can see them
 
@@ -40,13 +47,10 @@ Ok, now lets intantiate a TLP packet and see its values by default
 >>> p.payload
 ''
 
->>> hasattr(p, '__dict__')
-False
-
 ```
 
-Those values come from the defined defaults of Int (0) and Data ('').
-Of course, 'my defaults' may be aren't yours, so you can change them:
+Those values come from the defined defaults of Int and Data which are 0 and '' respectively.
+Of course, 'my defaults' may be aren't yours, so you can change them per packet instance:
 
 ```python
 >>> p = TLP(type=2) 
@@ -59,9 +63,8 @@ Of course, 'my defaults' may be aren't yours, so you can change them:
 
 ```
 
-This is very convenient but may be it is not the optimal of the default of 'type' is 2
-for all the packets that you need. In that case, you can redefine the class and set the
-default in the field itself.
+or change the default for all the packet's instances redefining the class and setting the 
+default in the field itself:
 
 ```python
 >>> class TLP(Packet):
@@ -78,3 +81,4 @@ default in the field itself.
 ''
 
 ```
+
