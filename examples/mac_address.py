@@ -1,4 +1,5 @@
 import sys
+sys.exit(0)
 sys.path.append("../")
 
 from bisturi.field import Field, Data

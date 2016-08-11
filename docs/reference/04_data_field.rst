@@ -12,10 +12,10 @@ be a simple byte, a more complex string or even a regexp.
 ...    length = Int(1)
 ...    a = Data(2)
 ...    b = Data(length)
-...    c = Data('\0')
-...    d = Data('eof')
-...    e = Data(re.compile('X+|$'))
-...    f = Data(re.compile('X+|$'))
+...    c = Data(until_marker='\0')
+...    d = Data(until_marker='eof')
+...    e = Data(until_marker=re.compile('X+|$'))
+...    f = Data(until_marker=re.compile('X+|$'))
 
 Let see what happen when the packet is built from this string
 
@@ -66,10 +66,10 @@ If you need that the token be in the result, you can use the keyword 'include_de
 ...    length = Int(1)
 ...    a = Data(2)
 ...    b = Data(length)
-...    c = Data('\0', include_delimiter=True)
-...    d = Data('eof', include_delimiter=True)
-...    e = Data(re.compile('X+|$'), include_delimiter=True)
-...    f = Data(re.compile('X+|$'), include_delimiter=True)
+...    c = Data(until_marker='\0', include_delimiter=True)
+...    d = Data(until_marker='eof', include_delimiter=True)
+...    e = Data(until_marker=re.compile('X+|$'), include_delimiter=True)
+...    f = Data(until_marker=re.compile('X+|$'), include_delimiter=True)
 
 >>> s = '\x01abCddd\x00eeeeoffghiXjk'
 >>> p = DataExample(s)
@@ -99,12 +99,11 @@ In this case, a callable can be used
 
 >>> class DataExample(Packet):
 ...    size = Int(1)
-...    payload = Data(lambda packet: packet.size if packet.size < 255 else packet.END)
+...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size < 255 else len(raw)-offset)
 
 In this example, the size of the 'payload' is determined by the value of 'size' only if it 
 is not equal to 255. When 'size' is 255, the payload will consume all the bytes until the
-'END' of the packet.
-This special attribute is just a shortcut for 're.compile("$")'.
+end of the packet.
 
 >>> s1 = '\x01a'
 >>> s2 = '\x02ab'

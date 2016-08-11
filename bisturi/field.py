@@ -238,51 +238,56 @@ class Int(Field):
 
 
 class Data(Field):
-   def __init__(self, byte_count, include_delimiter=False, consume_delimiter=True, default=''):
+   def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
       Field.__init__(self)
+      assert (byte_count is None and until_marker is not None) or (until_marker is None and byte_count is not None)
+
       self.default = default
       if not default and isinstance(byte_count, (int, long)):
          self.default = "\x00" * byte_count
-      self.byte_count = byte_count
+      
+      self.byte_count = _get_count(byte_count) if byte_count is not None else None
+      self.until_marker = until_marker
+
       self.include_delimiter = include_delimiter
-      self.delimiter_to_be_included = self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
+      self.delimiter_to_be_included = ""#self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
 
       assert not (consume_delimiter == False and include_delimiter == True)
       self.consume_delimiter = consume_delimiter #XXX document this!
 
 
    def unpack(self, pkt, raw, offset=0, **k):
-      byte_count = self.byte_count(pkt) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
       extra_count = 0
-      if isinstance(byte_count, int):
-         count = byte_count
-      elif isinstance(byte_count, basestring):
-         if self.include_delimiter:
-            count = raw[offset:].find(byte_count) + len(byte_count)
-         else:
-            count = raw[offset:].find(byte_count)
-            if self.consume_delimiter:
-               extra_count = len(byte_count)
-            self.delimiter_to_be_included = byte_count
+      if self.byte_count is not None:
+         count = self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)# if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
 
-      elif hasattr(byte_count, 'search'):
-         if byte_count.pattern == "$":    # shortcut
-            count = len(raw) - offset
-
-         else:
-            match = byte_count.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
-            if match:
-               if self.include_delimiter:
-                  count = match.end()
-               else:
-                  count = match.start()
-                  if self.consume_delimiter:
-                     extra_count = match.end()-count
-                  self.delimiter_to_be_included = match.group()
-            else:
-               count = -1
       else:
-         count = byte_count.getval(pkt)
+         until_marker = self.until_marker
+         if isinstance(until_marker, basestring):
+            if self.include_delimiter:
+               count = raw[offset:].find(until_marker) + len(until_marker)
+            else:
+               count = raw[offset:].find(until_marker)
+               if self.consume_delimiter:
+                  extra_count = len(until_marker)
+               self.delimiter_to_be_included = until_marker
+
+         elif hasattr(until_marker, 'search'):
+            if until_marker.pattern == "$":    # shortcut
+               count = len(raw) - offset
+
+            else:
+               match = until_marker.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
+               if match:
+                  if self.include_delimiter:
+                     count = match.end()
+                  else:
+                     count = match.start()
+                     if self.consume_delimiter:
+                        extra_count = match.end()-count
+                     self.delimiter_to_be_included = match.group()
+               else:
+                  count = -1
 
       if count < 0:
          raise IndexError()

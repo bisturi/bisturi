@@ -8,7 +8,7 @@ Using Data and Int its relative simple.
 ...    destination = Data(6)
 ...    source = Data(6)
 ...    size = Int(2)
-...    payload = Data(lambda packet: packet.size if packet.size <= 1500 else packet.END)
+...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
 The problem with this is that the fields 'destination' and 'source' are not randoms bytes.
 In fact they are the MAC of the statations.
@@ -23,7 +23,7 @@ It should be nice to create a packet for MAC and utilize it in Ethernet.
 ...    destination = Ref(MAC)
 ...    source = Ref(MAC)
 ...    size = Int(1)
-...    payload = Data(lambda packet: packet.size if packet.size <= 1500 else packet.END)
+...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
 So, we can do this
 
@@ -63,7 +63,7 @@ Of course, you can set any parameter to Ref and those will be used to create the
 ...    destination = Ref(MAC, nic='\xff\xff\x01')
 ...    source = Ref(MAC, nic='\xff\xff\x02')
 ...    size = Int(1)
-...    payload = Data(lambda packet: packet.size if packet.size <= 1500 else packet.END)
+...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
 >>> p = Ethernet()
 >>>
