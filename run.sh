@@ -1,7 +1,7 @@
 pushd .
 cd bisturi
 
-for t in ../docs/reference/$1*.rst
+for t in ../docs/reference/$1*.md
 do
    if [ -e $t ]
    then
