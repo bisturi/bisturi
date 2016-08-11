@@ -85,20 +85,17 @@ True
 If a field cannot be unpacked, an exception is raised with the full stack of packets and offsets:
 
 ```python
->>> class VariablePayload(Packet):
-...    length = Int(1)
-...    payload = Data(length)
 
 >>> def some_function(raw):
-...    q = VariablePayload.unpack(raw)
+...    q = TLP.unpack(raw)
 
->>> s = '\x04a'
+>>> s = '\x00\x00\x00\x00\x04a'
 >>> some_function(s)                                         #doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
-PacketError: Error when unpacking the field 'payload' of packet VariablePayload at 00000001: Unpacked 1 bytes but expected 4
+PacketError: Error when unpacking the field 'payload' of packet TLP at 00000005: Unpacked 1 bytes but expected 4
 Packet stack details: 
-    00000001 VariablePayload                .payload
+    00000005 TLP                            .payload
 Field's exception:
 ...
 Exception: Unpacked 1 bytes but expected 4...
@@ -108,19 +105,21 @@ Exception: Unpacked 1 bytes but expected 4...
 The same is true if the packet cannot be packed into a string:
 
 ```python
->>> p = VariablePayload()
->>> p.length = "invalid"
+>>> p = TLP()
+>>> p.length = "a non integer!"
 
 >>> p.pack()                                    #doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
-PacketError: Error when packing the field 'length' of packet VariablePayload at 00000000: cannot convert argument to integer
+PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: cannot convert argument to integer
 Packet stack details: 
-    00000000 VariablePayload                .length
+    00000000 TLP                            .between 'type' and 'length'
 Field's exception:
 ...
 
 ```
+
+There will be more about debugging, errors and unpacking/packing invalid data but for now we are done.
 
 No always you will have the full string in memory to parse but you will have a file.
 Instead of load the full file and read it, you can use the SeekableFile adapter that will
@@ -133,9 +132,9 @@ work like a string:
 ...   from StringIO import StringIO
 ...   return SeekableFile(file=StringIO(s))
 >>>
->>> seekable_file = _string_as_seekable_file('\x03abc')
+>>> seekable_file = _string_as_seekable_file('\x00\x00\x00\x00\x03abc')
 
->>> p = VariablePayload.unpack(seekable_file)
+>>> p = TLP.unpack(seekable_file)
 >>> p.length
 3
 >>> p.payload
