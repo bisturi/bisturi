@@ -13,6 +13,7 @@ We translate this into a python's class
 ...    type = Int(1)
 ...    length = Int()
 ...    payload = Data(length)
+
 ```
 
 You can see more about Int and Data in the next session, for now, both Ints are unsigned and
@@ -25,6 +26,7 @@ To check that all the fields were correctly created, we can see them
 ```python
 >>> [name for name, field in TLP.get_fields()]
 ['type', 'length', 'payload']
+
 ```
 
 Ok, now lets intantiate a TLP packet and see its values by default
@@ -37,6 +39,7 @@ Ok, now lets intantiate a TLP packet and see its values by default
 0
 >>> p.payload
 ''
+
 ```
 
 Those values come from the defined defaults of Int (0) and Data ('').
@@ -50,6 +53,7 @@ Of course, 'my defaults' may be aren't yours, so you can change them:
 0
 >>> p.payload
 ''
+
 ```
 
 This is very convenient but may be it is not the optimal of the default of 'type' is 2
@@ -69,4 +73,5 @@ default in the field itself.
 0
 >>> p.payload
 ''
+
 ```
