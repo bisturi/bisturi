@@ -148,13 +148,13 @@ chunks_raw.extend([pack(pkt) for name, f, pack, _ in fields[%(start_index)i:%(en
       }
 
 def generate_code_for_loop_unpack(group):
-   return '''
-for name, f, _, unpack in fields[%(start_index)i:%(end_index)i]:
-   offset = unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
+   return ''.join(['''
+name, _, _, unpack = fields[%(field_index)i]
+offset = unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
 ''' % {
-         'start_index': group[0][0],
-         'end_index':   group[-1][0]+1,
-      }
+      'field_index': field_index
+   } for field_index in range(group[0][0], group[-1][0]+1)])
+
 
 def indent(code, level=1):
    i = "   " * level
