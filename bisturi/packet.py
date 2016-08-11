@@ -53,10 +53,6 @@ class Packet(object):
       if _initialize_fields:
          map(lambda name_val: name_val[1].init(self, defaults), self.__class__.get_fields())
 
-   @classmethod
-   def build_default_instance(cls):
-      return cls.__bisturi__['clone_default_instance_func']()
-
    def as_prototype(self):
       return Prototype(self)
 

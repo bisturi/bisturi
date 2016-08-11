@@ -67,13 +67,6 @@ class PacketClassBuilder(object):
       write_py_module = self.cls.__bisturi__.get('write_py_module', False)
       blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
 
-    def create_prototype(self):
-      from packet import Prototype
-
-      pkt = self.cls()
-      prototype = Prototype(pkt)
-      self.cls.__bisturi__['clone_default_instance_func'] = prototype.clone
-
     def get_packet_class(self):
       return self.cls
 
@@ -133,7 +126,6 @@ class MetaPacket(type):
       builder.check_if_we_are_in_debug_mode()
 
       builder.create_optimized_code()
-      builder.create_prototype()
       
       cls = builder.get_packet_class()
       return cls
