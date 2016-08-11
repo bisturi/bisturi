@@ -186,57 +186,60 @@ class Int(Field):
          if self.is_signed:
             code = code.lower()
 
+         self.struct_code = code
          fmt = (">" if self.is_bigendian else "<") + code
-         s = struct.Struct(fmt)
-         del self.is_bigendian
-         del self.is_signed
+         self.struct_obj = struct.Struct(fmt)
 
-         def _unpack(raw_data):
-            return s.unpack(raw_data)[0]
-
-         def _pack(integer):
-            return s.pack(integer)
+         self.pack, self.unpack = self._pack_fixed_and_primitive_size, self._unpack_fixed_and_primitive_size
 
       else:
-         base = 2**(self.byte_count*8) 
-         xcode = ("%0" + str(self.byte_count*2) + "x")
-         def _unpack(raw_data):
-            if not self.is_bigendian:
-               raw_data = raw_data[::-1]
-            
-            num = int(raw_data.encode('hex'), 16)
-            if self.is_signed and ord(raw_data[0]) > 127:
-               num = -(base - num)
+         self.base = 2**(self.byte_count*8) 
+         self.xcode = ("%0" + str(self.byte_count*2) + "x")
 
-            return num
-
-         def _pack(integer):
-            num = (base + integer) if integer < 0 else integer
-
-            data = (xcode % num).decode('hex')
-            if not self.is_bigendian:
-               data = data[::-1]
-
-            return data
-
-      self._unpack = _unpack
-      self._pack = _pack
+         self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
 
    def unpack(self, pkt, raw, offset=0, **k):
+      raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
+
+   def pack(self, packet):
+      raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
+
+   def _unpack_fixed_and_primitive_size(self, pkt, raw, offset=0, **k):
       next_offset = offset + self.byte_count
-      raw_data = raw[offset:next_offset]
-      integer = self._unpack(raw_data)
+      integer = self.struct_obj.unpack(raw[offset:next_offset])[0]
       self.setval(pkt, integer)
 
       return next_offset
 
-   def pack(self, packet):
-      integer = self.getval(packet)
-      raw = self._pack(integer)
+   def _pack_fixed_and_primitive_size(self, pkt):
+      integer = self.getval(pkt)
+      raw = self.struct_obj.pack(integer)
 
       return raw
 
+   def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
+      next_offset = offset + self.byte_count
+      raw_data = raw[offset:next_offset]
+      if not self.is_bigendian:
+         raw_data = raw_data[::-1]
+      
+      num = int(raw_data.encode('hex'), 16)
+      if self.is_signed and ord(raw_data[0]) > 127:
+         num = -(self.base - num)
+
+      self.setval(pkt, num)
+      return next_offset
+
+   def _pack_fixed_size(self, pkt):
+      integer = self.getval(pkt)
+      num = (self.base + integer) if integer < 0 else integer
+
+      data = (self.xcode % num).decode('hex')
+      if not self.is_bigendian:
+         data = data[::-1]
+
+      return data
 
 class Data(Field):
    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
