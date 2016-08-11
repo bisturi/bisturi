@@ -119,10 +119,10 @@ def _get_when(count, when):
       
 
 class Sequence(Field):
-   def __init__(self, prototype, count, until, when):
+   def __init__(self, prototype, count, until, when, default=None):
       Field.__init__(self)
       self.ctime = prototype.ctime
-      self.default = []
+      self.default = default if default is not None else []
 
       self.prototype_field = prototype
 
@@ -140,7 +140,6 @@ class Sequence(Field):
       Field.init(self, packet, defaults)
       self.prototype_field.init(packet, {})
       
-
    def unpack(self, pkt, raw, offset=0, **k):
       self.until_condition.reset()
 
