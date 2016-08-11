@@ -133,7 +133,8 @@ class Sequence(Field):
       
    def compile(self, field_name, position, fields):
       Field.compile(self, field_name, position, fields)
-      self.prototype_field.compile(field_name="_seq__"+field_name, position=-1, fields=[])
+      self.seq_elem_field_name = "_seq_elem__"+field_name
+      self.prototype_field.compile(field_name=self.seq_elem_field_name, position=-1, fields=[])
 
    def init(self, packet, defaults):
       Field.init(self, packet, defaults)
@@ -144,13 +145,14 @@ class Sequence(Field):
       self.until_condition.reset()
 
       sequence = [] 
-      self.setval(pkt, sequence)
+      self.setval(pkt, sequence) # clean up the previous sequence, so it can be used by the 'when' and 'until' callbacks
       stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
+      seq_elem_field_name = self.seq_elem_field_name
       while not stop:
          offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-         obj = getattr(pkt, "_seq__"+self.field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
+         obj = getattr(pkt, seq_elem_field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
          if isinstance(obj, Packet):
             avoid_deep_copies = obj.__bisturi__.get('avoid_deep_copies', True)
 
@@ -162,15 +164,16 @@ class Sequence(Field):
          sequence.append(obj)
          stop = self.until_condition(pkt=pkt, raw=raw, offset=offset, **k)
 
-      self.setval(pkt, sequence)
+      # self.setval(pkt, sequence), we don't need this, because the sequence is already there
       return offset
 
 
    def pack(self, packet):
       sequence = self.getval(packet)
       raw = []
+      seq_elem_field_name = self.seq_elem_field_name
       for val in sequence:
-         setattr(packet,  "_seq__"+self.field_name, val)
+         setattr(packet,  seq_elem_field_name, val)
          raw.append(self.prototype_field.pack(packet))
 
       return "".join(raw)
