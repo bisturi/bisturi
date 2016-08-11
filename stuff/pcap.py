@@ -30,31 +30,3 @@ class MagicNumber(Packet):
          raw = Data(length)
 
       return Header, Packet_
-
-
-
-def get_packet_from(filein):
-   magic = MagicNumber(filein.read(4))
-
-   PcapHeader, Packet_ = magic.get_header_and_packet_classes()
-
-   header = PcapHeader(filein.read(20))
-   max_len = header.snapshot_length + 16 #packet header size
-
-   buf = filein.read(max_len)
-
-   while buf:
-      p = Packet_()
-      offset = p.from_raw(buf)
-
-      assert offset >= 0, "Bogus packet parser"
-
-      yield p
-
-      remain = (len(buf) - offset)
-      if remain < 0:
-         raise Exception("The original buffer has %i bytes but the final offset was %i. This means that the last packet consumed more bytes that should be expected." % (len(buf), offset))
-
-      buf = buf[offset:] + filein.read(max_len - remain)
-
-

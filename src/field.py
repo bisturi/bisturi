@@ -1,4 +1,4 @@
-import time, struct, sys, copy
+import time, struct, sys
 
 class Field(object):
    def __init__(self):
@@ -12,7 +12,7 @@ class Field(object):
 
 
    def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
+      self.setval(packet, defaults.get(self.field_name, self.default))
 
    def from_raw(self, packet, raw, offset=0):
       raise NotImplementedError()
@@ -20,98 +20,6 @@ class Field(object):
    def to_raw(self, packet):
       raise NotImplementedError()
 
-   def repeated(self, count=None, until=None, when=None):
-      assert not (count is None and until is None)
-      assert not (count is not None and until is not None)
-
-      return Sequence(prototype=self, count=count, until=until, when=when)
-
-
-   def when(self, condition):
-      return Sequence(prototype=self, count=1, until=None, when=condition)
-
-
-def _get_count(count_arg):
-   if count_arg is None:
-      return None
-
-   if isinstance(count_arg, (int, long)):
-      return lambda p: count_arg
-
-   if isinstance(count_arg, Field):
-      return lambda p: count_arg.getval(p)
-
-   if callable(count_arg):
-      return count_arg
-
-   raise Exception("Invalid argument for a 'count'. Expected a number, a field or a callable.")
-
-
-def _get_until(count, until):
-   assert not (count is None and until is None)
-   assert not (count is not None and until is not None)
-
-   if count is not None: #fixed
-      outer = {'i': 0}
-      def until_condition(packet, *args):
-         outer['i'] += 1
-         if outer['i'] >= count(packet):
-            return True
-         else:
-            return False
-
-      return until_condition
-   
-   else:
-      assert callable(until)
-      return until
-
-
-class Sequence(Field):
-   def __init__(self, prototype, count, until, when):
-      Field.__init__(self)
-      self.ctime = prototype.ctime
-      self.default = []
-
-      self.prototype = prototype
-      self.when = when
-      self.until_condition = _get_until(_get_count(count), until)
-
-
-   def from_raw(self, packet, raw, offset=0):
-      from packet import Packet
-      class Element(Packet):
-         val = copy.deepcopy(self.prototype)
-      
-      sequence = self.getval(packet)
-      stop = False if self.when is None else not self.when(packet, raw, offset)
-
-      while not stop:
-         elem = Element()
-         offset = elem.from_raw(raw, offset)
-
-         sequence.append(elem.val)
-         
-         stop = self.until_condition(packet, raw, offset)
-
-      self.setval(packet, sequence)
-      return offset
-
-
-   def to_raw(self, packet):
-      from packet import Packet
-      class Element(Packet):
-         val = copy.deepcopy(self.prototype)
-
-      sequence = self.getval(packet)
-      raw = []
-      for val in sequence:
-         elem = Element()
-         elem.val = val
-
-         raw.append(elem.to_raw())
-
-      return "".join(raw)
 
 
 class Int(Field):
