@@ -21,7 +21,7 @@ class Field(object):
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
-      self.setval(packet, defaults.get(self.field_name, self.default if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
+      setattr(packet, self.field_name, defaults.get(self.field_name, self.default)) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
@@ -124,23 +124,20 @@ class Sequence(Field):
       self.ctime = prototype.ctime
       self.default = []
 
-      self.prototype = prototype
+      self.prototype_field = prototype
 
       resolved_count = None if count is None else _get_count(count)
       self.when = _get_when(resolved_count, when)
       self.until_condition = _get_until(resolved_count, until)
 
-      class Element(Packet):
-         __bisturi__ = {'generate_for_pack': False, 'generate_for_unpack': False}
-         val = copy.deepcopy(self.prototype)
+      
+   def compile(self, field_name, position, fields):
+      Field.compile(self, field_name, position, fields)
+      self.prototype_field.compile(field_name="_seq__"+field_name, position=-1, fields=[])
 
-         def push_to_the_stack(self, stack):
-            return stack
-   
-         def pop_from_the_stack(self, stack):
-            return
-
-      self._Element = Element
+   def init(self, packet, defaults):
+      Field.init(self, packet, defaults)
+      self.prototype_field.init(packet, {})
       
 
    def unpack(self, pkt, raw, offset=0, **k):
@@ -151,11 +148,18 @@ class Sequence(Field):
       stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
       while not stop:
-         elem = self._Element()
-         offset = elem.unpack(raw=raw, offset=offset, **k)
+         offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-         sequence.append(elem.val)
+         obj = getattr(pkt, "_seq__"+self.field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
+         if isinstance(obj, Packet):
+            avoid_deep_copies = obj.__bisturi__.get('avoid_deep_copies', True)
 
+            if avoid_deep_copies:
+               obj = copy.copy(obj)
+            else:
+               obj = copy.deepcopy(obj)
+
+         sequence.append(obj)
          stop = self.until_condition(pkt=pkt, raw=raw, offset=offset, **k)
 
       self.setval(pkt, sequence)
@@ -166,10 +170,8 @@ class Sequence(Field):
       sequence = self.getval(packet)
       raw = []
       for val in sequence:
-         elem = self._Element()
-         elem.val = val
-
-         raw.append(elem.pack())
+         setattr(packet,  "_seq__"+self.field_name, val)
+         raw.append(self.prototype_field.pack(packet))
 
       return "".join(raw)
 
@@ -406,7 +408,7 @@ class Ref(Field):
 
       elif isinstance(prototype, Packet):
          if self.field_name not in defaults:
-            defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance
+            defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance (Field.init will copy that object)
 
          Field.init(self, packet, defaults)
          referenced = defaults[self.field_name]
@@ -416,7 +418,7 @@ class Ref(Field):
 
       else:
          assert callable(self.prototype)
-         Field.init(self, packet, defaults)
+         Field.init(self, packet, defaults)  #TODO check the examples: default should be a value or a Field?
          self.pack   = self._pack_referencing_a_unknow_object
 
 
