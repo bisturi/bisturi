@@ -20,3 +20,17 @@ do
 done
 
 popd
+
+pushd .
+cd tests
+
+for t in test_$1*.py
+do
+   if [ -e $t ]
+   then
+      echo $t
+      python -m unittest -q "${t%%.*}"
+   fi
+done
+
+popd
