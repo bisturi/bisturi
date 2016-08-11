@@ -60,7 +60,7 @@ class Int(Field):
             return num
 
          def _pack(integer):
-            num = (base + integer + 1) if integer < 0 else integer
+            num = (base + integer) if integer < 0 else integer
 
             data = (xcode % num).decode('hex')
             if not self.is_bigendian:
@@ -94,6 +94,7 @@ class Data(Field):
       self.default = default
       self.byte_count = byte_count
       self.include_delimiter = include_delimiter
+      self.delimiter_to_be_included = self.byte_count if isinstance(self.byte_count, basestring) and not include_delimiter else ''
 
    def init(self, packet, defaults):
       self.setval(packet, defaults.get(self.field_name, self.default))
@@ -108,6 +109,7 @@ class Data(Field):
          else:
             count = raw[offset:].find(self.byte_count)
             extra_count = len(self.byte_count)
+            self.delimiter_to_be_included = self.byte_count
 
       elif hasattr(self.byte_count, 'search'):
          match = self.byte_count.search(raw, offset)
@@ -117,6 +119,7 @@ class Data(Field):
             else:
                count = match.start()
                extra_count = match.end()-count
+               self.delimiter_to_be_included = match.group()
          else:
             count = -1
       else:
@@ -131,4 +134,4 @@ class Data(Field):
       return count + extra_count
 
    def to_raw(self, packet):
-      return self.getval(packet)
+      return self.getval(packet) + self.delimiter_to_be_included

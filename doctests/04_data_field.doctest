@@ -36,6 +36,29 @@ Let see what happen when the packet is built from this string
 >>> p.f
 'jk'
 
+>>> p.to_raw() == s
+True
+
+Note that a sutil problem is raises with the delimiters. If the delimiter is a regexp,
+there isn't a good default for it. So, be careful with that:
+
+>>> q = DataExample()
+>>> q.length
+0
+>>> q.a
+''
+>>> q.b
+''
+>>> q.c
+''
+>>> q.d
+''
+>>> q.e
+''
+>>> q.f
+''
+
+
 If you need that the token be in the result, you can use the keyword 'include_delimiter'
 
 >>> class DataExample(Packet):
@@ -64,4 +87,9 @@ If you need that the token be in the result, you can use the keyword 'include_de
 >>> p.f
 'jk'
 
+>>> p.to_raw() == s
+True
+
 As you can see, when you use a token as delimiter, the token is added to the result.
+
+
