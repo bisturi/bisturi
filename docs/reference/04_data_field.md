@@ -142,6 +142,22 @@ Exception: ...
 
 ```
 
+As an exception to this, when the search marker is the regex "$" (which means give me to me all 
+the rest of the raw string), this regex is honored and will return the rest of the string 
+ignoring the search buffer length:
+
+```python
+>>> class DataWithSearchLengthLimitTooShortButIgnored(Packet):
+...    __bisturi__ = { 'search_buffer_length': 2 }
+...
+...    a = Data(until_marker=re.compile('$'), include_delimiter=False)
+
+>>> s = 'abeeee'
+>>> p = DataWithSearchLengthLimitTooShortButIgnored(s) 
+>>> p.a
+'abeeee'
+
+```
 
 A special case arise when the size of the data is not bound to a field only neither there
 is a marker to search. 
