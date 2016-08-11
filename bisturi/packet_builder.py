@@ -15,6 +15,20 @@ class PacketClassBuilder(object):
     def make_configuration(self):
         self.bisturi_conf = self.attrs.get('__bisturi__', self.bisturi_configuration_default())
 
+    def create_field_name_from_subpacket_name(self, subpacket_name):
+        name = subpacket_name[0].lower() + subpacket_name[1:]
+        return "".join((c if c.islower() else "_"+c.lower()) for c in name)
+
+    def create_fields_for_embebed_subclasses_and_replace_them(self):
+        from packet import Packet
+        from field import Ref
+        import inspect
+        subpackets = filter(lambda name_val: inspect.isclass(name_val[1]) and issubclass(name_val[1], Packet), self.attrs.iteritems())
+        subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name), 
+                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) for name, subpacket in subpackets]
+
+        self.attrs.update(dict(subpackets_as_refs))
+
     def collect_the_fields(self):
       from field import Field
       self.fields_in_class = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
@@ -148,6 +162,8 @@ class MetaPacket(type):
           builder = PacketClassBuilder(metacls, name, bases, attrs)
     
       builder.make_configuration()
+
+      builder.create_fields_for_embebed_subclasses_and_replace_them()
 
       builder.collect_the_fields()
       builder.make_field_descriptions()

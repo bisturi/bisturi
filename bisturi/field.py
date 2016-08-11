@@ -683,8 +683,11 @@ class Data(Field):
       return fragments
 
 class Ref(Field):
-   def __init__(self, prototype, default=None, embeb=False): # TODO we don't support Bits fields
+   def __init__(self, prototype, default=None, embeb=False, _is_a_subpacket_definition=False): # TODO we don't support Bits fields
       Field.__init__(self)
+
+      if _is_a_subpacket_definition:
+          self.ctime = prototype.get_fields()[0][1].ctime
 
       self.prototype = prototype # TODO should we copy this prototype and/or its default?
       self.default = default

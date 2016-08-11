@@ -95,6 +95,44 @@ the packet Ethernet and the packet IP, maybe you will be temted to define
 Ethernet.payload as Ref(IP) but this will bound your Ethernet implementation to IP.
 Exists more flexible solutions to this called 'specializations' which i will show you later.
 
+There is possible to use a subpacket (a packet defined inside of another) as a shortcut instead of using
+Ref. This is an example:
+
+```python
+>>> from bisturi.packet import Packet
+>>> from bisturi.field import Int, Data
+
+>>> class Person(Packet):
+...    length = Int(1)
+...    name = Data(length)
+...
+...    class BirthDate(Packet):
+...        day   = Int(1)
+...        month = Int(1)
+...        year  = Int(2)
+...
+...    age = Int(1)
+...
+
+>>> s = "\x04john\x05\x03\x07\xda\x16"
+>>> p = Person.unpack(s)
+
+>>> p.length
+4
+>>> p.name
+'john'
+>>> p.age
+22
+>>> p.birth_date.day
+5
+>>> p.birth_date.year
+2010
+
+```
+
+Notice how the packet' name "Date" is transformed into the "date" field. The rules follow the pyhonic path for names,
+transforming class's names like "FooBar" into field's names like "foo_bar".
+
 We can do a last improvement. Some times we use sub packets to organize better the
 structure of the big picture but it become annoying the extra level of indirection.
 To makes this more easy to use we can 'embeb' the fields of the referenced sub packet
@@ -112,3 +150,4 @@ into the packet container:
 '\xff\xff\x02'
 
 ```
+
