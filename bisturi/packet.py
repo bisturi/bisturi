@@ -60,6 +60,9 @@ class MetaPacket(type):
       write_py_module = cls.__bisturi__.get('write_py_module', False)
       blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(fields)], cls, generate_for_pack, generate_for_unpack, write_py_module)
  
+      pkt = cls()
+      prototype = Prototype(pkt)
+      cls.__bisturi__['clone_default_instance_func'] = prototype.clone
 
       return cls
 
@@ -92,14 +95,7 @@ class Packet(object):
 
    @classmethod
    def build_default_instance(cls):
-       try:
-           return cls.__bisturi__['clone_default_instance_func']()
-       except KeyError:
-           pkt = cls()
-           prototype = Prototype(pkt)
-           cls.__bisturi__['clone_default_instance_func'] = prototype.clone
-
-           return prototype.clone()
+      return cls.__bisturi__['clone_default_instance_func']()
 
    def as_prototype(self):
       return Prototype(self)
