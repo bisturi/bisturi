@@ -9,10 +9,8 @@ import copy
 # RFC 1034, 1035
 class Label(Packet):
    length = Int(1)
-   name   = Ref(lambda pkt, **k: {
-                  0x00: Data(pkt.length),
-                  0xc0: Int(1),
-               }[pkt.length & 0xc0],  default='')
+   name   = Ref(lambda pkt, **k: Int(1) if pkt.is_compressed() else Data(pkt.length),
+                    default='')
 
    def is_root(self):
       return self.length == 0
