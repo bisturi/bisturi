@@ -396,6 +396,18 @@ class Ref(Field):
       if isinstance(self.prototype, Field): 
          self.prototype.compile(field_name=field_name, position=position, fields=[])
 
+      prototype = self.prototype
+      if isinstance(prototype, Field):
+         self.unpack = prototype.unpack
+         self.pack   = prototype.pack
+
+      elif isinstance(prototype, Packet):
+         self.unpack = self._unpack_referencing_a_packet
+         self.pack   = self._pack_referencing_a_packet 
+
+      else:
+         assert callable(self.prototype)
+         pass
 
 
    def init(self, packet, defaults):   #TODO ver el tema de los defaults q viene de la instanciacion del packet
@@ -405,17 +417,11 @@ class Ref(Field):
       if isinstance(prototype, Field):
          prototype.init(packet, defaults)
 
-         self.unpack = prototype.unpack
-         self.pack   = prototype.pack
-
       elif isinstance(prototype, Packet):
          if self.field_name not in defaults:
             defaults[self.field_name] = copy.deepcopy(prototype)  # get a new instance (Field.init will copy that object)
 
          Field.init(self, packet, defaults)
-         
-         self.unpack = self._unpack_referencing_a_packet
-         self.pack   = self._pack_referencing_a_packet 
 
       else:
          assert callable(self.prototype)

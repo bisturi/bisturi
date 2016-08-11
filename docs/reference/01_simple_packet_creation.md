@@ -24,7 +24,7 @@ of the field 'length'
 To check that all the fields were correctly created, we can see them
 
 ```python
->>> [name for name, field in TLP.get_fields()]
+>>> [name for name, field, _, _ in TLP.get_fields()]
 ['type', 'length', 'payload']
 
 ```

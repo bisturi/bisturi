@@ -13,6 +13,7 @@ class MetaPacket(type):
       
       map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields), *zip(*enumerate(fields)))
 
+      fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in fields]
       @classmethod
       def get_fields(cls):
          return fields
@@ -40,8 +41,8 @@ class Packet(object):
    def unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)
       try:
-         for name, f in self.get_fields():
-            offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+         for name, f, _, unpack in self.get_fields():
+            offset = unpack(pkt=self, raw=raw, offset=offset, stack=stack)
       except Exception, e:
          import traceback
          msg = traceback.format_exc()
@@ -52,7 +53,7 @@ class Packet(object):
       return offset
          
    def pack(self):
-      return ''.join([f.pack(self) for name, f in self.get_fields()])
+      return ''.join([pack(self) for name, f, pack, _ in self.get_fields()])
 
    def push_to_the_stack(self, stack):
       if stack:
@@ -67,7 +68,7 @@ class Packet(object):
 
    def iterative_unpack(self, raw, offset=0, stack=None):
       stack = self.push_to_the_stack(stack)
-      for name, f in self.get_fields():
+      for name, f, _, _ in self.get_fields():
          yield offset, name
          offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
 

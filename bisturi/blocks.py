@@ -150,7 +150,7 @@ def generate_code_for_fixed_fields_without_struct_code(group):
 
 def generate_code_for_loop_pack(group):
    return '''
-chunks_raw.extend([f.pack(pkt) for name, f in fields[%(start_index)i:%(end_index)i]])
+chunks_raw.extend([pack(pkt) for name, f, pack, _ in fields[%(start_index)i:%(end_index)i]])
 ''' % {
          'start_index': group[0][0],
          'end_index':   group[-1][0]+1,
@@ -158,8 +158,8 @@ chunks_raw.extend([f.pack(pkt) for name, f in fields[%(start_index)i:%(end_index
 
 def generate_code_for_loop_unpack(group):
    return '''
-for name, f in fields[%(start_index)i:%(end_index)i]:
-   offset = f.unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
+for name, f, _, unpack in fields[%(start_index)i:%(end_index)i]:
+   offset = unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
 ''' % {
          'start_index': group[0][0],
          'end_index':   group[-1][0]+1,
