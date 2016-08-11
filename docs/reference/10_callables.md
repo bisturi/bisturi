@@ -115,7 +115,7 @@ For example
 
 ```
 
-Don't be shy, we can do more complex expressions
+Don't be shy, lets do more complex expressions
 
 ```python
 >>> class AllVariable(Packet):
