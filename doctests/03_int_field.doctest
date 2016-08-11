@@ -1,0 +1,32 @@
+Let see the interface of the Int field.
+This field represent an integer which can be
+ - signed or unsigned
+ - represented in bigendian, littleendian or local (based in the local machine, sys.byteorder)
+
+The Int field can require any amount of bytes, 4 by default.
+Let see an example
+
+>>> from packet import Packet
+>>> from field import Int
+>>> class IntExample(Packet):
+...    a = Int()
+...    b = Int(1)
+...    c = Int(endianess='little')
+...    d = Int(1, signed=True)
+...    e = Int(endianess='network')
+...    f = Int(endianess='local')
+
+The code should be self explaining. But to remove any doubt,
+
+>>> a = '\x00\x00\x00\x01'  # 1
+>>> b = '\x02'              # 2
+>>> c = '\x03\x00\x00\x00'  # 3 in little endian
+>>> d = '\xfc'              # -4
+>>> e = '\x00\x00\x00\x05'  # 5 in big endian (or network order)
+>>> f = '\x00\x00\x00\x06'  # 6 if this machine is big endian, but i don't know.
+
+>>> s = a+b+c+d+e+f
+>>> p = IntExample(s)
+>>> [p.a, p.b, p.c, p.d, p.e]
+[1, 2, 3, -4, 5]
+

@@ -37,7 +37,7 @@ class Int(Field):
       if self.byte_count in (1, 2, 4, 8): 
          code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
          if self.is_signed:
-            code.lowercase()
+            code = code.lower()
 
          fmt = (">" if self.is_bigendian else "<") + code
          s = struct.Struct(fmt)
@@ -63,7 +63,7 @@ class Int(Field):
       if self.byte_count in (1, 2, 4, 8): 
          code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
          if self.is_signed:
-            code.lowercase()
+            code = code.lower()
 
          fmt = (">" if self.is_bigendian else "<") + code
          s = struct.Struct(fmt)
