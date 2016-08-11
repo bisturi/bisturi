@@ -247,11 +247,90 @@ class TestRef(unittest.TestCase):
          obj_two_second_values = (8, 9)
       )
 
-'''
-class RefVariableMixed(Packet):
-   first  = Ref(lambda **k: Int(1),  default=SubPacket(value=2))
-   second = Ref(lambda **k: SubPacket(value=3),  default=Int(4))
 
+   def test_ref_int_field_defaults_from_user(self):
+      class RefIntField(Packet):
+         first  = Ref(Int)
+         second = Ref(Int)
+
+      self._test_refs_field(
+         obj_one = RefIntField(first=1), 
+         obj_two = RefIntField(first=2, second=3),
+         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
+         two_default_raw = '\x00\x00\x00\x02\x00\x00\x00\x03',
+         obj_one_defaults = (1, 0), 
+         obj_two_defaults = (2, 3), 
+         first_raw_for_one =  '\x00\x00\x00\x04\x00\x00\x00\x05',   
+         obj_one_first_values = (4, 5),
+         second_raw_for_one = '\x00\x00\x00\x06\x00\x00\x00\x07', 
+         second_raw_for_two = '\x00\x00\x00\x08\x00\x00\x00\x09', 
+         obj_one_second_values = (6, 7), 
+         obj_two_second_values = (8, 9)
+      )
+   
+
+   def test_ref_subpacket_defaults_from_user(self):
+      class RefSubPacket(Packet):
+         first  = Ref(SubPacket)
+         second = Ref(SubPacket(value=1))
+
+      self._test_refs_packet(
+         obj_one = RefSubPacket(first=SubPacket(value=2)), 
+         obj_two = RefSubPacket(first=SubPacket(value=3), second=SubPacket(value=4)),
+         one_default_raw = '\x02\x01',
+         two_default_raw = '\x03\x04',
+         obj_one_defaults = (2, 1), 
+         obj_two_defaults = (3, 4), 
+         first_raw_for_one =  '\x05\x06',   
+         obj_one_first_values = (5, 6),
+         second_raw_for_one = '\x07\x08', 
+         second_raw_for_two = '\x09\x0a', 
+         obj_one_second_values = (7, 8), 
+         obj_two_second_values = (9, 0xa)
+      )
+
+   def test_ref_variable_int_field_defaults_from_user(self):
+      class RefVariableIntField(Packet):
+         first  = Ref(lambda **k: Int(1),  default=1)
+         second = Ref(lambda **k: Int(4),  default=2)
+
+      self._test_refs_field(
+         obj_one = RefVariableIntField(first=3), 
+         obj_two = RefVariableIntField(first=4, second=5),
+         one_default_raw = '\x03\x00\x00\x00\x02',
+         two_default_raw = '\x04\x00\x00\x00\x05',
+         obj_one_defaults = (3, 2), 
+         obj_two_defaults = (4, 5), 
+         first_raw_for_one =  '\x06\x00\x00\x00\x07',   
+         obj_one_first_values = (6, 7),
+         second_raw_for_one = '\x08\x00\x00\x00\x09',   
+         second_raw_for_two = '\x0a\x00\x00\x00\x0b',   
+         obj_one_second_values = (8, 9), 
+         obj_two_second_values = (0xa, 0xb)
+      )
+
+   def test_ref_variable_subpacket_defaults_from_user(self):
+      class RefVariableSubPacket(Packet):
+         first  = Ref(lambda **k: SubPacket(value=1),  default=SubPacket(value=2))
+         second = Ref(lambda **k: SubPacket(value=3),  default=SubPacket(value=4))
+
+      self._test_refs_packet(
+         obj_one = RefVariableSubPacket(first=SubPacket(value=5)), 
+         obj_two = RefVariableSubPacket(first=SubPacket(value=6), second=SubPacket(value=7)),
+         one_default_raw = '\x05\x04',
+         two_default_raw = '\x06\x07',
+         obj_one_defaults = (5, 4), 
+         obj_two_defaults = (6, 7), 
+         first_raw_for_one =  '\x08\x09',   
+         obj_one_first_values = (8, 9),
+         second_raw_for_one = '\x0a\x0b', 
+         second_raw_for_two = '\x0c\x0d', 
+         obj_one_second_values = (0xa, 0xb), 
+         obj_two_second_values = (0xc, 0xd)
+      )
+
+
+'''
 class RefVariableCorrectParameters(Packet):
    first  = Ref(first_callable,  default=Int())
    second = Ref(second_callable, default=Int())
