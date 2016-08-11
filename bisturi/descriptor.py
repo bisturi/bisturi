@@ -1,7 +1,6 @@
-
-class AutoLength(object):
-    def __init__(self, length_of):
-        self.length_of = length_of
+class Auto(object):
+    def __init__(self, func):
+        self.func = func
 
     def compile(self, field_name, descriptor_name, bisturi_conf):
         self.iam_enabled_attr_name = "_is_descriptor_%s_enabled" % descriptor_name
@@ -13,7 +12,7 @@ class AutoLength(object):
  
         iam_enabled = getattr(instance, self.iam_enabled_attr_name, True)
         if iam_enabled:
-            return len(getattr(instance, self.length_of))
+            return self.func(instance)
         else:
             real_value = getattr(instance, self.real_field_name) 
             return real_value
@@ -26,4 +25,13 @@ class AutoLength(object):
     def sync_before_pack(self, instance):
         val = self.__get__(instance, type(instance)) # this can be calculated or not, we don't care
         setattr(instance, self.real_field_name, val) # we only care that the real field has the same value
+
+
+class AutoLength(Auto):
+    def __init__(self, length_of):
+        self.length_of = length_of
+        Auto.__init__(self, self.calculate_length)
+
+    def calculate_length(self, instance):
+        return len(getattr(instance, self.length_of))
 

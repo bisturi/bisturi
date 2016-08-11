@@ -64,17 +64,57 @@ The AutoLength descriptor implement sync_before_pack so th pack method works as 
 
 AutoLength support to force a value disabling the auto-functionality
 
+```python
 >>> q = DataExample(length=3, a='ab')
 >>> q.length
 3
 >>> q.a
 'ab'
 
+```
+
 You can reenable it setting the field to None:
 
+```python
 >>> q.length = None
 >>> q.length
 2
 >>> q.a
 'ab'
+
+```
+
+There is a more general descriptor available that allows to execute an arbitrary function instead of calculate
+the length of some other field.
+For example if we need to compute the length in bits of some data, we can do:
+
+```python
+>>> from bisturi.packet import Packet
+>>> from bisturi.field  import Data, Int, Bkpt
+>>> from bisturi.descriptor import Auto
+
+>>> class DataExample(Packet):
+...    length_in_bits = Int(1).describe(Auto(lambda pkt: len(pkt.a) * 8))
+...    a = Data(length_in_bits / 8)
+...
+
+```
+
+An this descriptor will works in the same way that AutoLength:
+
+```python
+>>> s = '\x10ab'
+>>> p = DataExample.unpack(s)
+>>> p.length_in_bits
+16
+>>> p.a
+'ab'
+
+>>> p.a = "abc" 
+>>> p.length_in_bits
+24
+>>> p.a
+'abc'
+
+```
 
