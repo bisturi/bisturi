@@ -34,7 +34,7 @@ class Packet(object):
 
    def from_raw(self, raw, offset=0):
       for name, f in self.get_fields():
-         offset += f.from_raw(self, raw[offset:])
+         offset = f.from_raw(self, raw, offset)
 
       return offset
          

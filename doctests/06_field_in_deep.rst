@@ -67,7 +67,7 @@ So we need to create our own field.
 ...       ip_address._ip = struct.unpack(">I", raw_data)[0]
 ...       self.setval(packet, ip_address)
 ... 
-...       return self.byte_count
+...       return self.byte_count + offset
 ... 
 ...    def to_raw(self, packet):
 ...       ip_address = self.getval(packet)
@@ -82,7 +82,7 @@ Ok, lets see.
    With the version as parameter we can handle both version of the IP address schema.
    Two important notes, the parent __init__ is called and the 'default' attribute is setted.
  - Then, the from_raw is implemented. We read 4 (or 16) bytes and we set the val interpreted
-   using 'setval'. The count of byte readed is returned.
+   using 'setval'. The new offset is returned (the bytes readed plus the old offset).
  - Similar for 'to_raw'. We get the val using 'getval' and transform the ip address to
    its binary representation which is returned
 

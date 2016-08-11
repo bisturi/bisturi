@@ -80,7 +80,7 @@ class Int(Field):
       integer = self._unpack(raw_data)
       self.setval(packet, integer)
 
-      return self.byte_count
+      return self.byte_count + offset
 
    def to_raw(self, packet):
       integer = self.getval(packet)
@@ -116,7 +116,7 @@ class Data(Field):
             self.delimiter_to_be_included = byte_count
 
       elif hasattr(byte_count, 'search'):
-         match = byte_count.search(raw, offset)
+         match = byte_count.search(raw[offset:], 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
          if match:
             if self.include_delimiter:
                count = match.end()
@@ -136,7 +136,7 @@ class Data(Field):
       raw_data = raw[offset:offset+count]
       self.setval(packet, raw_data)
 
-      return count + extra_count
+      return count + extra_count + offset
 
    def to_raw(self, packet):
       return self.getval(packet) + self.delimiter_to_be_included
@@ -225,7 +225,7 @@ class Bits(Field):
       I = self.I.getval(packet)
 
       self.setval(packet, (I & self.mask) >> self.shift)
-      return consumed
+      return consumed + offset
 
    def to_raw(self, packet):
       I = self.I.getval(packet)
