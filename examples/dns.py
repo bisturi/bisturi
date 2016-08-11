@@ -257,19 +257,24 @@ if __name__ == '__main__':
    the_question = response.questions[0]
    assert list(map(lambda n: n.name.val, the_question.qname)) == ['www', 'google', 'com', '']
  
-   for resource_records in (response.questions, response.answers, response.authorities, response.additionals):
-      for one_record in resource_records:
+   BASE = "google.com."
+   W    = "www." + BASE
+   NS1  = "ns1." + BASE
+   NS2  = "ns2." + BASE
+   NS3  = "ns3." + BASE
+   NS4  = "ns4." + BASE
+   ROOT = ""
+   for resource_records, expecteds in zip(
+            (response.questions, response.answers, response.authorities, response.additionals),
+            ([W], [W]*6, [BASE]*4, [NS1, NS2, NS3, NS4, ROOT])):
+      
+      assert len(resource_records) == len(expecteds)
+      for one_record, expected_name in zip(resource_records, expecteds):
          labels = one_record.name if hasattr(one_record, 'name') else one_record.qname
-         for label in labels:
-            if label.is_compressed():
-               print hex(label.offset()), "compressed",
-            
-            print label.uncompressed_name(raw_response)
-         print "-" * 20
-      print "=" * 20
+         name = ".".join([label.uncompressed_name(raw_response) for label in labels])
+         
+         assert name == expected_name
    
-   #position_of_first_partial_name = raw_response.find('www')
-   #inspect(response)
-   #print response.additionals[0].name.offset, position_of_first_partial_name
-   #assert response.additionals[0].name.offset == position_of_first_partial_name
+   assert query.pack() == raw_query
+   assert response.pack() == raw_response
 
