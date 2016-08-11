@@ -115,29 +115,20 @@ def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
 
    lookup_fields  = " ".join([('pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
    unpack_code = '''
-try:
-   next_offset = offset + %(advance)s
-   %(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
-   offset = next_offset
-except Exception, e:
-   print e
-%(loop_for_unpack)s
+next_offset = offset + %(advance)s
+%(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
+offset = next_offset
 ''' % {
          'lookup_fields': lookup_fields,
          'fmt': fmt,
          'advance': struct.calcsize(fmt),
-         'loop_for_unpack': indent(generate_code_for_loop_unpack(group))
       }
 
    pack_code = '''
-try:
-   chunks_raw.append(StructPack("%(fmt)s", %(lookup_fields)s))
-except:
-%(loop_for_pack)s
+chunks_raw.append(StructPack("%(fmt)s", %(lookup_fields)s))
 ''' % {
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
-         'loop_for_pack': indent(generate_code_for_loop_pack(group))
       }
    
    return pack_code, unpack_code
