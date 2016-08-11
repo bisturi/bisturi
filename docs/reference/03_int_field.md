@@ -13,10 +13,10 @@ Let see an example
 >>> class IntExample(Packet):
 ...    a = Int()
 ...    b = Int(1)
-...    c = Int(endianess='little')
+...    c = Int(endianness='little')
 ...    d = Int(1, signed=True)
-...    e = Int(endianess='network')
-...    f = Int(endianess='local')
+...    e = Int(endianness='network')
+...    f = Int(endianness='local')
 
 ```
 
@@ -48,10 +48,10 @@ inefficient but it is implemented if you need it.
 ```python
 >>> class IntExample(Packet):
 ...    a = Int(3)
-...    b = Int(3, endianess='little')
+...    b = Int(3, endianness='little')
 ...    c = Int(16, signed=True)
-...    d = Int(3, endianess='network')
-...    e = Int(3, endianess='local')
+...    d = Int(3, endianness='network')
+...    e = Int(3, endianness='local')
 
 >>> a = '\x00\x00\x01'      # 1
 >>> b = '\x02\x00\x00'      # 2 in little endian
@@ -95,6 +95,33 @@ To see the 'cost' of both implementations, we can mount a very rudimentary test.
 >>> best_tgen = min(tgen.repeat(repeat=10, number=1000))
 
 >>> best_topt < best_tgen
+True
+
+```
+
+In some cases you need to change the endianness of all the Ints from bigendian (default)
+to littleendian.
+Changeing this in each Int is terrible, so we can change the default directly 
+
+```python
+
+>>> class IntWithDifferentDefault(Packet):
+...    __bisturi__ = {'endianness': 'little'}
+...
+...    a = Int(2, endianness='little')
+...    b = Int(2)    # now, littleendian by default
+...    c = Int(2, endianness='network')
+
+>>> a = '\x01\x00'          # 1 in little endian
+>>> b = '\x02\x00'          # 2 in little endian too
+>>> c = '\x00\x03'          # 3 in big endian (or network order)
+
+>>> s = a+b+c
+>>> p = IntWithDifferentDefault(s)
+>>> [p.a, p.b, p.c]
+[1, 2, 3]
+
+>>> p.pack() == s
 True
 
 ```

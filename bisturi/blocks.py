@@ -113,14 +113,14 @@ def generate_code_for_fixed_fields(fields):
    codes = []
    for has_struct_code, group in grouped_by_struct_code:
       if has_struct_code:
-         grouped_by_endianess = [(k, list(g)) for k, g in itertools.groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)]
-         codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) for k, g in grouped_by_endianess])
+         grouped_by_endianness = [(k, list(g)) for k, g in itertools.groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)]
+         codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) for k, g in grouped_by_endianness])
       else:
          codes.append(generate_code_for_fixed_fields_without_struct_code(group))
 
    return codes
 
-# TODO if is_bigendian  is  None means "don't care", no necessary means 'big endian (>)', so it should be joined with any other endianess
+# TODO if is_bigendian  is  None means "don't care", no necessary means 'big endian (>)', so it should be joined with any other endianness
 def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
    fmt = ">" if is_bigendian else "<"
    fmt += "".join([f.struct_code for _, _, f in group])

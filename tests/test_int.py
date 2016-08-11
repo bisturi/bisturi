@@ -129,8 +129,8 @@ class TestInt(unittest.TestCase):
 
    def test_double_int_with_endian(self):
       class ChangedEndianess(Packet):
-         first  = Int(4, endianess='little',  default=1)
-         second = Int(4, endianess='little',  default=2)
+         first  = Int(4, endianness='little',  default=1)
+         second = Int(4, endianness='little',  default=2)
          
       self._test_ints(
          obj_one = ChangedEndianess(), 
@@ -190,8 +190,8 @@ class TestInt(unittest.TestCase):
 
    def test_rare_int_with_endian(self):
       class RareSizeMinusOneChangedEndianess(Packet):
-         first  = Int(3, endianess='little',  default=1)
-         second = Int(3, endianess='little',  default=2)
+         first  = Int(3, endianness='little',  default=1)
+         second = Int(3, endianness='little',  default=2)
          
       self._test_ints(
          obj_one = RareSizeMinusOneChangedEndianess(), 

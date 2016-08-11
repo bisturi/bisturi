@@ -7,6 +7,9 @@ class MetaPacket(type):
          attrs['__slots__'] = []
          return type.__new__(metacls, name, bases, attrs) # Packet base class
  
+      # get the configuration, if any
+      bisturi_conf = attrs.get('__bisturi__', {})
+
       # collect the fields (Field)  
       from field import Field
       fields = filter(lambda name_val: isinstance(name_val[1], Field), attrs.iteritems())
@@ -15,9 +18,9 @@ class MetaPacket(type):
       # request to describe yourself to each field
       fields = sum([valfield.describe_yourself(namefield) for namefield, valfield in fields], [])
       
-      # create the slots (memory optimization)
-      additional_slots = attrs.get('__bisturi__', {}).get('additional_slots', [])
-      slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields), *zip(*enumerate(fields))), additional_slots)
+      # compile and create the slots (memory optimization)
+      additional_slots = bisturi_conf.get('additional_slots', [])
+      slots = sum(map(lambda position, name_val: name_val[1].compile(name_val[0], position, fields, bisturi_conf), *zip(*enumerate(fields))), additional_slots)
       
       # extend the field list with the their pack/unpack methods (to avoid lookups)
       fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in fields]
@@ -26,6 +29,7 @@ class MetaPacket(type):
          return fields
 
       attrs['__slots__'] = slots
+      attrs['__bisturi__'] = bisturi_conf
       
       # remove the fields from the class definition
       for n, _, _, _ in fields:
