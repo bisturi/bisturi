@@ -21,7 +21,7 @@ class Field(object):
       return setattr(packet, self.field_name, val)
 
    def init(self, packet, defaults):
-      setattr(packet, self.field_name, defaults.get(self.field_name, self.default)) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
+      setattr(packet, self.field_name, defaults.get(self.field_name, copy.deepcopy(self.default))) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
 
    def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
@@ -29,15 +29,15 @@ class Field(object):
    def pack(self, packet):
       raise NotImplementedError()
 
-   def repeated(self, count=None, until=None, when=None):
+   def repeated(self, count=None, until=None, when=None, default=None):
       assert not (count is None and until is None)
       assert not (count is not None and until is not None)
 
-      return Sequence(prototype=self, count=count, until=until, when=when)
+      return Sequence(prototype=self, count=count, until=until, when=when, default=default)
 
 
-   def when(self, condition):
-      return Sequence(prototype=self, count=1, until=None, when=condition)
+   def when(self, condition, default=None):
+      return Sequence(prototype=self, count=1, until=None, when=condition, default=None)
 
 
 def _get_count(count_arg):

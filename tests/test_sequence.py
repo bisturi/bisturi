@@ -202,6 +202,7 @@ class TestSequence(unittest.TestCase):
          _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
          raise type(_e), type(_e)(_message), sys.exc_info()[2]
 
+   
    def test_field_repeated_fixed_times(self):
       class FieldRepeatedFixedTimes(Packet):
          first  = Int(1).repeated(count=4)
@@ -498,6 +499,99 @@ class TestSequence(unittest.TestCase):
          obj_two_second_values = ([[17, 18], [19, 20]], [[21, 22], [23, 24]])
       )
 
+   def test_field_repeated_fixed_times_with_defaults(self):
+      class FieldRepeatedFixedTimes(Packet):
+         first  = Int(1).repeated(count=4, default=[1, 2, 3, 4])
+         second = Int(1).repeated(count=4, default=[5, 6, 7, 8])
+
+      self._test_sequences_fields(
+         obj_one = FieldRepeatedFixedTimes(), 
+         obj_two = FieldRepeatedFixedTimes(second=[9, 10, 11, 12]),
+         one_default_raw = '\x01\x02\x03\x04\x05\x06\x07\x08',
+         two_default_raw = '\x01\x02\x03\x04\x09\x0a\x0b\x0c',
+         obj_one_defaults = ([1, 2, 3, 4], [5, 6, 7, 8]),
+         obj_two_defaults = ([1, 2, 3, 4], [9, 10, 11, 12]),
+         first_raw_for_one =  '\x0d\x0e\x0f\x10\x11\x12\x13\x14',   
+         obj_one_first_values = ([13, 14, 15, 16], [17, 18, 19, 20]),
+         second_raw_for_one = '\x15\x16\x17\x18\x19\x1a\x1b\x1c', 
+         second_raw_for_two = '\x1d\x1e\x1f\x20\x21\x22\x23\x24',   
+         obj_one_second_values = ([21, 22, 23, 24], [25, 26, 27, 28]), 
+         obj_two_second_values = ([29, 30, 31, 32], [33, 34, 35, 36])
+      )
+
+
+   def test_field_ref_repeated_fixed_times_with_defaults(self):
+      class FieldRefRepeatedFixedTimes(Packet):
+         first  = Ref(Int(1)).repeated(count=4, default=[1, 2, 3, 4])
+         second = Ref(Int(1)).repeated(count=4, default=[5, 6, 7, 8])
+
+      self._test_sequences_fields(
+         obj_one = FieldRefRepeatedFixedTimes(), 
+         obj_two = FieldRefRepeatedFixedTimes(second=[9, 10, 11, 12]),
+         one_default_raw = '\x01\x02\x03\x04\x05\x06\x07\x08',
+         two_default_raw = '\x01\x02\x03\x04\x09\x0a\x0b\x0c',
+         obj_one_defaults = ([1, 2, 3, 4], [5, 6, 7, 8]),
+         obj_two_defaults = ([1, 2, 3, 4], [9, 10, 11, 12]),
+         first_raw_for_one =  '\x0d\x0e\x0f\x10\x11\x12\x13\x14',   
+         obj_one_first_values = ([13, 14, 15, 16], [17, 18, 19, 20]),
+         second_raw_for_one = '\x15\x16\x17\x18\x19\x1a\x1b\x1c', 
+         second_raw_for_two = '\x1d\x1e\x1f\x20\x21\x22\x23\x24',   
+         obj_one_second_values = ([21, 22, 23, 24], [25, 26, 27, 28]), 
+         obj_two_second_values = ([29, 30, 31, 32], [33, 34, 35, 36])
+      )
+   
+
+   def test_subpacket_ref_repeated_fixed_times_with_defaults(self):
+      class SubpacketRepeatedFixedTimes(Packet):
+         first  = Ref(SubPacket).repeated(count=4, default=[
+                                                      SubPacket(value=1),
+                                                      SubPacket(value=2),
+                                                      SubPacket(value=3),
+                                                      SubPacket(value=4)  ])
+         second = Ref(SubPacket).repeated(count=4, default=[
+                                                      SubPacket(value=5),
+                                                      SubPacket(value=6),
+                                                      SubPacket(value=7),
+                                                      SubPacket(value=8)  ])
+
+      self._test_sequences_packet(
+         obj_one = SubpacketRepeatedFixedTimes(), 
+         obj_two = SubpacketRepeatedFixedTimes(second=[
+                                                      SubPacket(value=9),
+                                                      SubPacket(value=10),
+                                                      SubPacket(value=11),
+                                                      SubPacket(value=12)  ]),
+         one_default_raw = '\x01\x02\x03\x04\x05\x06\x07\x08',
+         two_default_raw = '\x01\x02\x03\x04\x09\x0a\x0b\x0c',
+         obj_one_defaults = ([1, 2, 3, 4], [5, 6, 7, 8]),
+         obj_two_defaults = ([1, 2, 3, 4], [9, 10, 11, 12]),
+         first_raw_for_one =  '\x0d\x0e\x0f\x10\x11\x12\x13\x14',   
+         obj_one_first_values = ([13, 14, 15, 16], [17, 18, 19, 20]),
+         second_raw_for_one = '\x15\x16\x17\x18\x19\x1a\x1b\x1c', 
+         second_raw_for_two = '\x1d\x1e\x1f\x20\x21\x22\x23\x24',   
+         obj_one_second_values = ([21, 22, 23, 24], [25, 26, 27, 28]), 
+         obj_two_second_values = ([29, 30, 31, 32], [33, 34, 35, 36])
+      )
+
+   def test_variable_ref_repeated_fixed_times_with_defaults(self):
+      class VariableRefRepeatedFixedTimes(Packet):
+         first  = Ref(lambda **k: Int(1), default=0).repeated(count=4, default=[1, 2, 3, 4])
+         second = Ref(lambda **k: Int(1), default=0).repeated(count=4, default=[5, 6, 7, 8])
+
+      self._test_sequences_fields(
+         obj_one = VariableRefRepeatedFixedTimes(), 
+         obj_two = VariableRefRepeatedFixedTimes(second=[9, 10, 11, 12]),
+         one_default_raw = '\x01\x02\x03\x04\x05\x06\x07\x08',
+         two_default_raw = '\x01\x02\x03\x04\x09\x0a\x0b\x0c',
+         obj_one_defaults = ([1, 2, 3, 4], [5, 6, 7, 8]),
+         obj_two_defaults = ([1, 2, 3, 4], [9, 10, 11, 12]),
+         first_raw_for_one =  '\x0d\x0e\x0f\x10\x11\x12\x13\x14',   
+         obj_one_first_values = ([13, 14, 15, 16], [17, 18, 19, 20]),
+         second_raw_for_one = '\x15\x16\x17\x18\x19\x1a\x1b\x1c', 
+         second_raw_for_two = '\x1d\x1e\x1f\x20\x21\x22\x23\x24',   
+         obj_one_second_values = ([21, 22, 23, 24], [25, 26, 27, 28]), 
+         obj_two_second_values = ([29, 30, 31, 32], [33, 34, 35, 36])
+      )
 '''
 class B(Packet):
    first  = Int(1).repeated(count=1)
