@@ -51,9 +51,9 @@ So, we can do this
 >>> q.payload
 'world'
 
->>> p.to_raw() == s1
+>>> p.pack() == s1
 True
->>> q.to_raw() == s2
+>>> q.pack() == s2
 True
 
 Of course, you can set any parameter to Ref and those will be used to create the packet

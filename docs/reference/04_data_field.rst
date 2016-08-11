@@ -36,7 +36,7 @@ Let see what happen when the packet is built from this string
 >>> p.f
 'jk'
 
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 Note that a sutil problem is raises with the delimiters. If the delimiter is a regexp,
@@ -88,7 +88,7 @@ If you need that the token be in the result, you can use the keyword 'include_de
 >>> p.f
 'jk'
 
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 As you can see, when you use a token as delimiter, the token is added to the result.
@@ -123,7 +123,7 @@ This special attribute is just a shortcut for 're.compile("$")'.
 >>> DataExample(s5).payload
 'abc'
 
->>> DataExample(s1).to_raw() == s1
+>>> DataExample(s1).pack() == s1
 True
->>> DataExample(s5).to_raw() == s5
+>>> DataExample(s5).pack() == s5
 True

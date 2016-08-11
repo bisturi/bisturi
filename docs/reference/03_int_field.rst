@@ -30,7 +30,7 @@ The code should be self explaining. But to remove any doubt,
 >>> [p.a, p.b, p.c, p.d, p.e]
 [1, 2, 3, -4, 5]
 
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 A little optimization is made when the byte count is fixed and is 1, 2, 4, or 8.
@@ -56,7 +56,7 @@ inefficient but it is implemented if you need it.
 >>> [p.a, p.b, int(p.c), p.d]
 [1, 2, -3, 4]
 
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 Because the field 'c' is a big integer, python see it as an object of type 'long'

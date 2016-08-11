@@ -34,7 +34,7 @@ So,
    >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
    (4, 3, 'abc')
 
-   >>> p.to_raw() == s
+   >>> p.pack() == s
    True
 
 With the 'repeated' method we can repeat a fixed amount of times.
@@ -65,9 +65,9 @@ But the method can do more and in a more dynamic way:
    >>> q.attributes[1].type, q.attributes[1].length, q.attributes[1].value
    (0, 0, '')
 
-   >>> p.to_raw() == s
+   >>> p.pack() == s
    True
-   >>> q.to_raw() == s2
+   >>> q.pack() == s2
    True
 
 The 'until' keyword assume that the subpacket TypeLenValue was extracted and put in
@@ -93,7 +93,7 @@ To support 'zero-or-more' constructions we need the 'when' condition:
    >>> p.attributes[2].type, p.attributes[2].length, p.attributes[2].value
    (0, 0, '')
 
-   >>> p.to_raw() == s
+   >>> p.pack() == s
    True
 
    >>> s = '\x00'
@@ -105,7 +105,7 @@ To support 'zero-or-more' constructions we need the 'when' condition:
    >>> len(p.attributes)
    0
 
-   >>> p.to_raw() == s
+   >>> p.pack() == s
    True
 
 We can use even more complicate conditions like 'consume' all the data until the end
@@ -126,5 +126,5 @@ of the stream but leaving 4 byte at the end.
    >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
    (4, 3, 'abc')
 
-   >>> p.to_raw() == s
+   >>> p.pack() == s
    True

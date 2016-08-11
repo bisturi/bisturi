@@ -29,15 +29,15 @@ class Packet(object):
       map(lambda name_val: name_val[1].init(self, defaults), self.get_fields())
       
       if bytestring is not None:
-         self.from_raw(bytestring)
+         self.unpack(bytestring)
 
 
-   def from_raw(self, raw, offset=0):
+   def unpack(self, raw, offset=0):
       for name, f in self.get_fields():
-         offset = f.from_raw(self, raw, offset)
+         offset = f.unpack(self, raw, offset)
 
       return offset
          
-   def to_raw(self):
-      return ''.join([f.to_raw(self) for name, f in self.get_fields()])
+   def pack(self):
+      return ''.join([f.pack(self) for name, f in self.get_fields()])
 

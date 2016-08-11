@@ -49,7 +49,7 @@ to a NData (a Packet)
 1
 >>> p.address.val
 '\x01\x02\x03\x04'
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 >>> s = '\x04\x01\x02\x03\x04\x05\x06\x07\x08'
@@ -58,7 +58,7 @@ True
 4
 >>> p.address.val
 '\x01\x02\x03\x04\x05\x06\x07\x08'
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 >>> s = '\x03\x0bexample.com'
@@ -69,7 +69,7 @@ True
 'example.com'
 >>> p.address.length
 11
->>> p.to_raw() == s
+>>> p.pack() == s
 True
 
 Note that when Ref is referencing to a Field, the address (the value of the field) has

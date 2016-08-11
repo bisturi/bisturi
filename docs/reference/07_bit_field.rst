@@ -22,7 +22,7 @@ The default interpretation of the field is like an integer.
 
 >>> q = BitsExample(fragment_offset=1)
 >>> q.flags = 2
->>> q.to_raw() == s
+>>> q.pack() == s
 True
 
 The implementation require that the sequence of Bits field consume an entire byte 

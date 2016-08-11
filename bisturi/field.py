@@ -19,10 +19,10 @@ class Field(object):
    def init(self, packet, defaults):
       self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       raise NotImplementedError()
 
-   def to_raw(self, packet):
+   def pack(self, packet):
       raise NotImplementedError()
 
    def repeated(self, count=None, until=None, when=None):
@@ -83,7 +83,7 @@ class Sequence(Field):
       self.until_condition = _get_until(_get_count(count), until)
 
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       from packet import Packet
       class Element(Packet):
          val = copy.deepcopy(self.prototype)
@@ -93,7 +93,7 @@ class Sequence(Field):
 
       while not stop:
          elem = Element()
-         offset = elem.from_raw(raw, offset)
+         offset = elem.unpack(raw, offset)
 
          sequence.append(elem.val)
          
@@ -103,7 +103,7 @@ class Sequence(Field):
       return offset
 
 
-   def to_raw(self, packet):
+   def pack(self, packet):
       from packet import Packet
       class Element(Packet):
          val = copy.deepcopy(self.prototype)
@@ -114,7 +114,7 @@ class Sequence(Field):
          elem = Element()
          elem.val = val
 
-         raw.append(elem.to_raw())
+         raw.append(elem.pack())
 
       return "".join(raw)
 
@@ -172,14 +172,14 @@ class Int(Field):
       self._pack = _pack
 
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       raw_data = raw[offset:offset+self.byte_count]
       integer = self._unpack(raw_data)
       self.setval(packet, integer)
 
       return self.byte_count + offset
 
-   def to_raw(self, packet):
+   def pack(self, packet):
       integer = self.getval(packet)
       raw = self._pack(integer)
 
@@ -200,7 +200,7 @@ class Data(Field):
       self.consume_delimiter = consume_delimiter #XXX document this!
 
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       byte_count = self.byte_count(packet) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
       extra_count = 0
       if isinstance(byte_count, int):
@@ -241,7 +241,7 @@ class Data(Field):
 
       return count + extra_count + offset
 
-   def to_raw(self, packet):
+   def pack(self, packet):
       return self.getval(packet) + self.delimiter_to_be_included
 
 class Ref(Field):
@@ -285,14 +285,14 @@ class Ref(Field):
       elif not self.require_updated_packet_instance:
          self.setval(packet, self.get_packet_instance(packet))
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       if self.require_updated_packet_instance:
          self.setval(packet, self.get_packet_instance(packet))
 
-      return self.getval(packet).from_raw(raw, offset)
+      return self.getval(packet).unpack(raw, offset)
 
-   def to_raw(self, packet):
-      return self.getval(packet).to_raw()
+   def pack(self, packet):
+      return self.getval(packet).pack()
 
 class Bits(Field):
    class ByteBoundaryError(Exception):
@@ -349,21 +349,21 @@ class Bits(Field):
       Field.init(self, packet, defaults)
 
 
-   def from_raw(self, packet, raw, offset=0):
+   def unpack(self, packet, raw, offset=0):
       if self.iam_first:
-         offset = self.I.from_raw(packet, raw, offset)
+         offset = self.I.unpack(packet, raw, offset)
 
       I = self.I.getval(packet)
 
       self.setval(packet, (I & self.mask) >> self.shift)
       return offset
 
-   def to_raw(self, packet):
+   def pack(self, packet):
       I = self.I.getval(packet)
       self.I.setval(packet, ((self.getval(packet) << self.shift) & self.mask) | (I & (~self.mask)))
 
       if self.iam_last:
-         return self.I.to_raw(packet)
+         return self.I.pack(packet)
       else:
          return ""
       
