@@ -11,7 +11,7 @@ class UDP(Packet):
    length   = Int(2)
    checksum = Int(2)
 
-   payload  = Data(lambda pkt, **k: pkt.length-8)
+   payload  = Data(length-8)
 
 
 if __name__ == '__main__':

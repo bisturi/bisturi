@@ -45,7 +45,7 @@ class DIB(Packet):
 
 class PixelRow(Packet):
   __bisturi__ = {'endianness': 'little'}
-  pixels = Int(1).repeated(lambda pkt, stack, **k: stack[0].pkt.image_width*3)
+  pixels = Int(1).repeated(lambda stack, **k: stack[0].pkt.image_width*3)
 
   tail = Em().aligned(4, local=True)
 
@@ -62,7 +62,7 @@ class BMP(Packet):
 
   dib = Ref(DIB, embeb=True)
 
-  pixel_rows = Ref(PixelRow).repeated(lambda pkt, stack, **k: stack[0].pkt.image_height)\
+  pixel_rows = Ref(PixelRow).repeated(lambda stack, **k: stack[0].pkt.image_height)\
                       .at(offset_pixel_array)
   
 
