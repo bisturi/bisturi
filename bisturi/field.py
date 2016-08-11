@@ -19,7 +19,7 @@ class Field(object):
    def init(self, packet, defaults):
       self.setval(packet, defaults.get(self.field_name, copy.deepcopy(self.default)))
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset, **k):
       raise NotImplementedError()
 
    def pack(self, packet):
@@ -37,14 +37,17 @@ class Field(object):
 
 
 def _get_count(count_arg):
+   '''Return a callable from count_arg so you can invoke that callable
+      and the count of byte will be retrived. 
+      If count_arg is a callable, it must accept any variable keyword-argument.'''
    if count_arg is None:
       return None
 
    if isinstance(count_arg, (int, long)):
-      return lambda p: count_arg
+      return lambda **k: count_arg
 
    if isinstance(count_arg, Field):
-      return lambda p: count_arg.getval(p)
+      return lambda pkt, **k: count_arg.getval(pkt)
 
    if callable(count_arg):
       return count_arg
@@ -52,16 +55,21 @@ def _get_count(count_arg):
    raise Exception("Invalid argument for a 'count'. Expected a number, a field or a callable.")
 
 def _get_until(count, until):
+   '''Return a callable that will return True or False if the stream ends or
+      doesn't end (this will depend on the 'until' paramenter or the parameter 'count')
+      If 'count' and 'until' aren't None, they must be callables, however,
+      if one is not None, the other must be None.
+      Both 'count' and 'until' (if are callable), they must accept any variable keyword-argument.'''
    assert not (count is None and until is None)
    assert (count is None or until is None)
 
-   if count is not None: #fixed
+   if count is not None: # fixed size: no 'until' condition
       class _Until(object):
          counter = 0
          
-         def __call__(self, packet, *args):
+         def __call__(self, **k):
             _Until.counter += 1
-            if _Until.counter >= count(packet):
+            if _Until.counter >= count(**k):
                return True
             else:
                return False
@@ -75,22 +83,27 @@ def _get_until(count, until):
       assert callable(until)
 
       class _Until(object):
-         def __call__(self, *args, **kargs):
-            return until(*args, **kargs)
+         def __call__(self, **k):
+            return until(**k)
+
          def reset(self):
             pass
 
       return _Until()
 
 def _get_when(count, when):
-   if count is not None and when is None: #fixed
-      def when_condition(packet, *args):
-         return count(packet) > 0
+   '''Like _get_until, this will return a callable.
+      At difference with _get_until, both 'count' and 'when' can be
+      callables at the same time or Nones at the same time or any combination. '''
 
-   elif count is not None and when is not None: #fixed but conditional
+   if count is not None and when is None: # condition from a count-byte
+      def when_condition(**k):
+         return count(**k) > 0
+
+   elif count is not None and when is not None: # a more variable condition
       assert callable(when)
-      def when_condition(packet, *args):
-         return count(packet) > 0 and when(packet, *args)
+      def when_condition(**k):
+         return count(**k) > 0 and when(**k)
 
    elif count is None and when is not None:
       assert callable(when)
@@ -119,25 +132,28 @@ class Sequence(Field):
       class Element(Packet):
          val = copy.deepcopy(self.prototype)
 
+         def push_to_the_stack(self, stack):
+            return stack
+
       self._Element = Element
       
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset=0, **k):
       self.until_condition.reset()
 
       sequence = [] 
-      self.setval(packet, sequence)
-      stop = False if self.when is None else not self.when(packet, raw, offset)
+      self.setval(pkt, sequence)
+      stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
       while not stop:
          elem = self._Element()
-         offset = elem.unpack(raw, offset)
+         offset = elem.unpack(raw=raw, offset=offset, **k)
 
          sequence.append(elem.val)
 
-         stop = self.until_condition(packet, raw, offset)
+         stop = self.until_condition(pkt=pkt, raw=raw, offset=offset, **k)
 
-      self.setval(packet, sequence)
+      self.setval(pkt, sequence)
       return offset
 
 
@@ -206,10 +222,10 @@ class Int(Field):
       self._pack = _pack
 
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset=0, **k):
       raw_data = raw[offset:offset+self.byte_count]
       integer = self._unpack(raw_data)
-      self.setval(packet, integer)
+      self.setval(pkt, integer)
 
       return self.byte_count + offset
 
@@ -234,8 +250,8 @@ class Data(Field):
       self.consume_delimiter = consume_delimiter #XXX document this!
 
 
-   def unpack(self, packet, raw, offset=0):
-      byte_count = self.byte_count(packet) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
+   def unpack(self, pkt, raw, offset=0, **k):
+      byte_count = self.byte_count(pkt) if callable(self.byte_count) and not isinstance(self.byte_count, Field) else self.byte_count
       extra_count = 0
       if isinstance(byte_count, int):
          count = byte_count
@@ -265,13 +281,13 @@ class Data(Field):
             else:
                count = -1
       else:
-         count = byte_count.getval(packet)
+         count = byte_count.getval(pkt)
 
       if count < 0:
          raise IndexError()
 
       raw_data = raw[offset:offset+count]
-      self.setval(packet, raw_data)
+      self.setval(pkt, raw_data)
 
       return count + extra_count + offset
 
@@ -319,11 +335,11 @@ class Ref(Field):
       elif not self.require_updated_packet_instance:
          self.setval(packet, self.get_packet_instance(pkt=packet))
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset=0, **k):
       if self.require_updated_packet_instance:
-         self.setval(packet, self.get_packet_instance(pkt=packet))
+         self.setval(pkt, self.get_packet_instance(pkt=pkt, raw=raw, offset=offset, **k))
 
-      return self.getval(packet).unpack(raw, offset)
+      return self.getval(pkt).unpack(raw, offset, **k)
 
    def pack(self, packet):
       return self.getval(packet).pack()
@@ -383,13 +399,13 @@ class Bits(Field):
       Field.init(self, packet, defaults)
 
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset=0, **k):
       if self.iam_first:
-         offset = self.I.unpack(packet, raw, offset)
+         offset = self.I.unpack(pkt, raw, offset, **k)
 
-      I = self.I.getval(packet)
+      I = self.I.getval(pkt)
 
-      self.setval(packet, (I & self.mask) >> self.shift)
+      self.setval(pkt, (I & self.mask) >> self.shift)
       return offset
 
    def pack(self, packet):
@@ -406,7 +422,7 @@ class Bkpt(Field):
    def init(self, packet, defaults):
       pass
 
-   def unpack(self, packet, raw, offset=0):
+   def unpack(self, pkt, raw, offset=0, **k):
       import pdb
       pdb.set_trace()
       return offset
