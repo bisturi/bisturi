@@ -22,8 +22,8 @@ from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import Layer, PacketError
 
-def pack_impl(pkt, fragments, stack, **k):
-   stack.append(Layer(pkt, fragments.current_offset))
+def pack_impl(pkt, fragments, **k):
+   k['local_offset'] = fragments.current_offset
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
@@ -33,7 +33,6 @@ def pack_impl(pkt, fragments, stack, **k):
    except Exception, e:
       raise PacketError(False, name, pkt.__class__.__name__, fragments.current_offset, str(e))
 
-   stack.pop()
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
@@ -47,8 +46,8 @@ from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import Layer, PacketError
 
-def unpack_impl(pkt, raw, offset, stack, **k):
-   stack.append(Layer(pkt, offset))
+def unpack_impl(pkt, raw, offset, **k):
+   k['local_offset'] = offset
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
@@ -58,7 +57,6 @@ def unpack_impl(pkt, raw, offset, stack, **k):
    except Exception, e:
       raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
    
-   stack.pop()
    return offset
 ''' % {
       'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
@@ -158,7 +156,7 @@ def generate_code_for_fixed_fields_without_struct_code(group):
 def generate_code_for_loop_pack(group):
    return ''.join(['''
 name, _, pack, _ = fields[%(field_index)i]
-pack(pkt=pkt, fragments=fragments, stack=stack, **k)
+pack(pkt=pkt, fragments=fragments, **k)
 ''' % {
       'field_index': field_index
    } for field_index in range(group[0][0], group[-1][0]+1)])
@@ -166,7 +164,7 @@ pack(pkt=pkt, fragments=fragments, stack=stack, **k)
 def generate_code_for_loop_unpack(group):
    return ''.join(['''
 name, _, _, unpack = fields[%(field_index)i]
-offset = unpack(pkt=pkt, raw=raw, offset=offset, stack=stack, **k)
+offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 ''' % {
       'field_index': field_index
    } for field_index in range(group[0][0], group[-1][0]+1)])

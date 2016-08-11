@@ -963,7 +963,7 @@ class Move(Field):
           if self.movement_type == 'align-global':
               start = 0
           elif self.movement_type == 'align-local':
-              start = k['stack'][-1].offset
+              start = k['local_offset']
           else:
               raise Exception()
 
@@ -1000,7 +1000,7 @@ class Move(Field):
           if self.movement_type == 'align-global':
               start = 0
           elif self.movement_type == 'align-local':
-              start = k['stack'][-1].offset
+              start = k['local_offset']
           else:
               raise Exception()
 

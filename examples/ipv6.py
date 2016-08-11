@@ -72,10 +72,10 @@ class IPAddr(Field):
 
 class Extention(Packet):
    next_header = Int(1)
-   val         = Ref(lambda pkt, stack, **k: {
+   val         = Ref(lambda pkt, root, **k: {
                         0: HopByHop(),
                         1: Routing(),
-                     }[stack[-2].pkt.extentions[-1].next_header if stack[-2].pkt.extentions else stack[-2].pkt.next_header],
+                     }[root.extentions[-1].next_header if root.extentions else root.next_header],
                   default=HopByHop())
 
 class IPv6(Packet):

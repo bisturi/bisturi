@@ -334,7 +334,6 @@ class TestRef(unittest.TestCase):
       arguments_per_call = []
       def get_prototype(**k):
          arguments_per_call.append(k)
-         arguments_per_call[-1]['stack'] = list(arguments_per_call[-1]['stack'])
          return Int(2)
 
       class RefVariableCorrectParameters(Packet):
@@ -355,14 +354,16 @@ class TestRef(unittest.TestCase):
             'pkt': one,
             'raw': raw,
             'offset': 0,
-            'stack': [Layer(one, 0)],
+            'local_offset': 0,
+            'root': one,
          }
       
       assert second_call == {
             'pkt': one,
             'raw': raw,
             'offset': 2,
-            'stack': [Layer(one, 0)],
+            'local_offset': 0,
+            'root': one,
          }
 
       arguments_per_call.pop()   # cleanup

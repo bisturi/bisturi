@@ -17,6 +17,20 @@ class ARP(Packet):
    target_hw_addr   = Data(hw_len)
    target_prot_addr = Data(prot_len)
 
+class ARP_EthIP(Packet):
+   __bisturi__ = dict(write_py_module=True)
+
+   hw_type   = Int(2, default=0x0001)
+   prot_type = Int(2, default=0x0800)
+   hw_len    = Int(1, default=6)
+   prot_len  = Int(1, default=4)
+   opcode    = Int(2)
+   
+   sender_hw_addr   = Data(6)
+   sender_prot_addr = Data(4)
+   target_hw_addr   = Data(6)
+   target_prot_addr = Data(4)
+
 if __name__ == '__main__':
    from base64 import b16decode
 

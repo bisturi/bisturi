@@ -60,8 +60,7 @@ class Packet(object):
    def unpack(cls, raw, offset=0, silent=False):
      pkt = cls(_initialize_fields=False)
      try:
-         stack = []
-         pkt.unpack_impl(raw, offset, stack)
+         pkt.unpack_impl(raw, offset, root=pkt)
          return pkt
      except:
          if silent:
@@ -69,42 +68,39 @@ class Packet(object):
          else:
              raise
 
-   def unpack_impl(self, raw, offset, stack):
-      stack.append(Layer(self, offset))
+   def unpack_impl(self, raw, offset, **k):
+      k['local_offset'] = offset
       try:
          for name, f, _, unpack in self.get_fields():
-            offset = unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+            offset = unpack(pkt=self, raw=raw, offset=offset, **k)
       except PacketError, e:
          e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
          raise
       except Exception, e:
          raise PacketError(True, name, self.__class__.__name__, offset, str(e))
       
-      stack.pop()
       return offset
 
    def pack(self):
       fragments = Fragments()
-      stack = []
       try:
-         return self.pack_impl(fragments, stack)
+         return self.pack_impl(fragments, root=self)
       except PacketError, e:
          raise e
          
 
-   def pack_impl(self, fragments, stack):
-      stack.append(Layer(self, fragments.current_offset))
+   def pack_impl(self, fragments, **k):
+      k['local_offset'] = fragments.current_offset
 
       try:
          for name, f, pack, _ in self.get_fields():
-            pack(pkt=self, fragments=fragments, stack=stack)
+            pack(pkt=self, fragments=fragments, **k)
       except PacketError, e:
          e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
          raise
       except Exception, e:
          raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
       
-      stack.pop()
       return fragments
 
    def as_regular_expression(self, debug=False):
