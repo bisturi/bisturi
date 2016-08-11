@@ -2,14 +2,14 @@ import sys
 sys.path.append("../")
 
 from bisturi.packet import Packet
-from bisturi.field  import Bits, Int, Data, Field, Ref, Bkpt
+from bisturi.field  import Bits, Int, Data, Ref, Bkpt
 
 import copy
 
 # RFC 1034, 1035
 class Label(Packet):
    length = Int(1)
-   name   = Ref(lambda pkt, *args: {
+   name   = Ref(lambda pkt, **k: {
                   0x00: Data(pkt.length),
                   0xc0: Int(1),
                }[pkt.length & 0xc0])
@@ -31,7 +31,7 @@ class Label(Packet):
          return self.name.val
       else:
          class Builder(Packet):
-            name = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+            name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
          
          builder = Builder()
          builder.unpack(raw, self.offset())
@@ -44,7 +44,7 @@ class Label(Packet):
             
 
 class ResourceRecord(Packet):
-   name   = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+   name   = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
    type_  = Int(2, default=1)
    class_ = Int(2, default=1)
    ttl    = Int(4)
@@ -79,7 +79,7 @@ RDATA           a variable length string of octets that describes the
 '''
 
 class Question(Packet):
-   name  = Ref(Label).repeated(until=lambda pkt, *args: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
+   name  = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
    type_  = Int(2, default=1)
    class_ = Int(2, default=1)
 

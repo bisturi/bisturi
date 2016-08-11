@@ -63,11 +63,11 @@ So we need to create our own field.
 ...    def init(self, packet, defaults):
 ...       self.setval(packet, self.cls_address(defaults.get(self.field_name, self.default)))
 ...    
-...    def unpack(self, packet, raw, offset=0):
+...    def unpack(self, pkt, raw, offset=0, **k):
 ...       raw_data = raw[offset:offset+self.byte_count]
 ...       ip_address = self.cls_address(0) # work around for Python 2.7
 ...       ip_address._ip = struct.unpack(">I", raw_data)[0]
-...       self.setval(packet, ip_address)
+...       self.setval(pkt, ip_address)
 ... 
 ...       return self.byte_count + offset
 ... 

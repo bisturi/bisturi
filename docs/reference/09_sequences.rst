@@ -74,7 +74,7 @@ For example, the field 'attributes' can be a list that ends with a special
 ::
 
    >>> class Attributes(Packet):
-   ...    attributes = Ref(TypeLenValue).repeated(until=lambda p, *args: p.attributes[-1].type == 0)
+   ...    attributes = Ref(TypeLenValue).repeated(until=lambda pkt, **k: pkt.attributes[-1].type == 0)
 
    >>> s =  '\x01\x02ab\x04\x03abc\x00\x00'
    >>> s2 = '\x02\x01a\x00\x00'
@@ -127,7 +127,7 @@ To support 'zero-or-more' constructions we need the 'when' condition:
 
    >>> class Attributes(Packet):
    ...    has_attributes = Int(1)
-   ...    attributes = Ref(TypeLenValue).repeated(when=lambda p, *args: p.has_attributes, until=lambda p, *args: p.attributes[-1].type == 0)
+   ...    attributes = Ref(TypeLenValue).repeated(when=lambda pkt, **k: pkt.has_attributes, until=lambda pkt, **k: pkt.attributes[-1].type == 0)
 
    >>> s = '\x01\x01\x02ab\x04\x03abc\x00\x00'
    >>> p = Attributes(s)
@@ -161,7 +161,7 @@ The 'when' condition can be combinated with a fixed count, like:
 
    >>> class Attributes(Packet):
    ...    has_attributes = Int(1)
-   ...    attributes = Ref(TypeLenValue).repeated(2, when=lambda p, *args: p.has_attributes)
+   ...    attributes = Ref(TypeLenValue).repeated(2, when=lambda pkt, **k: pkt.has_attributes)
 
    >>> s = '\x01\x01\x02ab\x04\x03abc'
    >>> p = Attributes(s)
@@ -196,7 +196,7 @@ of the stream but leaving 4 byte at the end.
 ::
 
    >>> class Attributes(Packet):
-   ...    attributes = Ref(TypeLenValue).repeated(until=lambda p, raw, offset: offset >= (len(raw) - 4))
+   ...    attributes = Ref(TypeLenValue).repeated(until=lambda pkt, raw, offset, **k: offset >= (len(raw) - 4))
    ...    checksum = Int(4)
    
    >>> s = '\x01\x02ab\x04\x03abc\xff\xff\xff\xff'
