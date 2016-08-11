@@ -17,7 +17,18 @@ def inspect(packet, indent=""):
          value = value.tostring()
 
       if isinstance(value, basestring):
-         value = ':'.join(x.encode('hex') for x in value)
+         l = len(value)
+         truncated = l > 16
+         
+         _value = []
+         _value.append(' '.join(x.encode('hex') for x in value[:16]))
+         _value.append("|%s|" % value[:16].translate(_translate))
+         if truncated:
+            _value.append("[truncated]")
+
+         _value.append("%i bytes" % l)
+
+         value = "  ".join(_value)
 
       if isinstance(value, Packet):
          print "%s%s:" % (indent, name)
@@ -38,14 +49,86 @@ def inspect(packet, indent=""):
       if value is not None:
          print "%s%s = %s" % (indent, name, value)
 
-def hd(raw, full=False):
+import termcolor
+
+def mark_with_color(color, attr=None, bg=None):
+   fmt = '\033[%im'
+   codes = [0, termcolor.COLORS[color]]
+
+   if bg:
+      codes.append(termcolor.HIGHLIGHTS[bg])
+
+   if attr:
+      codes.append(termcolor.ATTRIBUTES[attr])
+
+   return "".join([fmt % code for code in codes])
+
+def xx(raw, packet, offset=0):
+   from bisturi.field import *
+   colours_by_class = {
+      Int:  [mark_with_color('red'),   mark_with_color('red', 'bold')],
+      Bits: [mark_with_color('yellow'),  mark_with_color('yellow')],
+      Data: [mark_with_color('magenta'), mark_with_color('magenta', 'bold')],
+      Ref:  [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
+      None: [mark_with_color('green'),    mark_with_color('green', 'bold')],
+      Sequence: [mark_with_color('cyan'),    mark_with_color('cyan', 'bold')],
+      }
+
+   for k in colours_by_class.keys():
+      if k is None:
+         k_name = "<default>" 
+      else:
+         k_name = k.__name__
+      print "%s%s %s%s" % (colours_by_class[k][0], k_name, colours_by_class[k][1], k_name)
+
+   print '\033[0m'
+
+   it = packet.iterative_unpack(raw, offset)
+   current_offset, field_name = next(it)
+   marks = []
+   last_cls = None
+   times = -1
+   try:
+      while field_name != ".":
+         marks.append((current_offset, '\033[0m'))
+         tmp = next(it)
+         #print ("%08x  %s = %s" % (current_offset, field_name, getattr(packet, field_name)))
+         
+         mro = getattr(packet.__class__, field_name).__class__.mro()
+         cls = None
+         for F in colours_by_class.keys():
+            if F in mro:
+               cls = F
+               break
+         
+         if cls == last_cls:
+            times += 1
+         else:
+            times = 0
+            last_cls = cls
+
+         colour = colours_by_class[cls][times % 2]
+
+         marks.append((current_offset, colour))
+         current_offset, field_name = tmp
+      
+      #print "%08x" % current_offset
+      marks.append((current_offset, '\033[0m'))
+      it.close()
+   finally:
+      #hd(raw)
+      hd(raw, full=True, offsets_abs_and_marks=marks)
+      inspect(packet)
+
+def hd(raw, full=False, offsets_abs_and_marks=[]):
    last_chunk = ""
    ignoring = False
 
-   offsets_abs_and_marks = [(1, '\033[32m'), (7, '\033[31m'), (8, '\033[33m'), (0x20, '\033[34m'), (0x38, '\033[35m')]
+   #offsets_abs_and_marks = [(1, '\033[32m'), (7, '\033[31m'), (8, '\033[33m'), (0x20, '\033[34m'), (0x38, '\033[35m')]
    last_mark_in_effect = '\033[0m'
    current_pos_for_marks = 0
 
+   offset = 0
    for offset in range(0, len(raw), 16):
       chunk = raw[offset : offset+16]
       if not full and last_chunk == chunk:
