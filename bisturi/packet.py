@@ -64,7 +64,8 @@ class Packet(object):
    def create_from(cls, raw, offset=0, silent=False):
      pkt = cls(_initialize_fields=False)
      try:
-         pkt.unpack(raw, offset)
+         stack = []
+         pkt.unpack_impl(raw, offset, stack)
          return pkt
      except:
          if silent:
