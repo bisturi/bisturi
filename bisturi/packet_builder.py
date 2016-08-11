@@ -42,6 +42,20 @@ class PacketClassBuilder(object):
       for name, field, _, _ in self.fields:
           if field.descriptor:
               self.attrs[field.descriptor_name] = field.descriptor
+    
+    def collect_sync_methods_from_field_descriptors(self):
+      self.sync_before_pack_methods = [] 
+      self.sync_after_unpack_methods = []
+      for name, field, _, _ in self.fields:
+          if field.descriptor:
+              try:
+                  self.sync_before_pack_methods.append(field.descriptor.sync_before_pack)
+              except AttributeError:
+                  pass
+              try:
+                  self.sync_after_unpack_methods.append(field.descriptor.sync_after_unpack)
+              except AttributeError:
+                  pass
 
     def create_class(self):
       self.bisturi_conf['original_fields_in_class'] = self.original_fields_in_class
@@ -57,6 +71,18 @@ class PacketClassBuilder(object):
          return self.fields
 
       self.cls.get_fields = get_fields
+
+    def add_sync_descriptor_class_methods(self):
+      @classmethod
+      def get_sync_before_pack_methods(cls):
+         return self.sync_before_pack_methods
+      
+      @classmethod
+      def get_sync_after_unpack_methods(cls):
+         return self.sync_after_unpack_methods
+
+      self.cls.get_sync_before_pack_methods = get_sync_before_pack_methods
+      self.cls.get_sync_after_unpack_methods = get_sync_after_unpack_methods
 
     def check_if_we_are_in_debug_mode(self):
       from field import Bkpt
@@ -124,9 +150,11 @@ class MetaPacket(type):
       builder.unroll_fields_with_their_pack_unpack_methods()
       builder.remove_fields_from_class_definition()
       builder.add_descriptors_to_class_definition()
+      builder.collect_sync_methods_from_field_descriptors()
 
       builder.create_class()
       builder.add_get_fields_class_method()
+      builder.add_sync_descriptor_class_methods()
 
       builder.check_if_we_are_in_debug_mode()
 

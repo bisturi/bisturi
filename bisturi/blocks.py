@@ -23,6 +23,7 @@ from bisturi.fragments import Fragments
 from bisturi.packet import Layer, PacketError
 
 def pack_impl(pkt, fragments, **k):
+   [sync(pkt) for sync in pkt.get_sync_before_pack_methods()]
    k['local_offset'] = fragments.current_offset
    fields = pkt.get_fields()
    try:
@@ -57,6 +58,7 @@ def unpack_impl(pkt, raw, offset, **k):
    except Exception, e:
       raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
    
+   [sync(pkt) for sync in pkt.get_sync_after_unpack_methods()]
    return offset
 ''' % {
       'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),

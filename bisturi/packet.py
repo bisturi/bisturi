@@ -79,6 +79,7 @@ class Packet(object):
       except Exception, e:
          raise PacketError(True, name, self.__class__.__name__, offset, str(e))
       
+      [sync(self) for sync in self.get_sync_after_unpack_methods()]
       return offset
 
    def pack(self):
@@ -90,6 +91,7 @@ class Packet(object):
          
 
    def pack_impl(self, fragments, **k):
+      [sync(self) for sync in self.get_sync_before_pack_methods()]
       k['local_offset'] = fragments.current_offset
 
       try:

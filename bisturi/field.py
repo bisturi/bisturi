@@ -43,6 +43,10 @@ class Field(object):
           self.field_name = "_described_%s" % field_name
           field_name = self.field_name
 
+          # Notify to the descriptor both attribute names
+          self.descriptor.descriptor_name = self.descriptor_name
+          self.descriptor.real_field_name = self.field_name
+
 
       if self.move_arg is None:
          return [(field_name, self)]

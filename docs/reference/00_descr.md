@@ -60,7 +60,7 @@ If we want to access to the real length value, we can do this:
 ```
 
 Notice how the real value still has the original value of 2. This is fine until we need
-to pack. The real value will be used instead of the camputed one.
+to pack. The real value will be used instead of the computed one.
 In some how, we need to synchronize both attributes. 
 
 For that purpose, the descriptor can implement the methods sync_before_pack and sync_after_unpack.
