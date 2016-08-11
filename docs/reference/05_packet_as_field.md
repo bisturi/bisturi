@@ -2,8 +2,8 @@ In this example will want to create the Ethernet Packet.
 Using Data and Int its relative simple.
 
 ```python
->>> from field import Data, Int
->>> from packet import Packet
+>>> from bisturi.field import Data, Int
+>>> from bisturi.packet import Packet
 
 >>> class Ethernet(Packet):
 ...    destination = Data(6)
@@ -18,7 +18,7 @@ In fact they are the MAC of the statations.
 It should be nice to create a packet for MAC and utilize it in Ethernet.
 
 ```python
->>> from field import Ref
+>>> from bisturi.field import Ref
 >>> class MAC(Packet):
 ...    oui = Data(3)
 ...    nic = Data(3)

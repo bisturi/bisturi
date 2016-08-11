@@ -18,8 +18,8 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 however, there isn't a fixed amount of bytes to be set for referenced objects or sequences:
 
 ```python
->>> from packet import Packet
->>> from field import Int, Data, Bits
+>>> from bisturi.packet import Packet
+>>> from bisturi.field import Int, Data, Bits
 
 >>> class AllFixed(Packet):
 ...    num  = Int(byte_count=1)
@@ -32,7 +32,7 @@ however, there isn't a fixed amount of bytes to be set for referenced objects or
 >>> pkt.num, pkt.data, pkt.bits
 (1, '\x02', 3)
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x02\x03'
 
 ```
@@ -40,7 +40,7 @@ however, there isn't a fixed amount of bytes to be set for referenced objects or
 For sequence of objects you can set the amount of objects to be extracted:
 
 ```python
->>> from field import Sequence
+>>> from bisturi.field import Sequence
 
 >>> class FixedSeq(Packet):
 ...    seq = Int(byte_count=1).repeated(count=3)
@@ -50,7 +50,7 @@ For sequence of objects you can set the amount of objects to be extracted:
 >>> pkt.seq
 [1, 2, 3]
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x02\x03'
 
 ```
@@ -72,7 +72,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> pkt.data, pkt.seq
 ('\x01', [2])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x01\x02'
 
 >>> raw = "\x02AA\x01\x02"
@@ -80,7 +80,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> pkt.data, pkt.seq
 ('AA', [1, 2])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x02AA\x01\x02'
 
 ```
@@ -102,7 +102,7 @@ For example
 >>> pkt.data, pkt.seq
 ('ABC', [1, 2, 3])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01ABC\x01\x02\x03'
 
 >>> raw = "\x02ABCDEF\x01\x02\x03\x04\x05\x06"
@@ -110,7 +110,7 @@ For example
 >>> pkt.data, pkt.seq
 ('ABCDEF', [1, 2, 3, 4, 5, 6])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x02ABCDEF\x01\x02\x03\x04\x05\x06'
 
 ```
@@ -129,7 +129,7 @@ Don't be shy, lets do more complex expressions
 >>> pkt.matrix
 [1, 2]
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x02\x01\x02'
 
 >>> raw = "\x02\x03\x01\x02\x03\x04\x05\x06"
@@ -137,7 +137,7 @@ Don't be shy, lets do more complex expressions
 >>> pkt.matrix
 [1, 2, 3, 4, 5, 6]
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x02\x03\x01\x02\x03\x04\x05\x06'
 
 ```
@@ -155,7 +155,7 @@ We can go further to use expressions in the until and when conditions:
 >>> pkt.opt
 2
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x02'
 
 >>> raw = "\x00XXX"
@@ -163,7 +163,7 @@ We can go further to use expressions in the until and when conditions:
 >>> pkt.opt is None
 True
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x00'
 
 ```
@@ -184,7 +184,7 @@ You can use any kind of callable, functions, methods or lambdas.
 >>> pkt.data, pkt.seq, pkt.seq2
 ('\x00\x01', [2, 3], [0])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x01\x00\x01\x02\x03\x00'
 
 >>> raw = "\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
@@ -192,7 +192,7 @@ You can use any kind of callable, functions, methods or lambdas.
 >>> pkt.data, pkt.seq, pkt.seq2
 ('AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
 
 ```
@@ -206,7 +206,7 @@ available arguments:
    stack:   the stack of packets being be parsed: stack[0] is the higher packet and stack[-1] is the lower (stack[-1] == pkt)
 
 ```python
->>> from field import Ref
+>>> from bisturi.field import Ref
 
 >>> class Lower(Packet):
 ...    data = Data(byte_count=lambda stack, **k: stack[0].amount)
@@ -220,7 +220,7 @@ available arguments:
 >>> pkt.amount, pkt.lower.data
 (2, 'AA')
 
->>> pkt.pack()
+>>> str(pkt.pack())
 '\x02AA'
 
 ```

@@ -7,8 +7,8 @@ The Int field can require any amount of bytes, 4 by default.
 Let see an example
 
 ```python
->>> from packet import Packet
->>> from field import Int
+>>> from bisturi.packet import Packet
+>>> from bisturi.field import Int
 
 >>> class IntExample(Packet):
 ...    a = Int()

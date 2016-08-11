@@ -1,8 +1,8 @@
 Some times, the field use a partial count of bytes. Only a few bits are used.
 
 ```python
->>> from packet import Packet
->>> from field  import Bits, Int
+>>> from bisturi.packet import Packet
+>>> from bisturi.field  import Bits, Int
 >>>
 >>> class BitsExample(Packet):
 ...   fragment_offset = Bits(12)

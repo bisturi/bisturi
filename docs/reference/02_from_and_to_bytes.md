@@ -4,8 +4,8 @@ as a string of bytes
 First, we create a simple packet class
 
 ```python
->>> from packet import Packet
->>> from field import Int, Data
+>>> from bisturi.packet import Packet
+>>> from bisturi.field import Int, Data
 
 >>> class TLP(Packet):
 ...    type = Int(1)

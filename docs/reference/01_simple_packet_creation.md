@@ -6,8 +6,8 @@ In this case we want create simple packet TLP (Type-Length-Payload) with the nex
 We translate this into a python's class
 
 ```python
->>> from packet import Packet
->>> from field import Int, Data
+>>> from bisturi.packet import Packet
+>>> from bisturi.field import Int, Data
 
 >>> class TLP(Packet):
 ...    type = Int(1)

@@ -1,7 +1,7 @@
 
 Now, we need to think, what are the responsabilities of one Field? Well, it has only one:
 given a string of bytes create from them a 'python object' and given a 'python object'
-return a string of bytes.
+return fragments of strings.
 
 This is the only responsability of each Field like Int, Data and Ref.
 But what it is this 'python object'? This depends of the Field.
@@ -11,12 +11,12 @@ The difference between Int and 'int' is that you are almost always interacting w
 the 'python object' of Int and not with the Int itself.
 
 ```python
->>> from field import Int, Field
->>> from packet import Packet
+>>> from bisturi.field import Int, Field
+>>> from bisturi.packet import Packet
 >>> class Ethernet(Packet):
 ...    size = Int(1)
 
->>> from field import Field
+>>> from bisturi.field import Field
 
 >>> p = Ethernet()
 >>> isinstance(p.size, Int)
@@ -45,8 +45,8 @@ cannot be used as fields using Ref.
 So we need to create our own field.
 
 ```python
->>> from field import Field
->>> from ipaddress import IPv4Address, IPv6Address
+>>> from bisturi.field import Field
+>>> from bisturi.ipaddress import IPv4Address, IPv6Address
 >>> import struct
 
 >>> class IP(Field):
@@ -70,11 +70,11 @@ So we need to create our own field.
 ... 
 ...       return self.byte_count + offset
 ... 
-...    def pack(self, pkt, offset):
+...    def pack(self, pkt, fragments, **k):
 ...       ip_address = self.getval(pkt)
 ...       raw = ip_address.packed
-... 
-...       return raw
+...       fragments.append(raw)
+...       return fragments
 
 ```
 
@@ -86,7 +86,7 @@ Ok, lets see.
  - Then, the unpack is implemented. We read 4 (or 16) bytes and we set the val interpreted
    using 'setval'. The new offset is returned (the bytes readed plus the old offset).
  - Similar for 'pack'. We get the val using 'getval' and transform the ip address to
-   its binary representation which is returned
+   its binary representation which it is added to the fragments and returned
 
 ```python
 >>> class IP_Example(Packet):
@@ -100,7 +100,7 @@ True
 '127.0.0.1'
 >>> str(p.source)
 '0.0.0.0'
->>> p.pack()
+>>> str(p.pack())
 '\x7f\x00\x00\x01\x00\x00\x00\x00'
 
 >>> s = '\xc0\xa8\x01\x01\xc0\xa8\x01\x02'
@@ -125,7 +125,7 @@ Take a look of the interface of IPv4Address/IPv6Address for free!
 False
 >>> p.source.is_private
 True
->>> from ipaddress import IPv4Network
+>>> from bisturi.ipaddress import IPv4Network
 >>> p.source in IPv4Network("192.168.0.0/16")
 True
 

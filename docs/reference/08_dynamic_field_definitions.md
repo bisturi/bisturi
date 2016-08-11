@@ -5,8 +5,8 @@ If the type is 0x01, the address is an IP v4, if it is 0x04 is an IP v6.
 This seems to be simple:
 
 ```python
->>> from packet import Packet
->>> from field  import Data, Int
+>>> from bisturi.packet import Packet
+>>> from bisturi.field  import Data, Int
 
 >>> class SOCKS(Packet):
 ...    type = Int(1, default=0x01)
@@ -30,7 +30,7 @@ The trick is that Ref not only can reference Packets as Fields,
 he can dynamically reference to a Packet or another Field using a callable.
 
 ```python
->>> from field  import Data, Int, Ref
+>>> from bisturi.field import Data, Int, Ref
 
 >>> class NData(Packet):
 ...    length = Int(1)

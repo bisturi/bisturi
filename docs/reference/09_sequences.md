@@ -2,8 +2,8 @@ Until now we created a fixed count of fields and packets. But if we need a list 
 Take this simple packet
 
 ```python
->>> from packet import Packet
->>> from field  import Data, Int, Ref
+>>> from bisturi.packet import Packet
+>>> from bisturi.field  import Data, Int, Ref
 
 >>> class TypeLenValue(Packet):
 ...    type = Int(1)

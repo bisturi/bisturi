@@ -5,8 +5,8 @@ In that  case, the Data will consume all the string until it find the token whic
 be a simple byte, a more complex string or even a regexp.
 
 ```python
->>> from packet import Packet
->>> from field  import Data, Int
+>>> from bisturi.packet import Packet
+>>> from bisturi.field  import Data, Int
 >>> import re
 
 >>> class DataExample(Packet):
