@@ -473,20 +473,38 @@ class Data(Field):
       return fragments
 
    def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
-      next_offset = offset + self.byte_count
-      setattr(pkt, self.field_name, raw[offset:next_offset])
+      byte_count = self.byte_count
+      next_offset = offset + byte_count
+
+      chunk = raw[offset:next_offset]
+      if len(chunk) != byte_count:
+          raise Exception("Unpacked %i bytes but expected %i" % (len(chunk), byte_count))
+
+      setattr(pkt, self.field_name, chunk)
       
       return next_offset
    
    def _unpack_variable_size_field(self, pkt, raw, offset=0, **k):
-      next_offset = offset + getattr(pkt, self.byte_count.field_name)
-      setattr(pkt, self.field_name, raw[offset:next_offset])
+      byte_count = getattr(pkt, self.byte_count.field_name)
+      next_offset = offset + byte_count
+      
+      chunk = raw[offset:next_offset]
+      if len(chunk) != byte_count:
+          raise Exception("Unpacked %i bytes but expected %i" % (len(chunk), byte_count))
+
+      setattr(pkt, self.field_name, chunk)
       
       return next_offset
    
    def _unpack_variable_size_callable(self, pkt, raw, offset=0, **k):
-      next_offset = offset + self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)
-      setattr(pkt, self.field_name, raw[offset:next_offset])
+      byte_count = self.byte_count(pkt=pkt, raw=raw, offset=offset, **k)
+      next_offset = offset + byte_count
+      
+      chunk = raw[offset:next_offset]
+      if len(chunk) != byte_count:
+          raise Exception("Unpacked %i bytes but expected %i" % (len(chunk), byte_count))
+
+      setattr(pkt, self.field_name, chunk)
       
       return next_offset
 
