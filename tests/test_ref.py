@@ -34,7 +34,7 @@ class TestRef(unittest.TestCase):
          assert two_packed == two_default_raw
 
          raw = first_raw_for_one
-         one.unpack(raw)
+         one = one.__class__.create_from(raw)
          
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first, one.second
@@ -49,8 +49,8 @@ class TestRef(unittest.TestCase):
 
          raw  = second_raw_for_one
          raw2 = second_raw_for_two
-         one.unpack(raw)
-         two.unpack(raw2)
+         one = one.__class__.create_from(raw)
+         two = two.__class__.create_from(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first, one.second
@@ -92,7 +92,7 @@ class TestRef(unittest.TestCase):
          assert two_packed == two_default_raw
 
          raw = first_raw_for_one
-         one.unpack(raw)
+         one = one.__class__.create_from(raw)
          
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first.value, one.second.value
@@ -107,8 +107,8 @@ class TestRef(unittest.TestCase):
 
          raw  = second_raw_for_one
          raw2 = second_raw_for_two
-         one.unpack(raw)
-         two.unpack(raw2)
+         one = one.__class__.create_from(raw)
+         two = two.__class__.create_from(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first.value, one.second.value
@@ -347,7 +347,7 @@ class TestRef(unittest.TestCase):
       assert len(arguments_per_call) == 0 # no called
    
       raw = '\x00\x00\x00\x01'
-      one.unpack(raw)
+      one = one.__class__.create_from(raw)
       assert len(arguments_per_call) == 2
       first_call, second_call = arguments_per_call
 

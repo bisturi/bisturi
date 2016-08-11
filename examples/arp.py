@@ -23,12 +23,8 @@ if __name__ == '__main__':
    raw_query = b16decode('00010800060400010018f7f6f7fdc0a80103000000000000c0a8010c', True)
    raw_response = b16decode('0001080006040002002f6f5fdfdfc0a8010c0018f7f6f7fdc0a80103', True)
 
-   arp_query = ARP()
-   query_last = arp_query.unpack(raw_query)
-
-   arp_response = ARP()
-   response_last = arp_response.unpack(raw_response)
-
+   arp_query = ARP.create_from(raw_query)
+   arp_response = ARP.create_from(raw_response)
 
    assert arp_query.hw_type == arp_response.hw_type == 0x0001        # ethernet
    assert arp_query.prot_type == arp_response.prot_type == 0x0800    # ip

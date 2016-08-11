@@ -31,7 +31,7 @@ class TestInt(unittest.TestCase):
          assert two_packed == two_default_raw
 
          raw = first_raw_for_one
-         one.unpack(raw)
+         one = one.__class__.create_from(raw)
          
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first, one.second
@@ -46,8 +46,8 @@ class TestInt(unittest.TestCase):
 
          raw  = second_raw_for_one
          raw2 = second_raw_for_two
-         one.unpack(raw)
-         two.unpack(raw2)
+         one = one.__class__.create_from(raw)
+         two = two.__class__.create_from(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
          one_first, one_second = one.first, one.second

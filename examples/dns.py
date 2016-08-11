@@ -31,8 +31,7 @@ class Label(Packet):
          class Builder(Packet):
             name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
          
-         builder = Builder()
-         builder.unpack(raw, self.offset())
+         builder = Builder.create_from(raw, offset=self.offset())
 
          names = []
          for n in builder.name:
@@ -220,12 +219,8 @@ if __name__ == '__main__':
    raw_query = b16decode('fabc010000010000000000010377777706676f6f676c6503636f6d00000100010000291000000000000000', True)
    raw_response = b16decode('fabc818000010006000400050377777706676f6f676c6503636f6d0000010001c00c000100010000006400044a7d8368c00c000100010000006400044a7d8369c00c000100010000006400044a7d836ac00c000100010000006400044a7d8393c00c000100010000006400044a7d8363c00c000100010000006400044a7d8367c010000200010000016f0006036e7331c010c010000200010000016f0006036e7332c010c010000200010000016f0006036e7334c010c010000200010000016f0006036e7333c010c08c000100010001397d0004d8ef200ac09e000100010000b3600004d8ef220ac0c20001000100010a7a0004d8ef240ac0b0000100010000db710004d8ef260a0000291000000000000000', True)
 
-   query = Message()
-   response = Message()
-
-   query.unpack(raw_query)
-   response.unpack(raw_response)
-
+   query = Message.create_from(raw_query)
+   response = Message.create_from(raw_response)
 
    assert query.id == response.id == 0xfabc
    

@@ -75,6 +75,7 @@ class Packet(object):
 
 
    def unpack(self, raw, offset=0):
+      raise Exception("NO")
       stack = []
       try:
          return self.unpack_impl(raw, offset, stack)

@@ -77,9 +77,7 @@ However, to use this you need to call unpack directly.
 
 ```python
 >>> s2 = 'xxx\x01\x00\x00\x00\x01d'
->>> q = TLP()
->>> q.unpack(s2, 3) #ignore the first 3 bytes "xxx"
-9
+>>> q = TLP.create_from(s2, offset=3)   #ignore the first 3 bytes "xxx"
 >>> q.type
 1
 >>> q.length
@@ -97,8 +95,7 @@ If a field cannot be unpacked, an exception is raised with the full stack of pac
 ...    payload = Data(length)
 
 >>> def some_function(raw):
-...    q = VariablePayload()
-...    q.unpack(raw)
+...    q = VariablePayload.create_from(raw)
 
 >>> s = '\x04a'
 >>> some_function(s)                                         #doctest: +ELLIPSIS
@@ -143,10 +140,7 @@ work like a string:
 >>>
 >>> seekable_file = _string_as_seekable_file('\x03abc')
 
->>> p = VariablePayload()
->>> p.unpack(seekable_file)
-4
-
+>>> p = VariablePayload.create_from(seekable_file)
 >>> p.length
 3
 >>> p.payload

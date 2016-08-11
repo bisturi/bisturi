@@ -37,9 +37,9 @@ class Routing(Packet):
    segment_left = Int(1)
    options      = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 4 + pkt._start)
 
-   def unpack(self, raw, offset=0, **k):
+   def unpack_impl(self, raw, offset=0, **k):
       self._start = offset
-      return Packet.unpack(self, raw, offset, **k)
+      return Packet.unpack_impl(self, raw, offset, **k)
 
 
 class IPAddr(Field):
@@ -101,8 +101,7 @@ if __name__ == '__main__':
    # Without extentions neither payload
    raw = b16decode('10200003 0000 3b 00 01020304000000000000000000000000 0a0b0000000000000000000000000c0d'.replace(' ', ''), True)
 
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.version == 1 and ip.traffic_class == 2 and ip.flow_label == 3
    assert ip.length == 0
@@ -117,8 +116,7 @@ if __name__ == '__main__':
    # One extention with padding: no options
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00000000000000'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -133,8 +131,7 @@ if __name__ == '__main__':
    # One extention with one small option and padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0102aabb 0000'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -153,8 +150,7 @@ if __name__ == '__main__':
    # One extention with one small option and without padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0104aabbccdd'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -174,8 +170,7 @@ if __name__ == '__main__':
    # One extention with one big option and without padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0106aabbccddeeff'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -194,8 +189,7 @@ if __name__ == '__main__':
    # One extention with two options and without padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0101aa 0101bb'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -217,8 +211,7 @@ if __name__ == '__main__':
    # One big extention with two options and padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b01 0103aabbcc 0105aabbccddee 0000'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
@@ -240,8 +233,7 @@ if __name__ == '__main__':
    # Three extentions with one option and padding.
    raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 0000 0104aaaaaaaa 0001 0107bbbbbbbbbbbbbb 0000000000 3b00 0102cccc 0000'.replace(' ', ''), True)
    
-   ip = IPv6()
-   ip.unpack(raw)
+   ip = IPv6.create_from(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0

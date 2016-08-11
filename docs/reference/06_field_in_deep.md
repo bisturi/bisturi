@@ -32,17 +32,12 @@ So, when you do something like p.size + 1 you are working with native python obj
 No more.
 The same happens with Data and Ref.
 
-But Ref is a little more special. He lets you to decide what should be the python object
-only if that python object has the methods 'pack' and 'unpack'.
-All the packets has them, so they can be used by Ref.
+But Ref is a little more special. He uses a Field or a Packet as his python object.
 
 But what happens if we want another type of Field?
 
 For example the 'ip' object from python (IPv4Address and IPv6Address) can be used as that
-'python object' but because they don't have the 'pack' neither 'unpack', those classes 
-cannot be used as fields using Ref.
-
-So we need to create our own field.
+'python object' so we can build a custom Field class to map the ip object from/to a string of bytes.
 
 ```python
 >>> from bisturi.field import Field
@@ -85,6 +80,8 @@ Ok, lets see.
    Two important notes, the parent __init__ is called and the 'default' attribute is setted.
  - Then, the unpack is implemented. We read 4 (or 16) bytes and we set the val interpreted
    using 'setval'. The new offset is returned (the bytes readed plus the old offset).
+   You need to implement the unpack method without assuming the the packet instance (pkt) has
+   the field already set. In other words, you cannot call 'getval' here without calling 'setval' first.
  - Similar for 'pack'. We get the val using 'getval' and transform the ip address to
    its binary representation which it is added to the fragments and returned
 
@@ -104,8 +101,7 @@ True
 '\x7f\x00\x00\x01\x00\x00\x00\x00'
 
 >>> s = '\xc0\xa8\x01\x01\xc0\xa8\x01\x02'
->>> p.unpack(s)
-8
+>>> p = IP_Example.create_from(s)
 >>> str(p.destination)
 '192.168.1.1'
 >>> str(p.source)
