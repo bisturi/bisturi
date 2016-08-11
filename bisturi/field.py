@@ -40,8 +40,6 @@ def _get_count(count_arg):
    '''Return a callable from count_arg so you can invoke that callable
       and the count of byte will be retrived. 
       If count_arg is a callable, it must accept any variable keyword-argument.'''
-   if count_arg is None:
-      return None
 
    if isinstance(count_arg, (int, long)):
       return lambda **k: count_arg
@@ -124,7 +122,7 @@ class Sequence(Field):
 
       self.prototype = prototype
 
-      resolved_count = _get_count(count)
+      resolved_count = None if count is None else _get_count(count)
       self.when = _get_when(resolved_count, when)
       self.until_condition = _get_until(resolved_count, until)
 
