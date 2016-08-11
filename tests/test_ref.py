@@ -209,14 +209,14 @@ class TestRef(unittest.TestCase):
 
    def test_ref_variable_int_field(self):
       class RefVariableIntField(Packet):
-         first  = Ref(lambda **k: Int(1),  default=Int(2))
-         second = Ref(lambda **k: Int(4),  default=Int(8))
+         first  = Ref(lambda **k: Int(1),  default=1)
+         second = Ref(lambda **k: Int(4),  default=2)
 
       self._test_refs_field(
          obj_one = RefVariableIntField(), 
          obj_two = RefVariableIntField(),
-         one_default_raw = '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02',
-         two_default_raw = '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02',
+         one_default_raw = '\x01\x00\x00\x00\x02',
+         two_default_raw = '\x01\x00\x00\x00\x02',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
          first_raw_for_one =  '\x03\x00\x00\x00\x04',   

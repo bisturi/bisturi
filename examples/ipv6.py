@@ -15,7 +15,7 @@ class len_val(Packet):
 
 class Option(Packet):
    type     = Int(1)
-   payload  = Ref(lambda pkt, **k: len_val() if pkt.type != 0 else Data(0), default=Data(0))
+   payload  = Ref(lambda pkt, **k: len_val() if pkt.type != 0 else Data(0), default='')
 
 
 class HopByHop(Packet):

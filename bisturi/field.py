@@ -373,8 +373,6 @@ class Ref(Field):
       if isinstance(self.prototype, type):
          self.prototype = self.prototype() # get an object
       
-      if isinstance(self.default, type):
-         self.default = self.default() # get an object
 
       if callable(self.prototype) and default is None:
          raise ValueError("We need a default object!")
@@ -383,25 +381,27 @@ class Ref(Field):
          raise ValueError("We don't need a default object, we will be using the prototype object instead.")
 
       if self.default is None:
-         self.default = self.prototype
-
-      # or it is the prototype or it is a 'default' explicit object
-      # in any case, it is a Field  or a Packet instance 
-      assert isinstance(self.default, (Field, Packet))
+         if isinstance(self.prototype, Packet):
+            self.default = self.prototype
+         else:
+            assert isinstance(self.prototype, Field)
+            self.default = getattr(self.prototype, 'default', None)
+            
 
 
    def compile(self, field_name, position, fields):
       # TODO should we call Field.compile here?
-      assert callable(self.prototype) or self.default == self.prototype
 
       self.position = position
       self.field_name = field_name
-      if isinstance(self.default, Field): # this will compile the prototype too if the prototype is not a callable
-         self.default.compile(field_name=field_name, position=position, fields=[])
+      if isinstance(self.prototype, Field): 
+         self.prototype.compile(field_name=field_name, position=position, fields=[])
 
 
 
    def init(self, packet, defaults):   #TODO ver el tema de los defaults q viene de la instanciacion del packet
+      # we use our prototype to get a valid default if the prototype is not a callable
+      # in the other case, we use self.default.
       prototype = self.prototype
       if isinstance(prototype, Field):
          prototype.init(packet, defaults)
@@ -421,15 +421,11 @@ class Ref(Field):
       else:
          assert callable(self.prototype)
          default = self.default
-         if isinstance(default, Field):
-            default.init(packet, defaults)
-
-         else:
-            assert isinstance(default, Packet)
+         if isinstance(default, Packet):
             if self.field_name not in defaults:
                defaults[self.field_name] = copy.deepcopy(default)  # get a new instance (Field.init will copy that object)
 
-            Field.init(self, packet, defaults)
+         Field.init(self, packet, defaults)
 
 
    def unpack(self, pkt, raw, offset=0, **k):

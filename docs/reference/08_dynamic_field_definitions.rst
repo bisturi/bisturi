@@ -38,12 +38,12 @@ he can dynamically reference to a Packet or another Field using a callable.
 ...                           0x01: Data(4),    # IP v4
 ...                           0x04: Data(8),    # IP v6
 ...                           0x03: NData(),    # domain name
-...                           }[pkt.type],  default=Data(4))
+...                           }[pkt.type],  default='\x00\x00\x00\x00')
 
 So, depends on the value of 'type', 'address' will be a Ref to a Data (a Field) or
 to a NData (a Packet)
 Because the object referenced is determined at unpacking time (using the callable),
-you need to set a default (this is mandatory)
+you need to set a default value (this is mandatory)
 
 >>> s = '\x01\x01\x02\x03\x04'
 >>> p = SOCKS(s)

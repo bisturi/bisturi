@@ -12,7 +12,7 @@ class Label(Packet):
    name   = Ref(lambda pkt, **k: {
                   0x00: Data(pkt.length),
                   0xc0: Int(1),
-               }[pkt.length & 0xc0],  default=Data(length))
+               }[pkt.length & 0xc0],  default='')
 
    def is_root(self):
       return self.length == 0
