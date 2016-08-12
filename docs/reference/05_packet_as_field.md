@@ -1,4 +1,4 @@
-In this example will want to create the Ethernet Packet.
+In this example will create the Ethernet Packet.
 Using Data and Int it's a relative simple task.
 
 ```python
@@ -15,7 +15,8 @@ Using Data and Int it's a relative simple task.
 
 The problem with this is that the fields 'destination' and 'source' are not randoms bytes.
 In fact they are the MAC of the statations.
-It should be nice to create a packet for MAC and utilize it in Ethernet.
+It should be nice to create a packet for MAC and utilize it in Ethernet. For that we can use
+the Ref field in the Ethernet packet to reference another packet, the MAC packet:
 
 ```python
 >>> from bisturi.field import Ref
@@ -85,17 +86,17 @@ to set defaults parameters to the referenced object, you need to pass it instead
 
 ```
 
+
 The use of Ref is most like a shortcut instead of create a new class which extends Field
 but at the cost of another level of indirection.
 You can see how to create your custom fields but this require a little more of knowlage
 about the lib.
 
-In the other hand, the Ref should not be used to link layers. For example, if you have
+The Ref should not be used to link layers or compose unrelated packets. For example, if you have
 the packet Ethernet and the packet IP, maybe you will be temted to define 
 Ethernet.payload as Ref(IP) but this will bound your Ethernet implementation to IP.
-Exists more flexible solutions to this called 'specializations' which i will show you later.
 
-There is possible to use a subpacket (a packet defined inside of another) as a shortcut instead of using
+It is possible to use a subpacket (a packet defined inside of another) as a shortcut instead of using
 Ref. This is an example:
 
 ```python
@@ -130,8 +131,8 @@ Ref. This is an example:
 
 ```
 
-Notice how the packet' name "Date" is transformed into the "date" field. The rules follow the pyhonic path for names,
-transforming class's names like "FooBar" into field's names like "foo_bar".
+Notice how the packet' name "BirthDate" is transformed into the "birth_date" field. 
+The rules follow the pyhonic path for names, transforming class's names like "FooBar" into field's names like "foo_bar".
 
 We can do a last improvement. Some times we use sub packets to organize better the
 structure of the big picture but it become annoying the extra level of indirection.
