@@ -1,8 +1,10 @@
-The Data field is very simple. It is just a piece of bytes.
-The interesting part of Data is that its size can be defined by another field
-or can be determined by the presence of a token.
-In that  case, the Data will consume all the string until it find the token which can
-be a simple byte, a more complex string or even a regexp.
+The Data field is very simple, it is just a piece of bytes.
+The interesting part of Data is that its size in bytes can be defined by another field
+or it can consume all the string until it find a particular token or a regular expression's match.
+Even you can use a function to be called so you can return the size in runtime (unpacking time), but this
+will be shown later...
+
+For now, take the following example
 
 ```python
 >>> from bisturi.packet import Packet
@@ -45,7 +47,7 @@ True
 
 ```
 
-Note that a sutil problem is raises with the delimiters. If the delimiter is a regexp,
+Note that a sutil problem araises with the delimiters. If the delimiter is a regexp,
 there isn't a good default for it. So, be careful with that. The only 'safe' default
 is used when the size is fixed:
 ```python
@@ -67,7 +69,7 @@ is used when the size is fixed:
 
 ```
 
-If you need that the token be in the result, you can use the keyword 'include_delimiter'
+If you need that the token be part of the result, you can use the keyword 'include_delimiter'
 
 ```python
 >>> class DataExample(Packet):
@@ -143,7 +145,7 @@ PacketError: Error when unpacking the field 'a' of packet DataWithSearchLengthLi
 
 ```
 
-As an exception to this, when the search marker is the regex "$" (which means give me to me all 
+However there As an exception to this limit. Wwhen the search marker is the regex "$" (which means give me to me all 
 the rest of the raw string), this regex is honored and will return the rest of the string 
 ignoring the search buffer length:
 
@@ -160,9 +162,8 @@ ignoring the search buffer length:
 
 ```
 
-A special case arise when the size of the data is not bound to a field only neither there
-is a marker to search. 
-Instead depend on something that can be resolved only when the packet disassmble the byte string.
+So, what happen if we need to compute some non-trivial size that depend on something 
+that can be resolved only when the packet disassmble the byte string.
 In this case, a callable can be used
 
 ```python
@@ -172,9 +173,22 @@ In this case, a callable can be used
 
 ```
 
+or, if you prefer
+
+```python
+>>> class DataExample(Packet):
+...    def calc_size(pkt, raw, offset, **k):
+...       return pkt.size if pkt.size < 255 else len(raw)-offset
+...
+...    size = Int(1)
+...    payload = Data(calc_size)
+...
+
+```
+
 In this example, the size of the 'payload' is determined by the value of 'size' only if it 
 is not equal to 255. When 'size' is 255, the payload will consume all the bytes until the
-end of the packet.
+end of the packet. 
 
 ```python
 >>> s1 = '\x01a'
@@ -229,3 +243,4 @@ True
 True
 
 ```
+

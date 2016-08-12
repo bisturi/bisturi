@@ -101,7 +101,7 @@ True
 
 In some cases you need to change the endianness of all the Ints from big endian (default)
 to little endian.
-Changeing this in each Int is terrible, so we can change the default directly 
+Changeing this in each Int is terrible, so we can change the default policy directly 
 
 ```python
 
