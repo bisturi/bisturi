@@ -10,12 +10,11 @@ Expr field  | false | true | false   | true          | no apply   | true      | 
 A callable  | false | true | false   | true          | true       | true      | true
 
 
-Notes: (\*) The amount set in a Bits fields is the amount of bits, no of bytes, and must be multiple of 8.
+Notes: (\*) The amount set in a Bits fields is the amount of bits, no of bytes.
       (\*\*) The amount set in a Sequence, is the amount of objects, no of bytes.
 
 
 First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
-however, there isn't a fixed amount of bytes to be set for referenced objects or sequences:
 
 ```python
 >>> from bisturi.packet import Packet
@@ -37,7 +36,7 @@ however, there isn't a fixed amount of bytes to be set for referenced objects or
 
 ```
 
-For sequence of objects you can set the amount of objects to be extracted:
+For sequence of objects you can set the amount of objects to be extracted, not the count of bytes:
 
 ```python
 >>> from bisturi.field import Sequence
@@ -55,7 +54,7 @@ For sequence of objects you can set the amount of objects to be extracted:
 
 ```
 
-But fixed amounts it is just the begin. You can define a variable amount using several
+But fixed amounts is just the begin. You can define a variable amount using several
 methods.
 The simplest is using another field, tipically an Int.
 Note how you can use this for Data and Sequence fields but not for Int, Bits or Ref fields.
@@ -170,7 +169,7 @@ True
 
 The more flexible method is to use a callable which will be invoked during the
 parsing to know how much to consume.
-You can use any kind of callable, functions, methods or lambdas.
+You can use any kind of callable: functions, methods or lambdas.
 
 ```python
 >>> class VariableUsingCallable(Packet):
