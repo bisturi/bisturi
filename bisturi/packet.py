@@ -51,123 +51,122 @@ class PacketError(Exception):
 
 
 class Packet(object):
-   __metaclass__ = packet_builder.MetaPacket
-   __bisturi__ = {}
+    __metaclass__ = packet_builder.MetaPacket
+    __bisturi__ = {}
 
+    def __init__(self, _initialize_fields=True, **defaults):
+        assert _initialize_fields in (True, False)
+        if _initialize_fields:
+            for field_name, field, _, _ in self.__class__.get_fields():
+                field.init(self, defaults)
+                try:
+                    descriptor_name = field.descriptor_name
+                    default_value = defaults[descriptor_name]
+                    setattr(self, descriptor_name, default_value)
+                except AttributeError:
+                    pass
+                except KeyError:
+                    pass
 
-   def __init__(self, _initialize_fields=True, **defaults):
-      assert _initialize_fields in (True, False)
-      if _initialize_fields:
-          for field_name, field, _, _ in self.__class__.get_fields():
-              field.init(self, defaults)
-              try:
-                  descriptor_name = field.descriptor_name
-                  default_value = defaults[descriptor_name]
-                  setattr(self, descriptor_name, default_value)
-              except AttributeError:
-                  pass
-              except KeyError:
-                  pass
+    def as_prototype(self):
+        return Prototype(self)
 
-   def as_prototype(self):
-      return Prototype(self)
+    @classmethod
+    def unpack(cls, raw, offset=0, silent=False):
+        pkt = cls(_initialize_fields=False)
+        try:
+            pkt.unpack_impl(raw, offset, root=pkt)
+            return pkt
+        except:
+            if silent:
+                return None
+            else:
+                raise
 
-   @classmethod
-   def unpack(cls, raw, offset=0, silent=False):
-     pkt = cls(_initialize_fields=False)
-     try:
-         pkt.unpack_impl(raw, offset, root=pkt)
-         return pkt
-     except:
-         if silent:
-             return None
-         else:
-             raise
-
-   def unpack_impl(self, raw, offset, **k):
-      k['local_offset'] = offset
-      try:
-         for name, f, _, unpack in self.get_fields():
-            offset = unpack(pkt=self, raw=raw, offset=offset, **k)
-      except PacketError, e:
-         e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
-         raise
-      except Exception, e:
-         raise PacketError(True, name, self.__class__.__name__, offset, str(e))
+    def unpack_impl(self, raw, offset, **k):
+        k['local_offset'] = offset
+        try:
+            for name, f, _, unpack in self.get_fields():
+                offset = unpack(pkt=self, raw=raw, offset=offset, **k)
+        except PacketError, e:
+            e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
+            raise
+        except Exception, e:
+            raise PacketError(True, name, self.__class__.__name__, offset, str(e))
       
-      [sync(self) for sync in self.get_sync_after_unpack_methods()]
-      return offset
+        [sync(self) for sync in self.get_sync_after_unpack_methods()]
+        return offset
 
-   def pack(self):
-      fragments = Fragments()
-      try:
-         return self.pack_impl(fragments, root=self)
-      except PacketError, e:
-         raise e
+    def pack(self):
+        fragments = Fragments()
+        try:
+            return self.pack_impl(fragments, root=self)
+        except PacketError, e:
+            raise e
          
 
-   def pack_impl(self, fragments, **k):
-      [sync(self) for sync in self.get_sync_before_pack_methods()]
-      k['local_offset'] = fragments.current_offset
+    def pack_impl(self, fragments, **k):
+        [sync(self) for sync in self.get_sync_before_pack_methods()]
+        k['local_offset'] = fragments.current_offset
 
-      try:
-         for name, f, pack, _ in self.get_fields():
-            pack(pkt=self, fragments=fragments, **k)
-      except PacketError, e:
-         e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
-         raise
-      except Exception, e:
-         raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
+        try:
+            for name, f, pack, _ in self.get_fields():
+                pack(pkt=self, fragments=fragments, **k)
+        except PacketError, e:
+            e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
+            raise
+        except Exception, e:
+            raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
       
-      return fragments
+        return fragments
 
-   def as_regular_expression(self, debug=False):
-      fragments = FragmentsOfRegexps()
-      stack = []
-      self.as_regular_expression_impl(fragments, stack)
+    def as_regular_expression(self, debug=False):
+        fragments = FragmentsOfRegexps()
+        stack = []
+        self.as_regular_expression_impl(fragments, stack)
 
-      return re.compile("(?s)" + fragments.assemble_regexp(), re.DEBUG if debug else 0)
-
-
-   def as_regular_expression_impl(self, fragments, stack):
-       for name, f, pack, _ in self.get_fields():
-           f.pack_regexp(self, fragments, stack=stack)
-
-   def __eq__(self, other):
-       if not isinstance(other, self.__class__):
-           return False
-
-       for name, f, pack, _ in self.get_fields():
-           if getattr(self, name) != getattr(other, name):
-               return False
-
-       return True
+        return re.compile("(?s)" + fragments.assemble_regexp(), re.DEBUG if debug else 0)
 
 
+    def as_regular_expression_impl(self, fragments, stack):
+        for name, f, pack, _ in self.get_fields():
+            f.pack_regexp(self, fragments, stack=stack)
 
-   def iterative_unpack(self, raw, offset=0, stack=None):
-      raise NotImplementedError()
-      for name, f, _, _ in self.get_fields():
-         yield offset, name
-         offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
 
-      yield offset, "."
+        for name, f, pack, _ in self.get_fields():
+            if getattr(self, name) != getattr(other, name):
+                return False
+
+        return True
+
+
+    def iterative_unpack(self, raw, offset=0, stack=None):
+        raise NotImplementedError()
+        for name, f, _, _ in self.get_fields():
+            yield offset, name
+            offset = f.unpack(pkt=self, raw=raw, offset=offset, stack=stack)
+
+        yield offset, "."
 
 class Prototype(object):
     def __init__(self, pkt):
-       try:
-           self.template = pickle.dumps(pkt, -1)
-           pickle.loads(self.template) # sanity check
-           self.clone = self._clone_from_pickle
-       except Exception as e:
-           self.template = copy.deepcopy(pkt)
-           self.clone = self._clone_from_live_obj
+        try:
+            self.template = pickle.dumps(pkt, -1)
+            pickle.loads(self.template) # sanity check
+            self.clone = self._clone_from_pickle
+        except Exception as e:
+            self.template = copy.deepcopy(pkt)
+            self.clone = self._clone_from_live_obj
 
     def clone(self):
-       raise Exception()
+        raise Exception()
 
     def _clone_from_pickle(self):
-       return pickle.loads(self.template)
+        return pickle.loads(self.template)
 
     def _clone_from_live_obj(self):
-       return copy.deepcopy(self.template)
+        return copy.deepcopy(self.template)
+

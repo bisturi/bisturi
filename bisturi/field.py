@@ -834,243 +834,244 @@ class Ref(Field):
 
 @defer_operations_of
 class Bits(Field):
-   class ByteBoundaryError(Exception):
-      def __init__(self, str):
-         Exception.__init__(self, str)
+    class ByteBoundaryError(Exception):
+        def __init__(self, str):
+            Exception.__init__(self, str)
 
-   def __init__(self, bit_count, default=0):
-      Field.__init__(self)
-      self.default = default
-      self.mask = (2**bit_count)-1
-      self.bit_count = bit_count
+    def __init__(self, bit_count, default=0):
+        Field.__init__(self)
+        self.default = default
+        self.mask = (2**bit_count)-1
+        self.bit_count = bit_count
 
-      self.iam_first = self.iam_last = False
+        self.iam_first = self.iam_last = False
    
-   @exec_once
-   def compile(self, position, fields, bisturi_conf):
-      slots = Field._compile(self, position, fields, bisturi_conf)
+    @exec_once
+    def compile(self, position, fields, bisturi_conf):
+        slots = Field._compile(self, position, fields, bisturi_conf)
 
-      if position == 0 or not isinstance(fields[position-1][1], Bits):
-         self.iam_first = True
+        if position == 0 or not isinstance(fields[position-1][1], Bits):
+            self.iam_first = True
 
-      if position == len(fields)-1 or not isinstance(fields[position+1][1], Bits):
-         self.iam_last = True
+        if position == len(fields)-1 or not isinstance(fields[position+1][1], Bits):
+            self.iam_last = True
 
-      if self.iam_last:
-         cumshift = 0
-         I = Int()
-         self.members = []
-         for n, f in reversed(fields[:position+1]):
-            if not isinstance(f, Bits):
-               break
+        if self.iam_last:
+            cumshift = 0
+            I = Int()
+            self.members = []
+            for n, f in reversed(fields[:position+1]):
+                if not isinstance(f, Bits):
+                    break
 
-            f.shift = cumshift
-            f.mask = ((2**f.bit_count) - 1) << f.shift
-            f.I = I
+                f.shift = cumshift
+                f.mask = ((2**f.bit_count) - 1) << f.shift
+                f.I = I
 
-            self.members.append((n, f.bit_count))
+                self.members.append((n, f.bit_count))
             
-            cumshift += f.bit_count
-            del f.bit_count
+                cumshift += f.bit_count
+                del f.bit_count
 
-         self.members.reverse()
-         name_of_members, bit_sequence = zip(*self.members)
+            self.members.reverse()
+            name_of_members, bit_sequence = zip(*self.members)
 
-         if not (cumshift % 8 == 0):
-            raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
+            if not (cumshift % 8 == 0):
+                raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
 
-         I.byte_count = cumshift / 8
-         fname = "_bits__"+"_".join(name_of_members)
-         I.field_name = fname
-         I.compile(position=-1, fields=[], bisturi_conf={})
+            I.byte_count = cumshift / 8
+            fname = "_bits__"+"_".join(name_of_members)
+            I.field_name = fname
+            I.compile(position=-1, fields=[], bisturi_conf={})
 
-         slots.append(fname)
-      return slots
+            slots.append(fname)
+        return slots
 
 
-   def init(self, packet, defaults):
-      if self.iam_first:
-         setattr(packet, self.I.field_name, 0)
+    def init(self, packet, defaults):
+        if self.iam_first:
+            setattr(packet, self.I.field_name, 0)
 
-      setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
+        setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      if self.iam_first:
-         offset = self.I.unpack(pkt, raw, offset, **k)
+    def unpack(self, pkt, raw, offset=0, **k):
+        if self.iam_first:
+            offset = self.I.unpack(pkt, raw, offset, **k)
 
-      I = getattr(pkt, self.I.field_name)
+        I = getattr(pkt, self.I.field_name)
 
-      setattr(pkt, self.field_name, (I & self.mask) >> self.shift)
-      return offset
+        setattr(pkt, self.field_name, (I & self.mask) >> self.shift)
+        return offset
 
-   def pack(self, pkt, fragments, **k):
-      I = getattr(pkt, self.I.field_name)
-      setattr(pkt, self.I.field_name, ((getattr(pkt, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
+    def pack(self, pkt, fragments, **k):
+        I = getattr(pkt, self.I.field_name)
+        setattr(pkt, self.I.field_name, ((getattr(pkt, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
 
-      if self.iam_last:
-         return self.I.pack(pkt, fragments=fragments, **k)
-      else:
-         return fragments
+        if self.iam_last:
+            return self.I.pack(pkt, fragments=fragments, **k)
+        else:
+            return fragments
       
-   def pack_regexp(self, pkt, fragments, **k):
-      if self.iam_last:
-          bits = []
-          for name, bit_count in self.members:
-              is_literal = not isinstance(getattr(pkt, name), Any)
+    def pack_regexp(self, pkt, fragments, **k):
+        if self.iam_last:
+            bits = []
+            for name, bit_count in self.members:
+                is_literal = not isinstance(getattr(pkt, name), Any)
               
-              if is_literal:
-                  b = bin(getattr(pkt, name))[2:]
-                  zeros = bit_count-len(b)
+                if is_literal:
+                    b = bin(getattr(pkt, name))[2:]
+                    zeros = bit_count-len(b)
 
-                  bits.append("0" * zeros)
-                  bits.append(b)
-              else:
-                  bits.append("x" * bit_count)
+                    bits.append("0" * zeros)
+                    bits.append(b)
+                else:
+                    bits.append("x" * bit_count)
 
-          bits  = "".join(bits)
-          bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)/8)]
+            bits  = "".join(bits)
+            bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)/8)]
 
-          for byte in bytes:
-              if byte == "x" * 8:                                   # xxxx xxxx pattern (all dont care)
-                  fragments.append(".{1}", is_literal=False)
-              else:
-                  first_dont_care = byte.find("x")
-                  if first_dont_care == -1:                         # 0000 0000 pattern (all fixed)
-                     char = chr(int(byte, 2))
-                     fragments.append(char, is_literal=True)
+            for byte in bytes:
+                if byte == "x" * 8:                                   # xxxx xxxx pattern (all dont care)
+                    fragments.append(".{1}", is_literal=False)
+                else:
+                    first_dont_care = byte.find("x")
+                    if first_dont_care == -1:                         # 0000 0000 pattern (all fixed)
+                        char = chr(int(byte, 2))
+                        fragments.append(char, is_literal=True)
 
-                  elif byte[first_dont_care:] == "x" * len(byte[first_dont_care:]):
-                     dont_care_bits = len(byte[first_dont_care:])   # 00xx xxxx pattern (lower dont care)
-                     lower_char = chr(int(byte[:first_dont_care] + ("0" * dont_care_bits),  2))
-                     higher_char = chr(int(byte[:first_dont_care] + ("1" * dont_care_bits), 2))
+                    elif byte[first_dont_care:] == "x" * len(byte[first_dont_care:]):
+                        dont_care_bits = len(byte[first_dont_care:])   # 00xx xxxx pattern (lower dont care)
+                        lower_char = chr(int(byte[:first_dont_care] + ("0" * dont_care_bits),  2))
+                        higher_char = chr(int(byte[:first_dont_care] + ("1" * dont_care_bits), 2))
 
-                     lower_literal = re.escape(lower_char)
-                     higher_literal = re.escape(higher_char)
-                     fragments.append("[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
+                        lower_literal = re.escape(lower_char)
+                        higher_literal = re.escape(higher_char)
+                        fragments.append("[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
                   
-                  else:                                             # 00xx x0x0 pattern (mixed pattern)
-                     all_patterns   = range(256)
-                     fixed_pattern  = int(byte.replace("x", "0"), 2) 
-                     dont_care_mask = int(byte.replace("1", "0").replace("x", "1"), 2)
+                    else:                                             # 00xx x0x0 pattern (mixed pattern)
+                        all_patterns   = range(256)
+                        fixed_pattern  = int(byte.replace("x", "0"), 2) 
+                        dont_care_mask = int(byte.replace("1", "0").replace("x", "1"), 2)
 
-                     mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
+                        mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
                      
-                     literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
-                     fragments.append("[%s]" % "".join(literal_patterns), is_literal=False)
+                        literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
+                        fragments.append("[%s]" % "".join(literal_patterns), is_literal=False)
 
-      return fragments
+        return fragments
 
 class Move(Field):
-   def __init__(self, move_arg, movement_type):
-      Field.__init__(self)
-      self.move_arg = move_arg 
-      self.movement_type = movement_type
-      self.default = ''
+    def __init__(self, move_arg, movement_type):
+        Field.__init__(self)
+        self.move_arg = move_arg 
+        self.movement_type = movement_type
+        self.default = ''
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      if isinstance(self.move_arg, Field):
-         move_value = getattr(pkt, self.move_arg.field_name)
+    def unpack(self, pkt, raw, offset=0, **k):
+        if isinstance(self.move_arg, Field):
+            move_value = getattr(pkt, self.move_arg.field_name)
 
-      elif isinstance(self.move_arg, (int, long)):
-         move_value = self.move_arg
+        elif isinstance(self.move_arg, (int, long)):
+            move_value = self.move_arg
       
-      else:
-         assert callable(self.move_arg) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
-         move_value = self.move_arg(pkt=pkt, raw=raw, offset=offset, **k)
+        else:
+            assert callable(self.move_arg) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
+            move_value = self.move_arg(pkt=pkt, raw=raw, offset=offset, **k)
 
-      # TODO we need to disable this, the data may be readed by other field
-      # in the future and then the packet will have duplicated data (but see pack())
-      #setattr(pkt, self.field_name, raw[offset:move_value])
-      if self.movement_type == 'absolute':
-          return move_value
-      elif self.movement_type == 'relative':
-          return offset + move_value
-      elif self.movement_type.startswith('align-'):
-          if self.movement_type == 'align-global':
-              start = 0
-          elif self.movement_type == 'align-local':
-              start = k['local_offset']
-          else:
-              raise Exception()
+        # TODO we need to disable this, the data may be readed by other field
+        # in the future and then the packet will have duplicated data (but see pack())
+        #setattr(pkt, self.field_name, raw[offset:move_value])
+        if self.movement_type == 'absolute':
+            return move_value
+        elif self.movement_type == 'relative':
+            return offset + move_value
+        elif self.movement_type.startswith('align-'):
+            if self.movement_type == 'align-global':
+                start = 0
+            elif self.movement_type == 'align-local':
+                start = k['local_offset']
+            else:
+                raise Exception()
 
-          return offset + ((move_value - ((offset-start) % move_value)) % move_value)
-      else:     
-          raise Exception()
+            return offset + ((move_value - ((offset-start) % move_value)) % move_value)
+        else:     
+            raise Exception()
    
-   def init(self, packet, defaults):
-      pass
+    def init(self, packet, defaults):
+        pass
 
-   def pack(self, pkt, fragments, **k):
-      #garbage = getattr(pkt, self.field_name)
+    def pack(self, pkt, fragments, **k):
+        #garbage = getattr(pkt, self.field_name)
 
-      if isinstance(self.move_arg, Field):
-         move_value = getattr(pkt, self.move_arg.field_name)
+        if isinstance(self.move_arg, Field):
+            move_value = getattr(pkt, self.move_arg.field_name)
  
-      elif isinstance(self.move_arg, (int, long)):
-         move_value = self.move_arg
+        elif isinstance(self.move_arg, (int, long)):
+            move_value = self.move_arg
       
-      else:
-         assert callable(self.move_arg)
-         move_value = self.move_arg(pkt=pkt, fragments=fragments, **k)
+        else:
+            assert callable(self.move_arg)
+            move_value = self.move_arg(pkt=pkt, fragments=fragments, **k)
      
-      # TODO because the "garbage" could be readed by another field in the future,
-      # this may not be garbage and if  we try to put here, the other field will
-      # try to put the same data in the same place and we get a collission.
-      #fragments.append(garbage)
-      if self.movement_type == 'absolute':
-          fragments.current_offset = move_value
-      elif self.movement_type == 'relative':
-          fragments.current_offset += move_value
-      elif self.movement_type.startswith('align-'):
-          offset = fragments.current_offset
-          if self.movement_type == 'align-global':
-              start = 0
-          elif self.movement_type == 'align-local':
-              start = k['local_offset']
-          else:
-              raise Exception()
+        # TODO because the "garbage" could be readed by another field in the future,
+        # this may not be garbage and if  we try to put here, the other field will
+        # try to put the same data in the same place and we get a collission.
+        #fragments.append(garbage)
+        if self.movement_type == 'absolute':
+            fragments.current_offset = move_value
+        elif self.movement_type == 'relative':
+            fragments.current_offset += move_value
+        elif self.movement_type.startswith('align-'):
+            offset = fragments.current_offset
+            if self.movement_type == 'align-global':
+                start = 0
+            elif self.movement_type == 'align-local':
+                start = k['local_offset']
+            else:
+                raise Exception()
 
-          fragments.current_offset += ((move_value - ((offset-start) % move_value)) % move_value)
-      else:
-          raise Exception()
+            fragments.current_offset += ((move_value - ((offset-start) % move_value)) % move_value)
+        else:
+            raise Exception()
 
-      return fragments
+        return fragments
 
 
 class Bkpt(Field):
-   def __init__(self):
-      Field.__init__(self)
+    def __init__(self):
+        Field.__init__(self)
 
-   def init(self, packet, defaults):
-      pass
+    def init(self, packet, defaults):
+        pass
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      import pdb
-      pdb.set_trace()
-      return offset
+    def unpack(self, pkt, raw, offset=0, **k):
+        import pdb
+        pdb.set_trace()
+        return offset
 
-   def pack(self, pkt, fragments, **k):
-      import pdb
-      pdb.set_trace()
-      return fragments
+    def pack(self, pkt, fragments, **k):
+        import pdb
+        pdb.set_trace()
+        return fragments
    
-   def pack_regexp(self, pkt, fragments, **k):
-      return fragments
+    def pack_regexp(self, pkt, fragments, **k):
+        return fragments
 
 class Em(Field):
-   def __init__(self):
-      Field.__init__(self)
+    def __init__(self):
+        Field.__init__(self)
 
-   def init(self, packet, defaults):
-      pass
+    def init(self, packet, defaults):
+        pass
    
-   @exec_once
-   def compile(self, position, fields, bisturi_conf):
-      return []
+    @exec_once
+    def compile(self, position, fields, bisturi_conf):
+        return []
 
-   def unpack(self, pkt, raw, offset=0, **k):
-      return offset
+    def unpack(self, pkt, raw, offset=0, **k):
+        return offset
 
-   def pack(self, pkt, fragments, **k):
-      fragments.append("")
-      return fragments
+    def pack(self, pkt, fragments, **k):
+        fragments.append("")
+        return fragments
+
