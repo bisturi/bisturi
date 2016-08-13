@@ -131,7 +131,3 @@ def inspect(packet, indent="", current_level=0, aligned_to=8, truncate_values_to
             except:
                 print "%s%s%s" % (indent_and_prefix, space, "unknow value")
 
-
-
-
-
