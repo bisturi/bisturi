@@ -18,9 +18,11 @@ class Auto(object):
             return real_value
 
     def __set__(self, instance, val):
-        iam_enabled = val is None
-        setattr(instance, self.iam_enabled_attr_name, iam_enabled)
+        setattr(instance, self.iam_enabled_attr_name, False)
         setattr(instance, self.real_field_name, val)
+
+    def __delete__(self, instance):
+        setattr(instance, self.iam_enabled_attr_name, True)
 
     def sync_before_pack(self, instance):
         val = self.__get__(instance, type(instance)) # this can be calculated or not, we don't care

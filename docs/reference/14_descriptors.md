@@ -73,10 +73,10 @@ AutoLength support to force a value disabling the auto-functionality
 
 ```
 
-You can reenable it setting the field to None:
+You can reenable 'deleting' the value set before:
 
 ```python
->>> q.length = None
+>>> del q.length
 >>> q.length
 2
 >>> q.a
