@@ -274,27 +274,28 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
         self.super_class = attrs['__bisturi__']['specialization_of']
         assert isinstance(self.super_class, Packet)
 
-        original_fields_in_class = self.super_class.__bisturi__['original_fields_in_class']
-        specialized_fields = self.specialize_fields(attrs, original_fields_in_class)
+        original_fields_in_superclass = self.super_class.__bisturi__['original_fields_in_class']
+        specialized_fields = self.specialize_fields(attrs, original_fields_in_superclass)
 
         PacketClassBuilder.__init__(self, metacls, name, bases, specialized_attrs)
 
     def bisturi_configuration_default(self):
         return copy.deepcopy(self.super_class.__bisturi__)
 
-    def specialize_fields(self, specialization_attrs, original_fields):
+    def specialize_fields(self, specialization_attrs, original_fields_in_superclass):
+        specialized_fields = copy.deepcopy(original_fields_in_superclass)
         for attrname, attrvalue in specialization_attrs:
-            if isinstance(attrvalue, Field) and attrname not in original_fields:
+            if isinstance(attrvalue, Field) and attrname not in original_fields_in_superclass:
                 raise Exception("You cannot add new fields like '%s'." % attrname)
 
-            if isinstance(attrvalue, (int, long, basestring)) and attrname in original_fields:
-                original_fields[attrname].default = attrvalue  # TODO the default or a constant??
+            if isinstance(attrvalue, (int, long, basestring)) and attrname in original_fields_in_superclass:
+                specialized_fields[attrname].default = attrvalue  # TODO the default or a constant??
 
-            if isinstance(attrvalue, Field) and attrname in original_fields:
-                attrvalue.ctime = original_fields[attrname].ctime # override the creation time to keep the same order
-                original_fields[attrname] = attrvalue
+            if isinstance(attrvalue, Field) and attrname in original_fields_in_superclass:
+                attrvalue.ctime = original_fields_in_superclass[attrname].ctime # override the creation time to keep the same order
+                specialized_fields[attrname] = attrvalue
 
-        return original_fields
+        return specialized_fields
 
 class MetaPacket(type):
     def __new__(metacls, name, bases, attrs):
