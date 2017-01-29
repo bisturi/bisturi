@@ -52,19 +52,62 @@ class PacketClassBuilder(object):
         self.attrs.update(dict(subpackets_as_refs))
 
     def collect_the_fields(self):
-      from field import Field
-      self.fields_in_class = filter(lambda name_val: isinstance(name_val[1], Field), self.attrs.iteritems())
-      self.fields_in_class.sort(key=lambda name_val: name_val[1].ctime)
+        ''' Collect the fields of the packet and sort them by creation time.
+            Take something like this:
 
-      self.original_fields_in_class = list(self.fields_in_class)
+            class A(Packet):
+                a = 1
+                b = Int(2)
+                c = Int(2)
 
-    def make_field_descriptions(self):
-      self.fields = sum([valfield.describe_yourself(namefield, self.bisturi_conf) for namefield, valfield in self.fields_in_class], [])
+            and collect [b->Int(2), c->Int(2)]
+        '''
+        from field import Field
+
+        def is_a_field_instance(name_and_field):
+            _, field = name_and_field
+            return isinstance(field, Field)
+
+        def creation_time_of_field(name_and_field):
+            _, field = name_and_field
+            return field.ctime
+
+        self.fields_in_class = filter(is_a_field_instance, self.attrs.iteritems())
+        self.fields_in_class.sort(key=creation_time_of_field)
+
+        self.original_fields_in_class = list(self.fields_in_class)
+
+    def ask_to_each_field_to_describe_itself(self):
+        ''' Ask to each field to describe itself. This should return for each field 
+            a list of names and fields which represent that original field.
+            In most cases one field is described by only one field (itself) but
+            there are cases where multiple field are needed.
+
+            class A(Packet):
+                a = Int(1)
+                b = Int(2).at(0)
+
+            The orignal list of fields should be [a->Int(1), b->Int(2)]
+            but after the description of both fields we have a new list of fields:
+                [a->Int(1), _shift_b_->Move(0), b->Int(2)]
+
+            How each field is describe will depend of each field instance.
+            See the method describe_yourself of each Field subclass.
+        '''
+        self.fields = sum([field.describe_yourself(name, self.bisturi_conf) for name, field in self.fields_in_class], [])
 
     def compile_fields_and_create_slots(self):
-      # compile each field (speed optimization) and create the slots (memory optimization)
-      additional_slots = self.bisturi_conf.get('additional_slots', [])
-      self.slots = sum(map(lambda position, name_val: name_val[1].compile(position, self.fields, self.bisturi_conf), *zip(*enumerate(self.fields))), additional_slots)
+        ''' Compile each field, allowing them to optimize their pack/unpack methods.
+            Also collect them and create the necessary slots to optimize the memory usage,
+            then extend the slot list with the slots given by the user.
+        '''
+
+        def compile_field(position, name_and_field):
+            _, field = name_and_field
+            return field.compile(position, self.fields, self.bisturi_conf)
+
+        additional_slots = self.bisturi_conf.get('additional_slots', [])
+        self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
     
     def compile_descriptors_and_extend_slots(self):
       self.slots += sum((field.descriptor.compile(field_name, field.descriptor_name, self.bisturi_conf) for field_name, field in self.fields
@@ -188,7 +231,7 @@ class MetaPacket(type):
       builder.create_fields_for_embebed_subclasses_and_replace_them()
 
       builder.collect_the_fields()
-      builder.make_field_descriptions()
+      builder.ask_to_each_field_to_describe_itself()
       builder.compile_fields_and_create_slots()
       builder.compile_descriptors_and_extend_slots()
 
