@@ -110,79 +110,132 @@ class PacketClassBuilder(object):
         self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
     
     def compile_descriptors_and_extend_slots(self):
-      self.slots += sum((field.descriptor.compile(field_name, field.descriptor_name, self.bisturi_conf) for field_name, field in self.fields
-               if field.descriptor is not None and hasattr(field.descriptor, 'compile')), [])
+        ''' Compile each field's descriptor if any and add their slots to the slot list. '''
+        def has_descriptor(field):
+            return field.descriptor is not None and hasattr(field.descriptor, 'compile')
+
+        self.slots += sum((field.descriptor.compile(name, field.descriptor_name, self.bisturi_conf) for name, field in self.fields
+               if has_descriptor(field)), [])
 
 
-    def unroll_fields_with_their_pack_unpack_methods(self):
-      # unroll the fields into the their pack/unpack methods (to avoid lookups)
-      self.fields = [(name_val[0], name_val[1], name_val[1].pack, name_val[1].unpack) for name_val in self.fields]
+    def lookup_pack_unpack_methods(self):
+        ''' The list of fields is transformed in a list of tuples with the pack/unpack methods
+            of each field ready to be called avoiding a further lookup.
+
+            Take this [a->Int(1), b->Int(2)] into
+                [(a, Int(1), a.pack, a.unpack),
+                 (b, Int(2), b.pack, b.unpack),
+                 ]
+        '''
+        self.fields = [(name, field, field.pack, field.unpack) for name, field in self.fields]
       
     def remove_fields_from_class_definition(self):
-      for name, _ in self.original_fields_in_class:
-         del self.attrs[name]
+        ''' Remove from the class definition any field.
+            Take this:
+                class A(Packet):
+                    a = 1
+                    b = Int(2)
+
+            and transform it into:
+                class A(Packet):
+                    a = 1
+        '''
+        for name, _ in self.original_fields_in_class:
+            del self.attrs[name]
     
     def add_descriptors_to_class_definition(self):
-      for name, field, _, _ in self.fields:
-          if field.descriptor:
-              self.attrs[field.descriptor_name] = field.descriptor
+        ''' Add to the class definition any field's descriptor.
+            It will replace a field by its descriptor.
+            Take this:
+                class A(Packet):
+                    a = 1
+                    b = Int(2).describe(Foo)
+
+            and transform it into:
+                class A(Packet):
+                    a = 1
+                    b = Foo()
+        '''
+        for name, field, _, _ in self.fields:
+            if field.descriptor:
+                self.attrs[field.descriptor_name] = field.descriptor
     
     def collect_sync_methods_from_field_descriptors(self):
-      self.sync_before_pack_methods = [] 
-      self.sync_after_unpack_methods = []
-      for name, field, _, _ in self.fields:
-          if field.descriptor:
-              try:
-                  self.sync_before_pack_methods.append(field.descriptor.sync_before_pack)
-              except AttributeError:
-                  pass
-              try:
-                  self.sync_after_unpack_methods.append(field.descriptor.sync_after_unpack)
-              except AttributeError:
-                  pass
+        self.sync_before_pack_methods = [] 
+        self.sync_after_unpack_methods = []
+        for name, field, _, _ in self.fields:
+            if field.descriptor:
+                try:
+                    self.sync_before_pack_methods.append(field.descriptor.sync_before_pack)
+                except AttributeError:
+                    pass
+
+                try:
+                    self.sync_after_unpack_methods.append(field.descriptor.sync_after_unpack)
+                except AttributeError:
+                    pass
 
     def create_class(self):
-      self.bisturi_conf['original_fields_in_class'] = self.original_fields_in_class
+        ''' Create the class with the correct attributes and slots.
+            If it is necessary, the original attributes (fields) can be access
+            via the dictionary __bisturi__, key original_fields_in_class.
+        '''
+        self.bisturi_conf['original_fields_in_class'] = self.original_fields_in_class
 
-      self.attrs['__slots__'] = self.slots
-      self.attrs['__bisturi__'] = self.bisturi_conf
+        self.attrs['__slots__'] = self.slots
+        self.attrs['__bisturi__'] = self.bisturi_conf
       
-      self.cls = type.__new__(self.metacls, self.name, self.bases, self.attrs)
+        self.cls = type.__new__(self.metacls, self.name, self.bases, self.attrs)
 
     def add_get_fields_class_method(self):
-      @classmethod
-      def get_fields(cls):
-         return self.fields
+        @classmethod
+        def get_fields(cls):
+            return self.fields
 
-      self.cls.get_fields = get_fields
+        self.cls.get_fields = get_fields
 
     def add_sync_descriptor_class_methods(self):
-      @classmethod
-      def get_sync_before_pack_methods(cls):
-         return self.sync_before_pack_methods
+        @classmethod
+        def get_sync_before_pack_methods(cls):
+            return self.sync_before_pack_methods
       
-      @classmethod
-      def get_sync_after_unpack_methods(cls):
-         return self.sync_after_unpack_methods
+        @classmethod
+        def get_sync_after_unpack_methods(cls):
+            return self.sync_after_unpack_methods
 
-      self.cls.get_sync_before_pack_methods = get_sync_before_pack_methods
-      self.cls.get_sync_after_unpack_methods = get_sync_after_unpack_methods
+        self.cls.get_sync_before_pack_methods = get_sync_before_pack_methods
+        self.cls.get_sync_after_unpack_methods = get_sync_after_unpack_methods
 
     def check_if_we_are_in_debug_mode(self):
-      from field import Bkpt
-      self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in self.fields))
+        ''' A class creation is in debug mode if one of its fields is 
+            a breakpoint (Bkpt).
+        '''
+        from field import Bkpt
+        self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in self.fields))
 
     def create_optimized_code(self):
-      # create code to optimize the pack/unpack
-      # by default, if we are in debug mode, disable the optimization
-      generate_by_default = True if not self.am_in_debug_mode else False
-      generate_for_pack = self.cls.__bisturi__.get('generate_for_pack', generate_by_default)
-      generate_for_unpack = self.cls.__bisturi__.get('generate_for_unpack', generate_by_default)
-      write_py_module = self.cls.__bisturi__.get('write_py_module', False)
-      blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
+        ''' Generate the optimized code for the pack and unpack methods and
+            replace the original version for the optimized ones.
+
+            The generation can be disabled is partially with the configuration
+            flagos generate_for_pack/generate_for_unpack.
+            And it is totally disabled if the class is in debug mode 
+            (see check_if_we_are_in_debug_mode)
+
+            Optinally the generated code can be kept to manual inspection
+            with the flag write_py_module in True.
+        '''
+        generate_by_default = True if not self.am_in_debug_mode else False
+
+        generate_for_pack = self.cls.__bisturi__.get('generate_for_pack', generate_by_default)
+        generate_for_unpack = self.cls.__bisturi__.get('generate_for_unpack', generate_by_default)
+
+        write_py_module = self.cls.__bisturi__.get('write_py_module', False)
+
+        blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
 
     def get_packet_class(self):
-      return self.cls
+        return self.cls
 
 class PacketSpecializationClassBuilder(PacketClassBuilder):
     def __init__(self, metacls, name, bases, attrs):
@@ -235,7 +288,7 @@ class MetaPacket(type):
       builder.compile_fields_and_create_slots()
       builder.compile_descriptors_and_extend_slots()
 
-      builder.unroll_fields_with_their_pack_unpack_methods()
+      builder.lookup_pack_unpack_methods()
       builder.remove_fields_from_class_definition()
       builder.add_descriptors_to_class_definition()
       builder.collect_sync_methods_from_field_descriptors()
