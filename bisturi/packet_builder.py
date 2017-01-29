@@ -51,7 +51,7 @@ class PacketClassBuilder(object):
 
         self.attrs.update(dict(subpackets_as_refs))
 
-    def collect_the_fields(self):
+    def collect_the_fields_from_class_definition(self):
         ''' Collect the fields of the packet and sort them by creation time.
             Take something like this:
 
@@ -156,14 +156,14 @@ class PacketClassBuilder(object):
                     a = 1
                     b = Foo()
         '''
-        for name, field, _, _ in self.fields:
+        for name, field in self.fields:
             if field.descriptor:
                 self.attrs[field.descriptor_name] = field.descriptor
     
     def collect_sync_methods_from_field_descriptors(self):
         self.sync_before_pack_methods = [] 
         self.sync_after_unpack_methods = []
-        for name, field, _, _ in self.fields:
+        for name, field in self.fields:
             if field.descriptor:
                 try:
                     self.sync_before_pack_methods.append(field.descriptor.sync_before_pack)
@@ -211,7 +211,7 @@ class PacketClassBuilder(object):
             a breakpoint (Bkpt).
         '''
         from field import Bkpt
-        self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field, _, _ in self.fields))
+        self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field in self.fields))
 
     def create_optimized_code(self):
         ''' Generate the optimized code for the pack and unpack methods and
@@ -236,6 +236,36 @@ class PacketClassBuilder(object):
 
     def get_packet_class(self):
         return self.cls
+
+    def create_collect_and_describe_the_field_list(self):
+        ''' Given a class definition create any extra field necessary,
+            then collect all of them and at last ask to each field to
+            describe itself returning a final list of fields.
+        '''
+        self.create_fields_for_embebed_subclasses_and_replace_them()
+        self.collect_the_fields_from_class_definition()
+        self.ask_to_each_field_to_describe_itself()
+
+    def compile_fields_and_descriptors_and_create_slots(self):
+        ''' Each field and each descriptor is compiled, optimized and
+            added to the list of slots.
+        '''
+        self.compile_fields_and_create_slots()
+        self.compile_descriptors_and_extend_slots()
+
+    def create_packet_class_and_add_its_special_methods(self):
+        self.create_class()
+        self.add_get_fields_class_method()
+        self.add_sync_descriptor_class_methods()
+
+    def remove_fields_from_and_add_descriptors_to_class_definition(self):
+        self.remove_fields_from_class_definition()
+        self.add_descriptors_to_class_definition()
+        
+    def optimize_methods(self):
+        self.check_if_we_are_in_debug_mode()
+        self.lookup_pack_unpack_methods()
+        self.create_optimized_code()
 
 class PacketSpecializationClassBuilder(PacketClassBuilder):
     def __init__(self, metacls, name, bases, attrs):
@@ -267,44 +297,35 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
         return original_fields
 
 class MetaPacket(type):
-   def __new__(metacls, name, bases, attrs):
-      if name == 'Packet' and bases == (object,):
-         attrs['__slots__'] = []
-         return type.__new__(metacls, name, bases, attrs) # Packet base class
+    def __new__(metacls, name, bases, attrs):
+        if name == 'Packet' and bases == (object,):
+            attrs['__slots__'] = []
+            return type.__new__(metacls, name, bases, attrs) # Packet base class
 
-      specialization_of = attrs.get('__bisturi__', {}).get('specialization_of', None)
-      if specialization_of:
-          builder = PacketSpecializationClassBuilder(metacls, name, bases, attrs)
+        specialization_of = attrs.get('__bisturi__', {}).get('specialization_of', None)
+        if specialization_of:
+            builder = PacketSpecializationClassBuilder(metacls, name, bases, attrs)
 
-      else:
-          builder = PacketClassBuilder(metacls, name, bases, attrs)
+        else:
+            builder = PacketClassBuilder(metacls, name, bases, attrs)
     
-      builder.make_configuration()
+        builder.make_configuration()
 
-      builder.create_fields_for_embebed_subclasses_and_replace_them()
+        builder.create_collect_and_describe_the_field_list()
+        builder.compile_fields_and_descriptors_and_create_slots()
+        
+        builder.collect_sync_methods_from_field_descriptors()
 
-      builder.collect_the_fields()
-      builder.ask_to_each_field_to_describe_itself()
-      builder.compile_fields_and_create_slots()
-      builder.compile_descriptors_and_extend_slots()
+        builder.remove_fields_from_and_add_descriptors_to_class_definition()
+        builder.create_packet_class_and_add_its_special_methods()
 
-      builder.lookup_pack_unpack_methods()
-      builder.remove_fields_from_class_definition()
-      builder.add_descriptors_to_class_definition()
-      builder.collect_sync_methods_from_field_descriptors()
-
-      builder.create_class()
-      builder.add_get_fields_class_method()
-      builder.add_sync_descriptor_class_methods()
-
-      builder.check_if_we_are_in_debug_mode()
-
-      builder.create_optimized_code()
+        builder.optimize_methods()
       
-      cls = builder.get_packet_class()
-      return cls
+        cls = builder.get_packet_class()
+        return cls
 
-   '''def __getattribute__(self, name):
+
+    '''def __getattribute__(self, name):
       """ Let be
           class P(Packet):
             f = Field()
