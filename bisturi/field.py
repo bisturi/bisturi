@@ -1,6 +1,6 @@
 import time, struct, sys, copy, re
 from packet import Packet, Prototype
-from deferred import defer_operations_of, UnaryExpr, BinaryExpr, compile_expr_into_callable
+from deferred import defer_operations, UnaryExpr, BinaryExpr, compile_expr_into_callable
 from pattern_matching import Any
 from fragments import FragmentsOfRegexps
 
@@ -388,7 +388,7 @@ class Optional(Field):
 
         return fragments
 
-@defer_operations_of
+@defer_operations(['integer'])
 class Int(Field):
     def __init__(self, byte_count=4, signed=False, endianness=None, default=0):
         Field.__init__(self)
@@ -832,7 +832,7 @@ class Ref(Field):
         return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
  
 
-@defer_operations_of
+@defer_operations(['integer'])
 class Bits(Field):
     class ByteBoundaryError(Exception):
         def __init__(self, str):
