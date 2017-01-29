@@ -16,16 +16,38 @@ class PacketClassBuilder(object):
         self.bisturi_conf = self.attrs.get('__bisturi__', self.bisturi_configuration_default())
 
     def create_field_name_from_subpacket_name(self, subpacket_name):
+        '''Helper method to transform names like CamelCase into camel_case'''
         name = subpacket_name[0].lower() + subpacket_name[1:]
         return "".join((c if c.islower() else "_"+c.lower()) for c in name)
 
     def create_fields_for_embebed_subclasses_and_replace_them(self):
+        ''' Create Ref fields to refer to 'embebed' subclasses.
+            Something like this:
+           
+            class A(Packet):
+                class B(Packet):
+                    pass
+
+            is transformed into
+           
+            class A(Packet):
+                b = Ref(B)
+
+            See the method create_field_name_from_subpacket_name to know how
+            the name 'B' was transformed into 'b'.
+        '''
+            
         from packet import Packet
         from field import Ref
         import inspect
-        subpackets = filter(lambda name_val: inspect.isclass(name_val[1]) and issubclass(name_val[1], Packet), self.attrs.iteritems())
+
+        def is_a_packet_instance(name_and_field):
+            _, field = name_and_field
+            return inspect.isclass(field) and issubclass(field, Packet)
+
+        names_and_subpackets = filter(is_a_packet_instance, self.attrs.iteritems())
         subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name), 
-                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) for name, subpacket in subpackets]
+                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) for name, subpacket in names_and_subpackets]
 
         self.attrs.update(dict(subpackets_as_refs))
 
