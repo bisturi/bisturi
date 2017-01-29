@@ -51,7 +51,7 @@ class ServerHello(Packet):
 if __name__ == '__main__':
     from base64 import b16decode
 
-    # Example from wikipedia: https://es.wikipedia.org/wiki/SOCKS
+    # Example from wikipedia: https://en.wikipedia.org/wiki/SOCKS
 
     # Socks v4 #################################
     raw_query = b16decode('04 01 0050 42660763 4672656400'.replace(' ', ''), True)
