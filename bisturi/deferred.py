@@ -12,6 +12,8 @@ BinaryOperationsByCategory = {
             # cmp --------------------------------------
             operator.le,          operator.lt,
             operator.ge,          operator.gt,
+
+            # eq ---------------------------------------
             operator.eq,          operator.ne,
 
             # logical ----------------------------------
@@ -21,6 +23,9 @@ BinaryOperationsByCategory = {
             ],
 
         'sequence': [
+            # eq ---------------------------------------
+            operator.eq,          operator.ne,
+
             # indexing ---------------------------------
             operator.getitem,
             ],

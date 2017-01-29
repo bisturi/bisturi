@@ -141,6 +141,35 @@ Don't be shy, lets do more complex expressions
 
 ```
 
+```python
+>>> class Magic(Packet):
+...    magic = Data(4, default='v002')
+...    v2_only_field = Data(2).when(magic == 'v002')
+...    hidden_field  = Data(4).when((magic[:3] == 'xyz') & (magic[3] != '\x00'))
+
+
+>>> raw = "v002AB"
+>>> pkt = Magic.unpack(raw)
+>>> pkt.v2_only_field
+'AB'
+>>> pkt.hidden_field is None
+True
+
+>>> str(pkt.pack())
+'v002AB'
+
+>>> raw = "xyz1beef"
+>>> pkt = Magic.unpack(raw)
+>>> pkt.v2_only_field is None
+True
+>>> pkt.hidden_field
+'beef'
+
+>>> str(pkt.pack()) 
+'xyz1beef'
+
+```
+
 We can go further to use expressions in the until and when conditions:
 
 ```python

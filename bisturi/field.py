@@ -388,7 +388,7 @@ class Optional(Field):
 
         return fragments
 
-@defer_operations(['integer'])
+@defer_operations(allowed_categories=['integer'])
 class Int(Field):
     def __init__(self, byte_count=4, signed=False, endianness=None, default=0):
         Field.__init__(self)
@@ -485,6 +485,7 @@ class Int(Field):
 
         return fragments
 
+@defer_operations(allowed_categories=['sequence'])
 class Data(Field):
     def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
         Field.__init__(self)
@@ -832,7 +833,7 @@ class Ref(Field):
         return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
  
 
-@defer_operations(['integer'])
+@defer_operations(allowed_categories=['integer'])
 class Bits(Field):
     class ByteBoundaryError(Exception):
         def __init__(self, str):
