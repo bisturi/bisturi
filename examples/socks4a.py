@@ -30,7 +30,7 @@ class ServerStatus(object):
     NOT_REACHABLE = CLIENT_NOT_REACHABLE
 
 
-class ClientHello(Packet):
+class ClientRequest(Packet):
     version = Int(1, default=0x04)
     command = Int(1, default=ClientCommand.CONNECT) # see ClientCommand
 
@@ -41,7 +41,7 @@ class ClientHello(Packet):
     domain_name = Data(until_marker='\x00').when((dst_ip[:3] == '\x00\x00\x00') & (dst_ip[3] != '\x00'))
 
 
-class ServerHello(Packet):
+class ServerResponse(Packet):
     version = Int(1, default=0x00)
     status  = Int(1) # see ServerStatus
 
@@ -54,41 +54,45 @@ if __name__ == '__main__':
     # Example from wikipedia: https://en.wikipedia.org/wiki/SOCKS
 
     # Socks v4 #################################
-    raw_query = b16decode('04 01 0050 42660763 4672656400'.replace(' ', ''), True)
+    raw_request = b16decode('04 01 0050 42660763 4672656400'.replace(' ', ''), True)
     raw_response = b16decode('00 5a 0050 42660763'.replace(' ', ''), True)
 
-    client_hello = ClientHello.unpack(raw_query)
-    server_hello = ServerHello.unpack(raw_response)
+    client_request = ClientRequest.unpack(raw_request)
+    server_response = ServerResponse.unpack(raw_response)
 
     # client -------------------------
-    assert client_hello.version == 0x04
-    assert client_hello.command == ClientCommand.CONNECT
+    assert client_request.version == 0x04
+    assert client_request.command == ClientCommand.CONNECT
 
     ip = '66.102.7.99'
     raw_ip = ''.join(chr(int(octet)) for octet in ip.replace('.', ' ').split())
-    assert client_hello.dst_port == 80 and client_hello.dst_ip == raw_ip
+    assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
-    assert client_hello.user_id == 'Fred'
-    assert client_hello.domain_name is None
+    assert client_request.user_id == 'Fred'
+    assert client_request.domain_name is None
 
     # server -------------------------
-    assert server_hello.version == 0 and server_hello.status == ServerStatus.GRANTED
-    assert server_hello.dst_port == 80 and server_hello.dst_ip == raw_ip
+    assert server_response.version == 0 and server_response.status == ServerStatus.GRANTED
+    assert server_response.dst_port == 80 and server_response.dst_ip == raw_ip
     
-    # Socks v4a (4a extension) #################
-    raw_query = b16decode('04 01 0050 00000001 4672656400 6578616d706c652e636f6d00'.replace(' ', ''), True)
+    assert client_request.pack() == raw_request
+    assert server_response.pack() == raw_response
 
-    client_hello = ClientHello.unpack(raw_query)
+    # Socks v4a (4a extension) #################
+    raw_request = b16decode('04 01 0050 00000001 4672656400 6578616d706c652e636f6d00'.replace(' ', ''), True)
+
+    client_request = ClientRequest.unpack(raw_request)
 
     # client -------------------------
-    assert client_hello.version == 0x04
-    assert client_hello.command == ClientCommand.CONNECT
+    assert client_request.version == 0x04
+    assert client_request.command == ClientCommand.CONNECT
 
     ip = '0.0.0.1'
     raw_ip = ''.join(chr(int(octet)) for octet in ip.replace('.', ' ').split())
-    assert client_hello.dst_port == 80 and client_hello.dst_ip == raw_ip
+    assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
-    assert client_hello.user_id == 'Fred'
-    assert client_hello.domain_name == 'example.com'
+    assert client_request.user_id == 'Fred'
+    assert client_request.domain_name == 'example.com'
 
+    assert client_request.pack() == raw_request
 
