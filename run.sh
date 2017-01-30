@@ -11,6 +11,15 @@ do
    fi
 done
 
+for t in docs/tutorial_by_example/$1*.md
+do
+   if [ -e $t ]
+   then
+      echo $t
+      $PYTHON -m doctest $t
+   fi
+done
+
 pushd .
 cd bisturi
 
