@@ -83,5 +83,5 @@ Just as you can unpack a byte string into a packet object you can go from a pack
 
 ```
 
-Se more about packing and unpacking and the packet objects in 01_simple_packet_creation.md and 02_from_and_to_bytes.md.
+See more about packing and unpacking and the packet objects in 01_simple_packet_creation.md and 02_from_and_to_bytes.md.
 
