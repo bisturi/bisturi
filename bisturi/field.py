@@ -314,7 +314,7 @@ class Sequence(Field):
 
         return fragments
 
-
+@defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an interger as well as a sequence 
 class Optional(Field):
     def __init__(self, prototype, when, default=None):
         Field.__init__(self)
@@ -338,7 +338,7 @@ class Optional(Field):
         del self.tmp
 
         if isinstance(when, Field):
-            when = (when == True)
+            when = self._convert_a_field_when_condition_into_a_boolean_unary_expression(when)
       
         if isinstance(when, (UnaryExpr, BinaryExpr)):
             when = compile_expr_into_callable(when)
@@ -391,6 +391,19 @@ class Optional(Field):
             fragments.append("(%s)?" % subregexp, is_literal=False)
 
         return fragments
+
+    def _convert_a_field_when_condition_into_a_boolean_unary_expression(self, when):
+        truth_methods = ('__nonzero__', '__len__') # the order is important here, ask first for nonzero only then for len.
+                                                   # otherwise is 'when' is an Optional field and the Optional field's value
+                                                   # resolves to None, None doesn't have a __len__ method.
+                                                   # Of course, None doesn't have a __nonzero__ methods neither but 
+                                                   # we use 'operator.truth' as the implementation of __nonzero__
+                                                   # and operator.truth(None) is well defined.
+        for method in truth_methods:
+            if hasattr(when, method):
+                return getattr(when, method)()
+
+        raise Exception("The field instance '%s' cannot be converted to a boolean value (it isn't an int nor a iterable)" % repr(when))
 
 @defer_operations(allowed_categories=['integer'])
 class Int(Field):

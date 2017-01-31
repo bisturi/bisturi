@@ -38,9 +38,15 @@ UnaryOperationsByCategory = {
 
             # logical ----------------------------------
             operator.inv,
+
+            # value ------------------------------------
+            operator.truth,
             ],
 
-        'sequence': [],
+        'sequence': [
+            # length -----------------------------------
+            len,
+            ],
         }
 
 
@@ -127,6 +133,8 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
         if op_name == "inv":
             op_name = "invert"
+        elif op_name == "truth":
+            op_name = "nonzero"
 
         methodname = "__%s__" % op_name
         _defer_method(cls, methodname, unary_op, is_binary=False)
