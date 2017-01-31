@@ -20,6 +20,10 @@ do
    fi
 done
 
+echo "README.md"
+$PYTHON -m doctest "README.md"
+
+
 pushd .
 cd bisturi
 
