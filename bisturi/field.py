@@ -199,6 +199,7 @@ def _get_when(count, when):
     return when_condition
       
 
+@defer_operations(allowed_categories=['sequence'])
 class Sequence(Field):
     def __init__(self, prototype, count, until, when, default=None, aligned=None):
         Field.__init__(self)
@@ -335,6 +336,9 @@ class Optional(Field):
 
         when = self.tmp
         del self.tmp
+
+        if isinstance(when, Field):
+            when = (when == True)
       
         if isinstance(when, (UnaryExpr, BinaryExpr)):
             when = compile_expr_into_callable(when)
