@@ -1,6 +1,6 @@
 import time, struct, sys, copy, re
 from packet import Packet, Prototype
-from deferred import defer_operations, UnaryExpr, BinaryExpr, TernaryExpr, compile_expr_into_callable
+from deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 from pattern_matching import Any
 from fragments import FragmentsOfRegexps
 
@@ -229,13 +229,13 @@ class Sequence(Field):
 
         count, until, when = self.tmp
 
-        if isinstance(count, (UnaryExpr, BinaryExpr, TernaryExpr)):
+        if isinstance(count, (UnaryExpr, BinaryExpr, NaryExpr)):
             count = compile_expr_into_callable(count)
 
-        #if isinstance(until, (UnaryExpr, BinaryExpr, TernaryExpr)):
+        #if isinstance(until, (UnaryExpr, BinaryExpr, NaryExpr)):
         #   until = compile_expr_into_callable(until)
       
-        if isinstance(when, (UnaryExpr, BinaryExpr, TernaryExpr)):
+        if isinstance(when, (UnaryExpr, BinaryExpr, NaryExpr)):
             when = compile_expr_into_callable(when)
 
         self.resolved_count = None if count is None else _get_count(count)
@@ -340,7 +340,7 @@ class Optional(Field):
         if isinstance(when, Field):
             when = self._convert_a_field_when_condition_into_a_boolean_unary_expression(when)
       
-        if isinstance(when, (UnaryExpr, BinaryExpr, TernaryExpr)):
+        if isinstance(when, (UnaryExpr, BinaryExpr, NaryExpr)):
             when = compile_expr_into_callable(when)
 
         self.when = _get_when(None, when)
@@ -537,7 +537,7 @@ class Data(Field):
             elif callable(self.byte_count):
                 self.unpack = self._unpack_variable_size_callable
 
-            elif isinstance(self.byte_count, (UnaryExpr, BinaryExpr, TernaryExpr)):
+            elif isinstance(self.byte_count, (UnaryExpr, BinaryExpr, NaryExpr)):
                 self.byte_count = compile_expr_into_callable(self.byte_count)
                 self.unpack = self._unpack_variable_size_callable
 

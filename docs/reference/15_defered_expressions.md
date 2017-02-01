@@ -41,25 +41,30 @@ True
 ```
 
 ```python
->>> class TernaryExpressions(Packet):
+>>> class NaryExpressions(Packet):
 ...     a = Int(1)
 ...     b = Int(1)
 ...
-...     mindata   = Data(byte_count = (a < b).if_true_then_else(a, b))
-...     truncated = Data(byte_count = (a > 4).if_true_then_else(4, a))
+...     data      = Data(byte_count = (a != b).if_true_then_else(( (a*b) + 1, 1)))
+...     mindata   = Data(byte_count = (a < b).if_true_then_else((a, b)))
+...     truncated = Data(byte_count = (a > 4).if_true_then_else((4, a)))
 
->>> raw_min = '\x01\x02AB'
->>> pkt_min = TernaryExpressions.unpack(raw_min)
+>>> raw_min = '\x01\x02:::AB'
+>>> pkt_min = NaryExpressions.unpack(raw_min)
 
+>>> pkt_min.data
+':::'
 >>> pkt_min.mindata
 'A'
 >>> pkt_min.truncated
 'B'
 
 
->>> raw_trunc = '\x06\x02AABBBBBBBBBBBBBBBB'
->>> pkt_trunc = TernaryExpressions.unpack(raw_trunc)
+>>> raw_trunc = '\x06\x02:::---:::---:AABBBBBBBBBBBBBBBB'
+>>> pkt_trunc = NaryExpressions.unpack(raw_trunc)
 
+>>> pkt_trunc.data
+':::---:::---:'
 >>> pkt_trunc.mindata
 'AA'
 >>> pkt_trunc.truncated

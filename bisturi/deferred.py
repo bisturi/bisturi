@@ -1,7 +1,9 @@
 import collections, functools, operator
 
-def if_true_then_else(condition, value_if_true, value_if_false):
+def if_true_then_else(condition, *possible_values):
+    value_if_true, value_if_false = possible_values
     return value_if_true if bool(condition) else value_if_false
+
 
 AllCategories = ['integer', 'sequence']
 BinaryOperationsByCategory = {
@@ -53,7 +55,7 @@ UnaryOperationsByCategory = {
         }
 
 
-TernaryExpr = collections.namedtuple('TernaryExpr', ['c', 't', 'f', 'op'])
+NaryExpr = collections.namedtuple('NaryExpr', ['h', 't', 'op'])
 BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
 
@@ -64,14 +66,16 @@ def compile_expr(root_expr, args=None, ops=None, ident=" "):
         args = []
         ops = []
 
-    if not isinstance(root_expr, (UnaryExpr, BinaryExpr, TernaryExpr, Field)):
+    if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
         ops.append((0, lambda pkt, *vargs, **kargs: root_expr))
     
-    elif isinstance(root_expr, TernaryExpr):
-        c, t, f, op = root_expr
-        compile_expr(c, args, ops, ident=ident*2)
-        compile_expr(t, args, ops, ident=ident*2)
-        compile_expr(f, args, ops, ident=ident*2)
+    elif isinstance(root_expr, NaryExpr):
+        h, t, op = root_expr
+        # XXX for one sec imagine that the t (tail) argument is a list with a two items
+        left, right = t
+        compile_expr(h, args, ops, ident=ident*2)
+        compile_expr(left, args, ops, ident=ident*2)
+        compile_expr(right, args, ops, ident=ident*2)
         ops.append((3,op))
    
     elif isinstance(root_expr, BinaryExpr):
@@ -111,12 +115,12 @@ def compile_expr_into_callable(root_expr):
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
    
 
-def _defer_method(target, methodname, op, is_binary, is_ternary=False):
+def _defer_method(target, methodname, op, is_binary, is_nary=False):
     if is_binary:
         setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
     else:
-        if is_ternary:
-            setattr(target, methodname, lambda A, B, C: TernaryExpr(A, B, C, op))
+        if is_nary:
+            setattr(target, methodname, lambda A, B: NaryExpr(A, B, op))
         else:
             setattr(target, methodname, lambda A: UnaryExpr(A, op))
    
@@ -153,7 +157,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
         methodname = "__%s__" % op_name
         _defer_method(cls, methodname, unary_op, is_binary=False)
 
-    _defer_method(cls, 'if_true_then_else', if_true_then_else, is_binary=False, is_ternary=True)
+    _defer_method(cls, 'if_true_then_else', if_true_then_else, is_binary=False, is_nary=True)
    
     return cls
 
@@ -165,5 +169,5 @@ def defer_operations(allowed_categories='all'):
 
 UnaryExpr = defer_operations()(UnaryExpr)
 BinaryExpr = defer_operations()(BinaryExpr)
-TernaryExpr = defer_operations()(TernaryExpr)
+NaryExpr = defer_operations()(NaryExpr)
 
