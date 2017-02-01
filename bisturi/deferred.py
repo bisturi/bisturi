@@ -57,7 +57,7 @@ UnaryOperationsByCategory = {
         }
 
 
-NaryExpr = collections.namedtuple('NaryExpr', ['h', 't', 'op'])
+NaryExpr = collections.namedtuple('NaryExpr', ['l', 's', 'm', 'op'])
 BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
 
@@ -71,15 +71,11 @@ def compile_expr(root_expr, ops=None, ident=" "):
         ops.append((0, lambda pkt, *vargs, **kargs: root_expr))
     
     elif isinstance(root_expr, NaryExpr):
-        h, t, op = root_expr
-        if hasattr(t, 'items'):
-            keys, values = zip(*t.items())
-        else:
-            values = t
+        r, l, m, op = root_expr
 
         # XXX for one sec imagine that the t (tail) argument is a list/dict with two items
-        left, right = values
-        compile_expr(h, ops, ident=ident*2)
+        left, right = l
+        compile_expr(r, ops, ident=ident*2)
         compile_expr(left, ops, ident=ident*2)
         compile_expr(right, ops, ident=ident*2)
         ops.append((3,op))
@@ -127,7 +123,7 @@ def _defer_method(target, methodname, op, is_binary, is_nary=False):
         setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
     else:
         if is_nary:
-            setattr(target, methodname, lambda A, B: NaryExpr(A, B, op))
+            setattr(target, methodname, lambda A, *B, **C: NaryExpr(A, B, C, op))
         else:
             setattr(target, methodname, lambda A: UnaryExpr(A, op))
    
