@@ -4,6 +4,8 @@ def if_true_then_else(condition, *possible_values):
     value_if_true, value_if_false = possible_values
     return value_if_true if bool(condition) else value_if_false
 
+def choose(index, *options):
+    return options[index]
 
 AllCategories = ['integer', 'sequence']
 BinaryOperationsByCategory = {
@@ -59,11 +61,10 @@ NaryExpr = collections.namedtuple('NaryExpr', ['h', 't', 'op'])
 BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
 
-def compile_expr(root_expr, args=None, ops=None, ident=" "):
+def compile_expr(root_expr, ops=None, ident=" "):
     from field import Field
 
-    if args is None:
-        args = []
+    if ops is None:
         ops = []
 
     if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
@@ -71,29 +72,34 @@ def compile_expr(root_expr, args=None, ops=None, ident=" "):
     
     elif isinstance(root_expr, NaryExpr):
         h, t, op = root_expr
-        # XXX for one sec imagine that the t (tail) argument is a list with a two items
-        left, right = t
-        compile_expr(h, args, ops, ident=ident*2)
-        compile_expr(left, args, ops, ident=ident*2)
-        compile_expr(right, args, ops, ident=ident*2)
+        if hasattr(t, 'items'):
+            keys, values = zip(*t.items())
+        else:
+            values = t
+
+        # XXX for one sec imagine that the t (tail) argument is a list/dict with two items
+        left, right = values
+        compile_expr(h, ops, ident=ident*2)
+        compile_expr(left, ops, ident=ident*2)
+        compile_expr(right, ops, ident=ident*2)
         ops.append((3,op))
    
     elif isinstance(root_expr, BinaryExpr):
         l, r, op = root_expr
-        compile_expr(l, args, ops, ident=ident*2)
-        compile_expr(r, args, ops, ident=ident*2)
+        compile_expr(l, ops, ident=ident*2)
+        compile_expr(r, ops, ident=ident*2)
         ops.append((2,op))
 
     elif isinstance(root_expr, UnaryExpr):
         r, op = root_expr
-        compile_expr(r, args, ops, ident=ident*2)
+        compile_expr(r, ops, ident=ident*2)
         ops.append((1,op))
 
     else:
         field_name = root_expr.field_name
         ops.append((0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name)))
 
-    return args, ops
+    return ops
 
 def exec_compiled_expr(pkt, args, ops, *vargs, **kargs):
     args = list(args)
@@ -111,7 +117,8 @@ def exec_compiled_expr(pkt, args, ops, *vargs, **kargs):
     return args[0]
 
 def compile_expr_into_callable(root_expr):
-    args, ops = compile_expr(root_expr)
+    ops = compile_expr(root_expr)
+    args = []
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
    
 
@@ -158,6 +165,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
         _defer_method(cls, methodname, unary_op, is_binary=False)
 
     _defer_method(cls, 'if_true_then_else', if_true_then_else, is_binary=False, is_nary=True)
+    _defer_method(cls, 'choose', choose, is_binary=False, is_nary=True)
    
     return cls
 

@@ -45,26 +45,31 @@ True
 ...     a = Int(1)
 ...     b = Int(1)
 ...
-...     data      = Data(byte_count = (a != b).if_true_then_else(( (a*b) + 1, 1)))
+...     extra     = Data(byte_count = 1).when( (a == 1).choose([False, True]) )
+...     nonextra  = Data(byte_count = 1).when( (a != 1).choose([False, True]) )
 ...     mindata   = Data(byte_count = (a < b).if_true_then_else((a, b)))
 ...     truncated = Data(byte_count = (a > 4).if_true_then_else((4, a)))
 
->>> raw_min = '\x01\x02:::AB'
+>>> raw_min = '\x01\x02:AB'
 >>> pkt_min = NaryExpressions.unpack(raw_min)
 
->>> pkt_min.data
-':::'
+>>> pkt_min.extra
+':'
+>>> pkt_min.nonextra is None
+True
 >>> pkt_min.mindata
 'A'
 >>> pkt_min.truncated
 'B'
 
 
->>> raw_trunc = '\x06\x02:::---:::---:AABBBBBBBBBBBBBBBB'
+>>> raw_trunc = '\x06\x02|AABBBBBBBBBBBBBBBB'
 >>> pkt_trunc = NaryExpressions.unpack(raw_trunc)
 
->>> pkt_trunc.data
-':::---:::---:'
+>>> pkt_trunc.extra is None
+True
+>>> pkt_trunc.nonextra
+'|'
 >>> pkt_trunc.mindata
 'AA'
 >>> pkt_trunc.truncated
