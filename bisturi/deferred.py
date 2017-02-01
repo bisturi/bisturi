@@ -1,5 +1,8 @@
 import collections, functools, operator
 
+def if_true_then_else(condition, value_if_true, value_if_false):
+    return value_if_true if bool(condition) else value_if_false
+
 AllCategories = ['integer', 'sequence']
 BinaryOperationsByCategory = {
         'integer': [
@@ -50,6 +53,7 @@ UnaryOperationsByCategory = {
         }
 
 
+TernaryExpr = collections.namedtuple('TernaryExpr', ['c', 't', 'f', 'op'])
 BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
 
@@ -60,8 +64,15 @@ def compile_expr(root_expr, args=None, ops=None, ident=" "):
         args = []
         ops = []
 
-    if not isinstance(root_expr, (UnaryExpr, BinaryExpr, Field)):
+    if not isinstance(root_expr, (UnaryExpr, BinaryExpr, TernaryExpr, Field)):
         ops.append((0, lambda pkt, *vargs, **kargs: root_expr))
+    
+    elif isinstance(root_expr, TernaryExpr):
+        c, t, f, op = root_expr
+        compile_expr(c, args, ops, ident=ident*2)
+        compile_expr(t, args, ops, ident=ident*2)
+        compile_expr(f, args, ops, ident=ident*2)
+        ops.append((3,op))
    
     elif isinstance(root_expr, BinaryExpr):
         l, r, op = root_expr
@@ -100,11 +111,14 @@ def compile_expr_into_callable(root_expr):
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
    
 
-def _defer_method(target, methodname, op, is_binary):
+def _defer_method(target, methodname, op, is_binary, is_ternary=False):
     if is_binary:
         setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
     else:
-        setattr(target, methodname, lambda A: UnaryExpr(A, op))
+        if is_ternary:
+            setattr(target, methodname, lambda A, B, C: TernaryExpr(A, B, C, op))
+        else:
+            setattr(target, methodname, lambda A: UnaryExpr(A, op))
    
 
 def _defer_operations_of(cls, allowed_categories='all'):
@@ -138,6 +152,8 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
         methodname = "__%s__" % op_name
         _defer_method(cls, methodname, unary_op, is_binary=False)
+
+    _defer_method(cls, 'if_true_then_else', if_true_then_else, is_binary=False, is_ternary=True)
    
     return cls
 
@@ -149,4 +165,5 @@ def defer_operations(allowed_categories='all'):
 
 UnaryExpr = defer_operations()(UnaryExpr)
 BinaryExpr = defer_operations()(BinaryExpr)
+TernaryExpr = defer_operations()(TernaryExpr)
 
