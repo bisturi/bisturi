@@ -73,12 +73,25 @@ def compile_expr(root_expr, ops=None, ident=" "):
     elif isinstance(root_expr, NaryExpr):
         r, l, m, op = root_expr
 
-        # XXX for one sec imagine that the t (tail) argument is a list/dict with two items
-        left, right = l
         compile_expr(r, ops, ident=ident*2)
-        compile_expr(left, ops, ident=ident*2)
-        compile_expr(right, ops, ident=ident*2)
-        ops.append((2, lambda *vargs: vargs))
+
+        assert l or m
+        assert not (l and m)
+
+        if l:
+            n = len(l)
+            for value in l:
+                compile_expr(value, ops, ident=ident*2)
+            
+            ops.append((n, lambda *vargs: vargs))
+
+        else:
+            n = len(m)
+            keys, values = zip(*m.items())
+            for value in values:
+                compile_expr(value, ops, ident=ident*2)
+
+            ops.append((n, lambda *vargs: dict(zip(keys, vargs))))
 
         ops.append((2,op))
    
@@ -125,7 +138,17 @@ def _defer_method(target, methodname, op, is_binary, is_nary=False):
         setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
     else:
         if is_nary:
-            setattr(target, methodname, lambda A, *B, **C: NaryExpr(A, B, C, op))
+            def nary(A, *B, **C):
+                assert B or C
+                assert not (B and C)
+
+                if not C and len(B) == 1 and isinstance(B[0], dict):
+                    C = B[0]
+                    B = []
+
+                return NaryExpr(A, B, C, op)
+
+            setattr(target, methodname, nary)
         else:
             setattr(target, methodname, lambda A: UnaryExpr(A, op))
    

@@ -1,3 +1,4 @@
+Several fields accept others fields as parameter to define how many bytes to consume, how many times a fields must be there or if a field should be there or not.
 
 ```python
 >>> from bisturi.packet import Packet
@@ -38,6 +39,67 @@ True
 >>> pkt0.author is None
 True
 
+>>> str(pkt3.pack()) == raw3
+True
+>>> str(pkt0.pack()) == '\x00'
+True
+
+```
+
+But using only a field as parameter is just the begin. You can use simple expressions as arguments that use one or more fields as operands:
+
+```python
+>>> class ArithExpressions(Packet):
+...     rows  = Int(1)
+...     cols  = Int(1)
+...
+...     values  = Int(1).repeated(rows * cols)
+...     padding = Data( 8 - ((rows * cols) % 8) )
+
+>>> class SequenceExpressions(Packet):
+...     items = Int(1).repeated(4)
+...     
+...     extra_data  = Data(4).when(items[0] == 0xff)
+...     hidden_data = Data(4).when(items[:2] == [0xbe, 0xef])
+
+>>> raw_matrix = '\x02\x03ABCDEF\xff\xff'
+>>> matrix = ArithExpressions.unpack(raw_matrix)
+
+>>> matrix.rows, matrix.cols
+(2, 3)
+>>> matrix.values
+[65, 66, 66, 68, 69, 70]
+>>> matrix.padding
+'\xff\xff'
+
+>>> raw_extra_msg = '\xffABCHELO'
+>>> extra_msg = SequenceExpressions.unpack(raw_extra_msg)
+
+>>> extra_msg.items
+[255, 65, 66, 67]
+>>> extra_msg.extra_data
+'HELO'
+>>> extra_msg.hidden_data is None
+True
+
+>>> raw_hidden_msg = '\xbe\xefABbeef'
+>>> hidden_msg = SequenceExpressions.unpack(raw_hidden_msg)
+
+>>> hidden_msg.items
+[190, 239, 65, 66]
+>>> hidden_msg.extra_data is None
+True
+>>> hidden_msg.hidden_data
+'beef'
+
+>>> str(matrix.pack()) == raw_matrix
+True
+
+>>> str(extra_msg.pack()) == raw_extra_msg
+True
+>>> str(hidden_msg.pack()) == raw_hidden_msg
+True
+
 ```
 
 ```python
@@ -46,34 +108,63 @@ True
 ...     b = Int(1)
 ...
 ...     extra     = Data(byte_count = 1).when( (a == 1).choose(False, True) )
-...     nonextra  = Data(byte_count = 1).when( (a != 1).choose(False, True) )
-...     mindata   = Data(byte_count = (a < b).if_true_then_else(a, b))
-...     truncated = Data(byte_count = (a > 4).if_true_then_else(4, a))
+...     mindata   = Data(byte_count = (a < b).choose({False: b, True: a}))
+...     truncated = Data(byte_count = (a > 4).choose({True: 4, False: a}))
+...
 
 >>> raw_min = '\x01\x02:AB'
 >>> pkt_min = NaryExpressions.unpack(raw_min)
 
 >>> pkt_min.extra
 ':'
->>> pkt_min.nonextra is None
-True
 >>> pkt_min.mindata
 'A'
 >>> pkt_min.truncated
 'B'
 
 
->>> raw_trunc = '\x06\x02|AABBBBBBBBBBBBBBBB'
+>>> raw_trunc = '\x06\x02AABBBBBBBBBBBBBBBB'
 >>> pkt_trunc = NaryExpressions.unpack(raw_trunc)
 
 >>> pkt_trunc.extra is None
 True
->>> pkt_trunc.nonextra
-'|'
 >>> pkt_trunc.mindata
 'AA'
 >>> pkt_trunc.truncated
 'BBBB'
+
+>>> str(pkt_min.pack()) == raw_min
+True
+>>> str(pkt_trunc.pack()) == raw_trunc[:8]
+True
+
+```
+
+```python
+>>> class NaryExpressions(Packet):
+...     size_type = Data(until_marker='\x00')
+...     data      = Data(byte_count = size_type.choose(small=2, large=4, extra_large=8))
+
+>>> raw_small = 'small\x00AB'
+>>> pkt_small = NaryExpressions.unpack(raw_small)
+
+>>> pkt_small.size_type
+'small'
+>>> pkt_small.data
+'AB'
+
+>>> raw_large = 'large\x00ABCD'
+>>> pkt_large = NaryExpressions.unpack(raw_large)
+
+>>> pkt_large.size_type
+'large'
+>>> pkt_large.data
+'ABCD'
+
+>>> str(pkt_small.pack()) == raw_small
+True
+>>> str(pkt_large.pack()) == raw_large
+True
 
 ```
 
