@@ -1,10 +1,10 @@
 import collections, functools, operator
 
-def if_true_then_else(condition, *possible_values):
+def if_true_then_else(condition, possible_values):
     value_if_true, value_if_false = possible_values
     return value_if_true if bool(condition) else value_if_false
 
-def choose(index, *options):
+def choose(index, options):
     return options[index]
 
 AllCategories = ['integer', 'sequence']
@@ -78,7 +78,9 @@ def compile_expr(root_expr, ops=None, ident=" "):
         compile_expr(r, ops, ident=ident*2)
         compile_expr(left, ops, ident=ident*2)
         compile_expr(right, ops, ident=ident*2)
-        ops.append((3,op))
+        ops.append((2, lambda *vargs: vargs))
+
+        ops.append((2,op))
    
     elif isinstance(root_expr, BinaryExpr):
         l, r, op = root_expr
