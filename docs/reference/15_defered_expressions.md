@@ -68,7 +68,7 @@ But using only a field as parameter is just the begin. You can use simple expres
 >>> matrix.rows, matrix.cols
 (2, 3)
 >>> matrix.values
-[65, 66, 66, 68, 69, 70]
+[65, 66, 67, 68, 69, 70]
 >>> matrix.padding
 '\xff\xff'
 
@@ -168,12 +168,4 @@ True
 
 ```
 
-```python
->>> class ArithExpressions(Packet):
-...     rows  = Int(1)
-...     cols  = Int(1)
 
-...     values  = Int(1).repeated(rows * cols)
-...     padding = Data( 8 - ((rows * cols) % 8) )
-
-```

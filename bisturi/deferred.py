@@ -38,6 +38,24 @@ BinaryOperationsByCategory = {
             ],
         }
 
+BinaryReverseOperationsByCategory = {
+        'integer': [
+            # arith ------------------------------------
+            operator.add,         operator.sub,
+            operator.mul,         operator.div,
+            operator.truediv,     operator.floordiv,
+            operator.mod,         operator.pow,
+
+            # logical ----------------------------------
+            operator.and_,        operator.or_,
+            operator.xor,              
+            operator.rshift,      operator.lshift,
+            ],
+
+        'sequence': [
+            ],
+        }
+
 UnaryOperationsByCategory = {
         'integer': [
             # arith ------------------------------------
@@ -61,19 +79,34 @@ NaryExpr = collections.namedtuple('NaryExpr', ['l', 's', 'm', 'op'])
 BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
 
-def compile_expr(root_expr, ops=None, ident=" "):
+class Operations(object):
+    def __init__(self):
+        self.ops = []
+
+    def append(self, num_arguments, operation, level, operation_name=None):
+        if operation_name is None:
+            operation_name = repr(operation)
+
+        self.ops.append((num_arguments, operation, level, operation_name))
+
+    def as_list(self):
+        return [(num_arguments, operation) for num_arguments, operation, _, _ in self.ops]
+
+
+def compile_expr(root_expr, ops=None, level=0, verbose=False):
     from field import Field
+    next_level = level + 1
 
     if ops is None:
-        ops = []
+        ops = Operations()
 
     if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
-        ops.append((0, lambda pkt, *vargs, **kargs: root_expr))
+        ops.append(0, lambda pkt, *vargs, **kargs: root_expr, level, 'value ' + repr(root_expr))
     
     elif isinstance(root_expr, NaryExpr):
         r, l, m, op = root_expr
 
-        compile_expr(r, ops, ident=ident*2)
+        compile_expr(r, ops, level=next_level)
 
         assert l or m
         assert not (l and m)
@@ -81,34 +114,34 @@ def compile_expr(root_expr, ops=None, ident=" "):
         if l:
             n = len(l)
             for value in l:
-                compile_expr(value, ops, ident=ident*2)
+                compile_expr(value, ops, level=next_level)
             
-            ops.append((n, lambda *vargs: vargs))
+            ops.append(n, lambda *vargs: vargs, level, 'arg-list')
 
         else:
             n = len(m)
             keys, values = zip(*m.items())
             for value in values:
-                compile_expr(value, ops, ident=ident*2)
+                compile_expr(value, ops, level=next_level)
 
-            ops.append((n, lambda *vargs: dict(zip(keys, vargs))))
+            ops.append(n, lambda *vargs: dict(zip(keys, vargs)), level, 'arg-mapping')
 
-        ops.append((2,op))
+        ops.append(2, op, level)
    
     elif isinstance(root_expr, BinaryExpr):
         l, r, op = root_expr
-        compile_expr(l, ops, ident=ident*2)
-        compile_expr(r, ops, ident=ident*2)
-        ops.append((2,op))
+        compile_expr(l, ops, level=next_level)
+        compile_expr(r, ops, level=next_level)
+        ops.append(2, op, level)
 
     elif isinstance(root_expr, UnaryExpr):
         r, op = root_expr
-        compile_expr(r, ops, ident=ident*2)
-        ops.append((1,op))
+        compile_expr(r, ops, level=next_level)
+        ops.append(1, op, level)
 
     else:
         field_name = root_expr.field_name
-        ops.append((0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name)))
+        ops.append(0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name), level, 'field-lookup ' + repr(root_expr))
 
     return ops
 
@@ -128,14 +161,17 @@ def exec_compiled_expr(pkt, args, ops, *vargs, **kargs):
     return args[0]
 
 def compile_expr_into_callable(root_expr):
-    ops = compile_expr(root_expr)
+    ops = compile_expr(root_expr).as_list()
     args = []
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
    
 
-def _defer_method(target, methodname, op, is_binary, is_nary=False):
+def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_arguments=False):
     if is_binary:
-        setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
+        if swap_binary_arguments:
+            setattr(target, methodname, lambda A, B: BinaryExpr(B, A, op))
+        else:
+            setattr(target, methodname, lambda A, B: BinaryExpr(A, B, op))
     else:
         if is_nary:
             def nary(A, *B, **C):
@@ -162,6 +198,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
         assert all((category in AllCategories) for category in allowed_categories) # sanity check
 
     allowed_binary_operations = sum((BinaryOperationsByCategory[category] for category in allowed_categories), [])
+    allowed_binary_reverse_operations = sum((BinaryReverseOperationsByCategory[category] for category in allowed_categories), [])
     allowed_unary_operations  = sum((UnaryOperationsByCategory[category]  for category in allowed_categories), [])
 
     for binary_op in allowed_binary_operations:
@@ -171,6 +208,14 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
         methodname = "__%s__" % op_name
         _defer_method(cls, methodname, binary_op, is_binary=True)
+    
+    for binary_op in allowed_binary_reverse_operations:
+        op_name = binary_op.__name__
+        if op_name.endswith("_"):
+            op_name = op_name[:-1]
+
+        methodname = "__r%s__" % op_name
+        _defer_method(cls, methodname, binary_op, is_binary=True, swap_binary_arguments=True)
    
     for unary_op in allowed_unary_operations:
         op_name = unary_op.__name__
