@@ -102,18 +102,29 @@ True
 
 ```
 
+As a special case, any field or expression of fields implement the 'choose' operator. This one select an item based on the value of the field/expression who owns the operator.
+This can be use to select one item from its parameters by position in the argument list or by name from a keyword argument call. If the 'choose' operator receives only one argument, this one can be a list (to select by position) or a dict (to select by keyword).
+
+Here are some examples of using 'choose' by position:
+
 ```python
->>> class NaryExpressions(Packet):
+>>> class ChooseExpressions(Packet):
 ...     a = Int(1)
 ...     b = Int(1)
 ...
+...     # by position from the argument list
 ...     extra     = Data(byte_count = 1).when( (a == 1).choose(False, True) )
-...     mindata   = Data(byte_count = (a < b).choose({False: b, True: a}))
+...
+...     # by position but from a list
+...     mindata   = Data(byte_count = (a < b).choose([b, a]))
+...
+...     # by name/keyword from a dictionary (this is the prefered way to 
+...     # code a 'if-then-else' expression. Equivalent to: 4 if a > 4 else a 
 ...     truncated = Data(byte_count = (a > 4).choose({True: 4, False: a}))
 ...
 
 >>> raw_min = '\x01\x02:AB'
->>> pkt_min = NaryExpressions.unpack(raw_min)
+>>> pkt_min = ChooseExpressions.unpack(raw_min)
 
 >>> pkt_min.extra
 ':'
@@ -124,7 +135,7 @@ True
 
 
 >>> raw_trunc = '\x06\x02AABBBBBBBBBBBBBBBB'
->>> pkt_trunc = NaryExpressions.unpack(raw_trunc)
+>>> pkt_trunc = ChooseExpressions.unpack(raw_trunc)
 
 >>> pkt_trunc.extra is None
 True
@@ -140,13 +151,15 @@ True
 
 ```
 
+If the pool of names from where you want to choose one is a pool of valid python names you can use keyword arguments as a shortcut instead of an explicit dictionary. 
+
 ```python
->>> class NaryExpressions(Packet):
+>>> class ChooseExpressions(Packet):
 ...     size_type = Data(until_marker='\x00')
 ...     data      = Data(byte_count = size_type.choose(small=2, large=4, extra_large=8))
 
 >>> raw_small = 'small\x00AB'
->>> pkt_small = NaryExpressions.unpack(raw_small)
+>>> pkt_small = ChooseExpressions.unpack(raw_small)
 
 >>> pkt_small.size_type
 'small'
@@ -154,7 +167,7 @@ True
 'AB'
 
 >>> raw_large = 'large\x00ABCD'
->>> pkt_large = NaryExpressions.unpack(raw_large)
+>>> pkt_large = ChooseExpressions.unpack(raw_large)
 
 >>> pkt_large.size_type
 'large'

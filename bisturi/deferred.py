@@ -178,9 +178,16 @@ def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_
                 assert B or C
                 assert not (B and C)
 
-                if not C and len(B) == 1 and isinstance(B[0], dict):
-                    C = B[0]
-                    B = []
+                if not C and len(B) == 1:
+                    if isinstance(B[0], dict):
+                        C = B[0]
+                        B = []
+                    elif isinstance(B[0], (list, tuple)):
+                        B = B[0]
+                        C = {}
+
+                    else:
+                        raise Exception("Invalid argument for nary expression '%s'. Valid arguments can be a single list or dict (like nary([a, b]) or nary({k1: a, k2: b})), a list of arguments (like nary(a, b)) or a keyword arguments call (like nary(k1=a, k2=b)).")
 
                 return NaryExpr(A, B, C, op)
 
