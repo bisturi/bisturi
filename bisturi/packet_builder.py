@@ -92,9 +92,9 @@ class PacketClassBuilder(object):
                 [a->Int(1), _shift_b_->Move(0), b->Int(2)]
 
             How each field is describe will depend of each field instance.
-            See the method describe_yourself of each Field subclass.
+            See the method _describe_yourself of each Field subclass.
         '''
-        self.fields = sum([field.describe_yourself(name, self.bisturi_conf) for name, field in self.fields_in_class], [])
+        self.fields = sum([field._describe_yourself(name, self.bisturi_conf) for name, field in self.fields_in_class], [])
 
     def compile_fields_and_create_slots(self):
         ''' Compile each field, allowing them to optimize their pack/unpack methods.
@@ -104,7 +104,7 @@ class PacketClassBuilder(object):
 
         def compile_field(position, name_and_field):
             _, field = name_and_field
-            return field.compile(position, self.fields, self.bisturi_conf)
+            return field._compile(position, self.fields, self.bisturi_conf)
 
         additional_slots = self.bisturi_conf.get('additional_slots', [])
         self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
@@ -112,9 +112,9 @@ class PacketClassBuilder(object):
     def compile_descriptors_and_extend_slots(self):
         ''' Compile each field's descriptor if any and add their slots to the slot list. '''
         def has_descriptor(field):
-            return field.descriptor is not None and hasattr(field.descriptor, 'compile')
+            return field.descriptor is not None and hasattr(field.descriptor, '_compile')
 
-        self.slots += sum((field.descriptor.compile(name, field.descriptor_name, self.bisturi_conf) for name, field in self.fields
+        self.slots += sum((field.descriptor._compile(name, field.descriptor_name, self.bisturi_conf) for name, field in self.fields
                if has_descriptor(field)), [])
 
 

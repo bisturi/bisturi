@@ -5,7 +5,7 @@ from pattern_matching import Any
 from fragments import FragmentsOfRegexps
 
 def exec_once(m):
-    ''' Force to execute the method M only once and save its result.
+    ''' Force to execute the method m only once and save its result.
         The next calls will always return the same result, ignoring the parameters. '''
     def wrapper(self, *args, **kargs):
         try:
@@ -18,6 +18,21 @@ def exec_once(m):
     return wrapper
 
 class Field(object):
+    ''' A field represent a single parsing unit. This is the superclass from where all the other field must inherit.
+        
+        A field will hold a raw configuration from it initialization (__init__) until the compilation of it (_compile method).
+        Once you call _compile, the field will define the most optimum version for its pack and unpack methods.
+        
+        See the Packet class to get a more broad view about this.
+        
+        Any field instance will support the following public methods besides the pack/unpack:
+            - repeated: to define a sequence of fields like Int(1).repeated(4) (see the Sequence field).
+            - times: an alias for repeated.
+            - when: to define a field as optional like Int(1).when(foo == True) (see the Optional field).
+            - at: to define where the field should start to pack/unpack (see the Move field).
+            - aligned: a variant of at.
+
+            '''
     def __init__(self):
         self.ctime = time.time()
         self.is_fixed = False
@@ -30,7 +45,7 @@ class Field(object):
         self.descriptor = None
         self.descriptor_name = None
 
-    def describe_yourself(self, field_name, bisturi_conf):
+    def _describe_yourself(self, field_name, bisturi_conf):
         self.field_name = field_name
         if self.move_arg is None and 'align' in bisturi_conf:
             self.aligned(to=bisturi_conf['align'])
@@ -57,11 +72,11 @@ class Field(object):
             return [(m.field_name, m), (field_name, self)]
 
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        # Dont call this from a subclass. Call _compile directly.
-        return self._compile(position, fields, bisturi_conf)
-
     def _compile(self, position, fields, bisturi_conf):
+        # Dont call this from a subclass. Call _compile_impl directly.
+        return self._compile_impl(position, fields, bisturi_conf)
+
+    def _compile_impl(self, position, fields, bisturi_conf):
         slots = [self.field_name]
         if self.descriptor:
             slots.append(self.descriptor_name)
@@ -215,8 +230,8 @@ class Sequence(Field):
 
       
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
         if self.aligned_to is None:
             self.aligned_to = bisturi_conf.get('align', 1)
 
@@ -225,7 +240,7 @@ class Sequence(Field):
         # This happen in others fields like Optional and Ref
         self.seq_elem_field_name = "_seq_elem__"+self.field_name
         self.prototype_field.field_name = self.seq_elem_field_name
-        self.prototype_field.compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
+        self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
         count, until, when = self.tmp
 
@@ -328,11 +343,11 @@ class Optional(Field):
 
       
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
         self.opt_elem_field_name = "_opt_elem__"+self.field_name
         self.prototype_field.field_name = self.opt_elem_field_name
-        self.prototype_field.compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
+        self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
         when = self.tmp
         del self.tmp
@@ -416,8 +431,8 @@ class Int(Field):
         self.is_fixed = True
 
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
       
         if self.endianness is None:
             self.endianness = bisturi_conf.get('endianness', 'big') # try to get the default from the Packet class; big endian by default
@@ -523,8 +538,8 @@ class Data(Field):
         self.is_fixed = isinstance(byte_count, (int, long))
 
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         if self.byte_count is not None:
             if isinstance(self.byte_count, (int, long)):
@@ -737,21 +752,21 @@ class Ref(Field):
         # a.d.i  has the default value of an Int which it is wrong.
         #        we need to do something with this case.
    
-    def describe_yourself(self, field_name, bisturi_conf):
-        desc = Field.describe_yourself(self, field_name, bisturi_conf)
+    def _describe_yourself(self, field_name, bisturi_conf):
+        desc = Field._describe_yourself(self, field_name, bisturi_conf)
         if self.embeb:
             desc.extend([(fname, f) for fname, f, _, _ in self.prototype.get_fields()])
 
         return desc
 
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         self.position = position
         if isinstance(self.prototype, Field):
             self.prototype.field_name = self.field_name
-            self.prototype.compile(position=position, fields=[], bisturi_conf=bisturi_conf)
+            self.prototype._compile(position=position, fields=[], bisturi_conf=bisturi_conf)
 
         prototype = self.prototype
         if isinstance(prototype, Field):
@@ -808,7 +823,7 @@ class Ref(Field):
 
         if isinstance(referenced, Field):
             referenced.field_name=self.field_name
-            referenced.compile(position=self.position, fields=[], bisturi_conf={})
+            referenced._compile(position=self.position, fields=[], bisturi_conf={})
             referenced.init(pkt, {})
 
             return referenced.unpack(pkt=pkt, raw=raw, offset=offset, **k)
@@ -831,7 +846,7 @@ class Ref(Field):
 
         if isinstance(referenced, Field):
             referenced.field_name = self.field_name
-            referenced.compile(position=self.position, fields=[], bisturi_conf={})
+            referenced._compile(position=self.position, fields=[], bisturi_conf={})
             #referenced.init(pkt, {})
 
             return referenced.pack(pkt, fragments, **k)
@@ -865,8 +880,8 @@ class Bits(Field):
         self.iam_first = self.iam_last = False
    
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
-        slots = Field._compile(self, position, fields, bisturi_conf)
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         if position == 0 or not isinstance(fields[position-1][1], Bits):
             self.iam_first = True
@@ -900,7 +915,7 @@ class Bits(Field):
             I.byte_count = cumshift / 8
             fname = "_bits__"+"_".join(name_of_members)
             I.field_name = fname
-            I.compile(position=-1, fields=[], bisturi_conf={})
+            I._compile(position=-1, fields=[], bisturi_conf={})
 
             slots.append(fname)
         return slots
@@ -1083,7 +1098,7 @@ class Em(Field):
         pass
    
     @exec_once
-    def compile(self, position, fields, bisturi_conf):
+    def _compile(self, position, fields, bisturi_conf):
         return []
 
     def unpack(self, pkt, raw, offset=0, **k):

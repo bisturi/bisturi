@@ -2,7 +2,7 @@ class Auto(object):
     def __init__(self, func):
         self.func = func
 
-    def compile(self, field_name, descriptor_name, bisturi_conf):
+    def _compile(self, field_name, descriptor_name, bisturi_conf):
         self.iam_enabled_attr_name = "_is_descriptor_%s_enabled" % descriptor_name
         return [self.iam_enabled_attr_name]
 
