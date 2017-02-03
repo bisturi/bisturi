@@ -103,9 +103,10 @@ True
 ```
 
 As a special case, any field or expression of fields implement the 'choose' operator. This one select an item based on the value of the field/expression who owns the operator.
-This can be use to select one item from its parameters by position in the argument list or by name from a keyword argument call. If the 'choose' operator receives only one argument, this one can be a list (to select by position) or a dict (to select by keyword).
+This can be use to select one item from its parameters by position in the argument list ( choose(a, b, ...) ) or by name from a keyword argument call ( choose(k1=a, k2=b, ...) ). 
+If the 'choose' operator receives only one argument, this must  be a list/tuple (to select by position like choose([a, b, ...]) ) or a dict (to select by keyword like choose({k1: a, k2: b, ...}) ).
 
-Here are some examples of using 'choose' by position:
+Here are some examples of using 'choose' by position and by name:
 
 ```python
 >>> class ChooseExpressions(Packet):
