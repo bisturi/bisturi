@@ -1,6 +1,14 @@
 #PYTHON="coverage run --branch -p" # or python
 PYTHON="python"
 
+pushd() {
+    command pushd "$@" > /dev/null
+}
+
+popd() {
+    command popd "$@" > /dev/null
+}
+
 
 for t in docs/reference/$1*.md
 do
@@ -20,8 +28,14 @@ do
    fi
 done
 
-echo "README.md"
-$PYTHON -m doctest "README.md"
+for t in $1*.md
+do
+   if [ -e $t ]
+   then
+      echo $t
+      $PYTHON -m doctest $t
+   fi
+done
 
 
 pushd .
