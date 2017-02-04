@@ -679,31 +679,31 @@ class Ref(Field):
         if _is_a_subpacket_definition:
             self.ctime = prototype.get_fields()[0][1].ctime
 
-        self.prototype = prototype # TODO should we copy this prototype and/or its default?
         self.default = default
 
-        if isinstance(self.prototype, type):
-            self.prototype = self.prototype() # get an object
+        if isinstance(prototype, type):
+            prototype = prototype() # get an object
       
-        if not isinstance(self.prototype, Packet) and not callable(self.prototype):
+        if not isinstance(prototype, Packet) and not callable(prototype):
             raise ValueError("The prototype of a Ref field must be a packet (class or instance) or a callable that should return a Field or a Packet.")
 
-        if callable(self.prototype) and default is None:
+        if callable(prototype) and default is None:
             raise ValueError("We need a default object!")
 
-        if not callable(self.prototype) and default is not None:
+        if not callable(prototype) and default is not None:
             raise ValueError("We don't need a default object, we will be using the prototype object instead.")
 
         if self.default is None:
-            if isinstance(self.prototype, Packet):
-                self.default = self.prototype
+            if isinstance(prototype, Packet):
+                self.default = prototype
             else:
-                assert isinstance(self.prototype, Field)
-                self.default = getattr(self.prototype, 'default', None)
+                assert isinstance(prototype, Field)
+                self.default = getattr(prototype, 'default', None)
 
-        if embeb and not isinstance(self.prototype, Packet):
+        if embeb and not isinstance(prototype, Packet):
             raise ValueError("The prototype must be a Packet if you want to embeb it.")
             
+        self.prototype = prototype
         self.embeb = embeb 
         # TODO :
         # class D(Packet):
