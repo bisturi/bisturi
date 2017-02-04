@@ -28,6 +28,15 @@ do
    fi
 done
 
+for t in bisturi/$1*.py
+do
+   if [ -e $t ]
+   then
+      echo $t
+      $PYTHON -m doctest $t
+   fi
+done
+
 for t in $1*.md
 do
    if [ -e $t ]
