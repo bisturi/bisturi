@@ -82,6 +82,8 @@ Ok, lets see.
    using 'setattr'. The new offset is returned (the bytes readed plus the old offset).
    You need to implement the unpack method without assuming the the packet instance (pkt) has
    the field already set. In other words, you cannot call 'getattr' here without calling 'setattr' first.
+   You must always return a new instance each time that the unpack is called (or you can return the same
+   but if it is inmutable). In this case we are calling 'cls_address' every time.
  - Similar for 'pack'. We get the val using 'getattr' and transform the ip address to
    its binary representation which it is added to the fragments and returned
 
