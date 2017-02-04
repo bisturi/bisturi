@@ -685,6 +685,8 @@ class Ref(Field):
         if isinstance(self.prototype, type):
             self.prototype = self.prototype() # get an object
       
+        if not isinstance(self.prototype, Packet) and not callable(self.prototype):
+            raise ValueError("The prototype of a Ref field must be a packet (class or instance) or a callable that should return a Field or a Packet.")
 
         if callable(self.prototype) and default is None:
             raise ValueError("We need a default object!")

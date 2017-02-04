@@ -225,7 +225,7 @@ the field, instead we just mark the field to be there 'when' some condition is m
 ```python
 >>> class Option(Packet):
 ...    type = Int(1)
-...    num  = Ref(Int).when(lambda pkt, **k: pkt.type != 0)
+...    num  = Int(4).when(lambda pkt, **k: pkt.type != 0)
 
 >>> s = '\x01\x00\x00\x00\x04'
 >>> p = Option.unpack(s)

@@ -328,25 +328,6 @@ class TestSequence(unittest.TestCase):
          obj_two_second_values = ([7, 8, 9], [10, 11, 12])
       )
 
-   def test_field_ref_repeated_fixed_times(self):
-      class FieldRefRepeatedFixedTimes(Packet):
-         first  = Ref(Int(1)).repeated(count=4)
-         second = Ref(Int(1)).repeated(count=4)
-
-      self._test_sequences_fields(
-         obj_one = FieldRefRepeatedFixedTimes(), 
-         obj_two = FieldRefRepeatedFixedTimes(),
-         one_default_raw = '',
-         two_default_raw = '',
-         obj_one_defaults = ([], []),
-         obj_two_defaults = ([], []),
-         first_raw_for_one =   '\x01\x02\x03\x04\x05\x06\x07\x08',   
-         obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
-         second_raw_for_one = '\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10', 
-         second_raw_for_two = '\x11\x12\x13\x14\x15\x16\x17\x18', 
-         obj_one_second_values = ([9,  10, 11, 12], [13, 14, 15, 16]), 
-         obj_two_second_values = ([17, 18, 19, 20], [21, 22, 23, 24])
-      )
 
    def test_subpacket_ref_repeated_fixed_times(self):
       class SubpacketRepeatedFixedTimes(Packet):
@@ -627,8 +608,8 @@ class TestSequence(unittest.TestCase):
 
    def test_field_ref_repeated_fixed_times_with_defaults(self):
       class FieldRefRepeatedFixedTimes(Packet):
-         first  = Ref(Int(1)).repeated(count=4, default=[1, 2, 3, 4])
-         second = Ref(Int(1)).repeated(count=4, default=[5, 6, 7, 8])
+         first  = Ref(lambda **k: Int(1), default=0).repeated(count=4, default=[1, 2, 3, 4])
+         second = Ref(lambda **k: Int(1), default=0).repeated(count=4, default=[5, 6, 7, 8])
 
       self._test_sequences_fields(
          obj_one = FieldRefRepeatedFixedTimes(), 

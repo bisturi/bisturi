@@ -127,46 +127,6 @@ class TestRef(unittest.TestCase):
          raise type(_e), type(_e)(_message), sys.exc_info()[2]
 
 
-   def test_ref_int_field(self):
-      class RefIntField(Packet):
-         first  = Ref(Int)
-         second = Ref(Int)
-
-      self._test_refs_field(
-         obj_one = RefIntField(), 
-         obj_two = RefIntField(),
-         one_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
-         obj_one_defaults = (0, 0), 
-         obj_two_defaults = (0, 0), 
-         first_raw_for_one =  '\x00\x00\x00\x01\x00\x00\x00\x02',   
-         obj_one_first_values = (1, 2),
-         second_raw_for_one = '\x00\x00\x00\x03\x00\x00\x00\x04', 
-         second_raw_for_two = '\x00\x00\x00\x05\x00\x00\x00\x06', 
-         obj_one_second_values = (3, 4), 
-         obj_two_second_values = (5, 6)
-      )
-   
-   def test_ref_int_field_using_an_instance(self):
-      class RefIntFieldWithInstance(Packet):
-         first  = Ref(Int(default=1))   
-         second = Ref(Int(default=2))   
-
-      self._test_refs_field(
-         obj_one = RefIntFieldWithInstance(), 
-         obj_two = RefIntFieldWithInstance(),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
-         two_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
-         obj_one_defaults = (1, 2), 
-         obj_two_defaults = (1, 2), 
-         first_raw_for_one =  '\x00\x00\x00\x03\x00\x00\x00\x04',   
-         obj_one_first_values = (3, 4),
-         second_raw_for_one = '\x00\x00\x00\x05\x00\x00\x00\x06', 
-         second_raw_for_two = '\x00\x00\x00\x07\x00\x00\x00\x08', 
-         obj_one_second_values = (5, 6), 
-         obj_two_second_values = (7, 8)
-      )
-
    def test_ref_subpacket(self):
       class RefSubPacket(Packet):
          first  = Ref(SubPacket)
@@ -250,15 +210,15 @@ class TestRef(unittest.TestCase):
 
    def test_ref_int_field_defaults_from_user(self):
       class RefIntField(Packet):
-         first  = Ref(Int)
-         second = Ref(Int)
+         first  = Ref(lambda **k: Int(4),  default=8)
+         second = Ref(lambda **k: Int(4),  default=16)
 
       self._test_refs_field(
          obj_one = RefIntField(first=1), 
          obj_two = RefIntField(first=2, second=3),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
+         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x10',
          two_default_raw = '\x00\x00\x00\x02\x00\x00\x00\x03',
-         obj_one_defaults = (1, 0), 
+         obj_one_defaults = (1, 16), 
          obj_two_defaults = (2, 3), 
          first_raw_for_one =  '\x00\x00\x00\x04\x00\x00\x00\x05',   
          obj_one_first_values = (4, 5),
