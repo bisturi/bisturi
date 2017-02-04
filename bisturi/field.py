@@ -46,6 +46,17 @@ class Field(object):
         self.descriptor_name = None
 
     def _describe_yourself(self, field_name, bisturi_conf):
+        ''' Given a name and a configuration, set the name of this field 
+            and return the list of tuples that describe this field.
+            Each tuple contains the name of the field and the value of the field.
+
+            The most simple case is a description that consists in a list of one tuple
+                [(my name, myself)]
+            but it is possible that a field requires more than one tuple to describe.
+            For example, Int(1).at(x) requires two tuples one about the movement (at) and
+            the other about the int itself like:
+                [(my move's name, Move(x)), (my name, myself)]
+            '''
         self.field_name = field_name
         if self.move_arg is None and 'align' in bisturi_conf:
             self.aligned(to=bisturi_conf['align'])
@@ -73,6 +84,7 @@ class Field(object):
 
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
+        ''' Realize all the optimizations available. '''
         # Dont call this from a subclass. Call _compile_impl directly.
         return self._compile_impl(position, fields, bisturi_conf)
 
@@ -83,13 +95,9 @@ class Field(object):
 
         return slots
 
-    def getval(self, packet): #TODO do this INLINE!!
-        return getattr(packet, self.field_name)
-
-    def setval(self, packet, val): #TODO do this INLINE!!
-        return setattr(packet, self.field_name, val)
-
     def init(self, packet, defaults):
+        ''' Initialize the field based on the default. 
+            This must set a 'field_name' attribute in the packet.'''
         try:
             obj = defaults[self.field_name]
         except KeyError:
@@ -104,17 +112,20 @@ class Field(object):
         raise NotImplementedError()
 
     def unpack_noop(self, pkt, raw, offset, **k):
+        ''' No-operation unpack function. Do nothing during the unpacking stage. '''
         return offset
 
     def pack_noop(self, pkt, fragments, **k):
+        ''' No-operation pack function. Do nothing during the packing stage. '''
         return fragments
 
     def repeated(self, count=None, until=None, when=None, default=None, aligned=None):
+        ''' Describe a sequence of fields instead of a single field. Repeat this field
+            'count' times or 'until' the given condition is false. '''
         assert not (count is None and until is None)
         assert not (count is not None and until is not None)
 
         return Sequence(prototype=self, count=count, until=until, when=when, default=default, aligned=aligned)
-
 
     def when(self, condition, default=None):
         return Optional(prototype=self, when=condition, default=default)
@@ -135,6 +146,8 @@ class Field(object):
     def describe(self, descriptor):
         self.descriptor = descriptor
         return self
+
+Field.times = Field.repeated
 
 def _get_count(count_arg):
     ''' Return a callable from count_arg so you can invoke that callable
@@ -293,7 +306,7 @@ class Sequence(Field):
                 setattr(pkt, seq_elem_field_name, copy.deepcopy(obj))
 
 
-        # self.setval(pkt, sequence), we don't need this, because the sequence is already there
+        # setattr(pkt, self.field_name, sequence) we don't need this, because the sequence is already there
         return offset
 
 
