@@ -679,6 +679,11 @@ class Ref(Field):
         If it is the latter, the callable must return a packet instance or a field instance each time
         that it is called. Because of that, the callable must to return a new packet/field instance each time, 
         you cannot return the same object twice.
+        
+        The callable will be called during the unpack stage but it can also be called during the pack stage to
+        determinate how to pack a value when this one is not a packet instance (let's say that you are referencing
+        to an Int field and I have the value 42, I need to call the callable to get an Int instance to pack the 42).
+        In this case the callable will be call with the parameter packing=True.
 
         If the prototype is a packet, then the default it is not needed becasue we can use the prototype as
         a default value for the field.
@@ -861,8 +866,6 @@ class Ref(Field):
         if isinstance(obj, Packet):
             return obj.pack_impl(fragments=fragments, **k)
 
-        # TODO: raise NotImplementedError("We don't know how to pack this. The field '%s' (type '%s') is not a Packet neither the Ref's prototype is a Field/Packet (it is a '%s'). Probably the Ref's prototype is a callable, right? Because that we can't know how to pack this field (which is not pointing to a Packet instance) because we cannot execute the callable during the packing-time." % (self.field_name, str(type(obj)), str(type(self.prototype))))
-
         # we try to know how to pack this value
         assert callable(self.prototype)
         referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)   # TODO add more parameters, like raw=partial_raw
@@ -876,7 +879,10 @@ class Ref(Field):
 
         # well, we are in a dead end: the 'obj' object IS NOT a Packet, it is a "primitive" value
         # however, the 'referenced' object IS a Packet and we cannot do anything else
-        raise NotImplementedError()
+        raise NotImplementedError("I have a value to pack of type '%s' and because it is not a Packet instance "
+                                  "I don't know how to pack it. The prototype of this Ref field is a callable so "
+                                  "I called it hoping to receive a Field instance to show me how to pack the value "
+                                  "but instead I received a '%s' so I'm stuck." % (type(obj), type(referenced)))
 
 
     def _unpack_referencing_a_packet(self, pkt, **k):
