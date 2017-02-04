@@ -55,18 +55,18 @@ For example the 'ip' object from python (IPv4Address and IPv6Address) can be use
 ...       self.default = default
 ...    
 ...    def init(self, packet, defaults):
-...       self.setval(packet, self.cls_address(defaults.get(self.field_name, self.default)))
+...       setattr(packet, self.field_name, self.cls_address(defaults.get(self.field_name, self.default)))
 ...    
 ...    def unpack(self, pkt, raw, offset=0, **k):
 ...       raw_data = raw[offset:offset+self.byte_count]
 ...       ip_address = self.cls_address(0) # work around for Python 2.7
 ...       ip_address._ip = struct.unpack(">I", raw_data)[0]
-...       self.setval(pkt, ip_address)
+...       setattr(pkt, self.field_name, ip_address)
 ... 
 ...       return self.byte_count + offset
 ... 
 ...    def pack(self, pkt, fragments, **k):
-...       ip_address = self.getval(pkt)
+...       ip_address = getattr(pkt, self.field_name)
 ...       raw = ip_address.packed
 ...       fragments.append(raw)
 ...       return fragments
@@ -79,10 +79,10 @@ Ok, lets see.
    With the version as parameter we can handle both version of the IP address schema.
    Two important notes, the parent __init__ is called and the 'default' attribute is setted.
  - Then, the unpack is implemented. We read 4 (or 16) bytes and we set the val interpreted
-   using 'setval'. The new offset is returned (the bytes readed plus the old offset).
+   using 'setattr'. The new offset is returned (the bytes readed plus the old offset).
    You need to implement the unpack method without assuming the the packet instance (pkt) has
-   the field already set. In other words, you cannot call 'getval' here without calling 'setval' first.
- - Similar for 'pack'. We get the val using 'getval' and transform the ip address to
+   the field already set. In other words, you cannot call 'getattr' here without calling 'setattr' first.
+ - Similar for 'pack'. We get the val using 'getattr' and transform the ip address to
    its binary representation which it is added to the fragments and returned
 
 ```python

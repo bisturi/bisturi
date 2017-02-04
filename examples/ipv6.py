@@ -46,11 +46,11 @@ class IPAddr(Field):
       chunks = [base64.b16encode(raw_data[i:i+2]) for i in range(0, len(raw_data), 2)]
       ip_address = self.cls_address(":".join(chunks)) # work around for Python 2.7
 
-      self.setval(pkt, ip_address)
+      setattr(pkt, self.field_name, ip_address)
       return self.byte_count + offset
 
    def pack(self, packet):
-      ip_address = self.getval(packet)
+      ip_address = getattr(packet, self.field_name)
       raw = ip_address.packed
       return raw
 
