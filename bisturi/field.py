@@ -673,7 +673,7 @@ class Data(Field):
         return fragments
 
 class Ref(Field):
-    def __init__(self, prototype, default=None, embeb=False, _is_a_subpacket_definition=False): # TODO we don't support Bits fields
+    def __init__(self, prototype, default=None, embeb=False, _is_a_subpacket_definition=False):
         Field.__init__(self)
 
         if _is_a_subpacket_definition:
@@ -682,23 +682,24 @@ class Ref(Field):
         self.default = default
 
         if isinstance(prototype, type):
-            prototype = prototype() # get an object
+            prototype = prototype() # get an object, this allows write  Ref(PacketClass) instead of Ref(PacketClass())
       
         if not isinstance(prototype, Packet) and not callable(prototype):
             raise ValueError("The prototype of a Ref field must be a packet (class or instance) or a callable that should return a Field or a Packet.")
 
-        if callable(prototype) and default is None:
-            raise ValueError("We need a default object!")
+        # let's find a nice default
+        if callable(prototype):
+            if default is None:
+                raise ValueError("If your are using a callable as the prototype of Ref I need a default object.")
 
-        if not callable(prototype) and default is not None:
-            raise ValueError("We don't need a default object, we will be using the prototype object instead.")
+            self.default = default
 
-        if self.default is None:
-            if isinstance(prototype, Packet):
-                self.default = prototype
-            else:
-                assert isinstance(prototype, Field)
-                self.default = getattr(prototype, 'default', None)
+        elif isinstance(prototype, Packet):
+            if default is not None:
+                raise ValueError("We don't need a default object, we will be using the prototype object instead.")
+
+            self.default = copy.deepcopy(prototype)
+
 
         if embeb and not isinstance(prototype, Packet):
             raise ValueError("The prototype must be a Packet if you want to embeb it.")
