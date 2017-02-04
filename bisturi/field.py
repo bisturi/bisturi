@@ -1,5 +1,7 @@
 import time, struct, sys, copy, re
 from packet import Packet, Prototype
+from structural_fields import normalize_when_condition_into_a_callable, \
+                              normalize_count_condition_into_a_callable
 from deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 from pattern_matching import Any
 from fragments import FragmentsOfRegexps
@@ -84,7 +86,9 @@ class Field(object):
 
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
-        ''' Realize all the optimizations available. '''
+        ''' Realize all the optimizations available and return a list of names which will be the
+            __slots__ of the packet class. This is the time to realize all the optimizations in
+            terms of speed and memory as you can. '''
         # Dont call this from a subclass. Call _compile_impl directly.
         return self._compile_impl(position, fields, bisturi_conf)
 
@@ -149,22 +153,6 @@ class Field(object):
 
 Field.times = Field.repeated
 
-def _get_count(count_arg):
-    ''' Return a callable from count_arg so you can invoke that callable
-        and the count of byte will be retrived. 
-        If count_arg is a callable, it must accept any variable keyword-argument.'''
-
-    if isinstance(count_arg, (int, long)):
-        return lambda **k: count_arg
-
-    if isinstance(count_arg, Field):
-        return lambda pkt, **k: getattr(pkt, count_arg.field_name)
-
-    if callable(count_arg):
-        return count_arg
-
-    raise Exception("Invalid argument for a 'count'. Expected a number, a field or a callable.")
-
 def _get_until(count, until):
     ''' Return a callable that will return True or False if the stream ends or
         doesn't end (this will depend on the 'until' paramenter or the parameter 'count')
@@ -202,30 +190,6 @@ def _get_until(count, until):
 
         return _Until()
 
-def _get_when(count, when):
-    ''' Like _get_until, this will return a callable.
-        At difference with _get_until, both 'count' and 'when' can be
-        callables at the same time or Nones at the same time or any combination. '''
-
-    if count is not None and when is None: # condition from a count-byte
-        def when_condition(**k):
-            return count(**k) > 0
-
-    elif count is not None and when is not None: # a more variable condition
-        assert callable(when)
-        def when_condition(**k):
-            return count(**k) > 0 and when(**k)
-
-    elif count is None and when is not None:
-        assert callable(when)
-        when_condition = when
-
-    else:
-        assert count is None and when is None
-        when_condition = None
-
-    return when_condition
-      
 
 @defer_operations(allowed_categories=['sequence'])
 class Sequence(Field):
@@ -263,11 +227,8 @@ class Sequence(Field):
         #if isinstance(until, (UnaryExpr, BinaryExpr, NaryExpr)):
         #   until = compile_expr_into_callable(until)
       
-        if isinstance(when, (UnaryExpr, BinaryExpr, NaryExpr)):
-            when = compile_expr_into_callable(when)
-
-        self.resolved_count = None if count is None else _get_count(count)
-        self.when = _get_when(self.resolved_count, when)
+        self.resolved_count = None if count is None else normalize_count_condition_into_a_callable(count)
+        self.when = None if when is None else normalize_when_condition_into_a_callable(when)
         self.until_condition = _get_until(self.resolved_count, until)
 
         return slots + [self.seq_elem_field_name]
@@ -281,21 +242,27 @@ class Sequence(Field):
 
         sequence = [] 
         setattr(pkt, self.field_name, sequence) # clean up the previous sequence, so it can be used by the 'when' and 'until' callbacks
-        stop = False if self.when is None else not self.when(pkt=pkt, raw=raw, offset=offset, **k)
+        
+        should_continue = True
+        if self.when:
+            should_continue = should_continue and self.when(pkt=pkt, raw=raw, offset=offset, **k)
+
+        if self.resolved_count:
+            should_continue = should_continue and self.resolved_count(pkt=pkt, raw=raw, offset=offset, **k) > 0
 
         seq_elem_field_name = self.seq_elem_field_name
         _unpack = self.prototype_field.unpack
         _append = sequence.append
         _until  = self.until_condition
         _aligned_to = self.aligned_to
-        while not stop:
+        while should_continue:
             offset += (_aligned_to - (offset % _aligned_to)) % _aligned_to
             offset =  _unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
             obj = getattr(pkt, seq_elem_field_name) 
          
             _append(obj)
-            stop = _until(pkt=pkt, raw=raw, offset=offset, **k)
+            should_continue = not _until(pkt=pkt, raw=raw, offset=offset, **k)
 
             if isinstance(obj, Packet):
                 # if this is a Packet instance, obj is the same object each iteration, 
@@ -365,13 +332,7 @@ class Optional(Field):
         when = self.tmp
         del self.tmp
 
-        if isinstance(when, Field):
-            when = self._convert_a_field_when_condition_into_a_boolean_unary_expression(when)
-      
-        if isinstance(when, (UnaryExpr, BinaryExpr, NaryExpr)):
-            when = compile_expr_into_callable(when)
-
-        self.when = _get_when(None, when)
+        self.when = normalize_when_condition_into_a_callable(when)
         return slots + [self.opt_elem_field_name]
 
     def init(self, packet, defaults):
@@ -420,18 +381,6 @@ class Optional(Field):
 
         return fragments
 
-    def _convert_a_field_when_condition_into_a_boolean_unary_expression(self, when):
-        truth_methods = ('__nonzero__', '__len__') # the order is important here, ask first for nonzero only then for len.
-                                                   # otherwise is 'when' is an Optional field and the Optional field's value
-                                                   # resolves to None, None doesn't have a __len__ method.
-                                                   # Of course, None doesn't have a __nonzero__ methods neither but 
-                                                   # we use 'operator.truth' as the implementation of __nonzero__
-                                                   # and operator.truth(None) is well defined.
-        for method in truth_methods:
-            if hasattr(when, method):
-                return getattr(when, method)()
-
-        raise Exception("The field instance '%s' cannot be converted to a boolean value (it isn't an int nor a iterable)" % repr(when))
 
 @defer_operations(allowed_categories=['integer'])
 class Int(Field):
