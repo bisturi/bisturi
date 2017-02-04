@@ -673,6 +673,80 @@ class Data(Field):
         return fragments
 
 class Ref(Field):
+    r''' Reference to another packet description. This field allows to composite different packet descriptions.
+        
+        The prototype parameter must be a packet class, a packet instance or a callable.
+        If it is the latter, the callable must return a packet instance or a field instance each time
+        that it is called. Because of that, the callable must to return a new packet/field instance each time, 
+        you cannot return the same object twice.
+
+        If the prototype is a packet, then the default it is not needed becasue we can use the prototype as
+        a default value for the field.
+        But if it is a callable, the default is mandatory otherwise we cannot know how to create a default value
+        for the field.
+
+        >>> class Point(Packet):
+        ...     x = Int(1)
+        ...     y = Int(1)
+        
+        >>> class Line(Packet):
+        ...     begin = Ref(Point(x=1, y=2)) # prototype is used as the default
+        ...     end   = Ref(Point) # shortcut for Ref(Point())
+        ...
+        ...     extra = Ref(lambda **k: Point(), default=Point(y=7)) # default is mandatory
+
+        >>> pkt = Line()
+        >>> (pkt.begin.x, pkt.begin.y)
+        (1, 2)
+        >>> (pkt.end.x, pkt.end.y)
+        (0, 0)
+        >>> (pkt.extra.x, pkt.extra.y)
+        (0, 7)
+
+        >>> str(pkt.pack()) == '\x01\x02\x00\x00\x00\x07'
+        True
+
+        >>> raw = '\x01\x02\x03\x04\x05\x06'
+        >>> pkt = Line.unpack(raw)
+        
+        >>> (pkt.begin.x, pkt.begin.y)
+        (1, 2)
+        >>> (pkt.end.x, pkt.end.y)
+        (3, 4)
+        >>> (pkt.extra.x, pkt.extra.y)
+        (5, 6)
+
+        >>> str(pkt.pack()) == raw
+        True
+
+
+        If the embeb parameter is True, the prototype must be a packet. With this flag all the fields of the
+        prototype are borrow to the current packet.
+        The embeb feature is quite experimental and has a few quirks:
+
+        >>> class Point3D(Packet):
+        ...     point_2d = Ref(Point(x=1, y=2), embeb=True)
+        ...     z = Int(1)
+
+        >>> pkt = Point3D(x=7)
+        >>> (pkt.x, pkt.y, pkt.z) # XXX this should be (7, 2, 0) but...
+        (7, 0, 0)
+
+        >>> pkt.x = 8
+        >>> pkt.point_2d.y = 9
+        >>> str(pkt.pack()) == '\x08\x00\x00' # XXX but it should be 08 09 00
+        True
+
+        >>> raw = '\x01\x02\x03'
+        >>> pkt = Point3D.unpack(raw)
+        >>> (pkt.x, pkt.y, pkt.z)
+        (1, 2, 3)
+
+        >>> str(pkt.pack()) == '\x01\x02\x03'
+        True
+
+        '''
+
     def __init__(self, prototype, default=None, embeb=False, _is_a_subpacket_definition=False):
         Field.__init__(self)
 
@@ -700,22 +774,15 @@ class Ref(Field):
 
             self.default = copy.deepcopy(prototype)
 
+        else:
+            assert False
+
 
         if embeb and not isinstance(prototype, Packet):
             raise ValueError("The prototype must be a Packet if you want to embeb it.")
             
         self.prototype = prototype
         self.embeb = embeb 
-        # TODO :
-        # class D(Packet):
-        #    i = Int()
-        # class A(Packet):
-        #    d = Ref(D, embeb=True)
-        #
-        # a = A()
-        # a.i    has the correct value
-        # a.d.i  has the default value of an Int which it is wrong.
-        #        we need to do something with this case.
    
     def _describe_yourself(self, field_name, bisturi_conf):
         desc = Field._describe_yourself(self, field_name, bisturi_conf)
@@ -729,16 +796,9 @@ class Ref(Field):
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         self.position = position
-        if isinstance(self.prototype, Field):
-            self.prototype.field_name = self.field_name
-            self.prototype._compile(position=position, fields=[], bisturi_conf=bisturi_conf)
 
         prototype = self.prototype
-        if isinstance(prototype, Field):
-            self.unpack = prototype.unpack
-            self.pack   = prototype.pack
-
-        elif isinstance(prototype, Packet):
+        if isinstance(prototype, Packet):
             self.unpack = self._unpack_referencing_a_packet
             self.pack   = self._pack_referencing_a_packet
             self.prototype   = prototype.as_prototype()
@@ -758,17 +818,15 @@ class Ref(Field):
             self.unpack = self.unpack_noop
 
         assert not isinstance(self.prototype, Packet)
+        assert isinstance(self.prototype, Prototype) or callable(self.prototype)
         return slots
       
 
-    def init(self, packet, defaults):   #TODO ver el tema de los defaults q viene de la instanciacion del packet
+    def init(self, packet, defaults): 
         # we use our prototype to get a valid default if the prototype is not a callable
         # in the other case, we use self.default.
         prototype = self.prototype
-        if isinstance(prototype, Field):
-            prototype.init(packet, defaults)
-
-        elif isinstance(prototype, Prototype):
+        if isinstance(prototype, Prototype):
             if self.field_name not in defaults:
                 defaults[self.field_name] = prototype.clone()
 
