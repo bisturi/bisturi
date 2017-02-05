@@ -1,27 +1,27 @@
 
-def normalize_when_condition_into_a_callable(when_raw_condition):
+def normalize_raw_condition_into_a_callable(raw_condition):
     from field import Field
     from deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 
-    if callable(when_raw_condition):
-        return when_raw_condition
+    if callable(raw_condition):
+        return raw_condition
 
-    if isinstance(when_raw_condition, Field):
-        when_raw_condition = convert_a_field_when_condition_into_a_boolean_unary_expression(when_raw_condition)
+    if isinstance(raw_condition, Field):
+        raw_condition = convert_a_field_raw_condition_into_a_boolean_unary_expression(raw_condition)
   
-    if isinstance(when_raw_condition, (UnaryExpr, BinaryExpr, NaryExpr)):
-        when_raw_condition = compile_expr_into_callable(when_raw_condition)
+    if isinstance(raw_condition, (UnaryExpr, BinaryExpr, NaryExpr)):
+        raw_condition = compile_expr_into_callable(raw_condition)
 
     
-    if callable(when_raw_condition):
-        return when_raw_condition
+    if callable(raw_condition):
+        return raw_condition
 
     else:
-        raise ValueError("The 'when' condition must be a callable, a field or an expression of fields but is '%s'" % (repr(when_raw_condition)))
+        raise ValueError("The 'when' or 'until' condition must be a callable, a field or an expression of fields but is '%s'" % (repr(raw_condition)))
 
 
 
-def convert_a_field_when_condition_into_a_boolean_unary_expression(a_field):
+def convert_a_field_raw_condition_into_a_boolean_unary_expression(a_field):
     from field import Field
     assert isinstance(a_field, Field)
 

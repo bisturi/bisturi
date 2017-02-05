@@ -1,6 +1,6 @@
 import time, struct, sys, copy, re
 from packet import Packet, Prototype
-from structural_fields import normalize_when_condition_into_a_callable, \
+from structural_fields import normalize_raw_condition_into_a_callable, \
                               normalize_count_condition_into_a_callable
 from deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 from pattern_matching import Any
@@ -153,49 +153,18 @@ class Field(object):
 
 Field.times = Field.repeated
 
-def _get_until(count, until):
-    ''' Return a callable that will return True or False if the stream ends or
-        doesn't end (this will depend on the 'until' paramenter or the parameter 'count')
-        If 'count' and 'until' aren't None, they must be callables, however,
-        if one is not None, the other must be None.
-        Both 'count' and 'until' (if are callable), they must accept any variable keyword-argument.'''
-    assert not (count is None and until is None)
-    assert (count is None or until is None)
-
-    if count is not None: # fixed size: no 'until' condition
-        class _Until(object):
-            counter = 0
-         
-            def __call__(self, **k):
-                _Until.counter += 1
-                if _Until.counter >= count(**k):
-                    return True
-                else:
-                    return False
-
-            def reset(self):
-                _Until.counter = 0
-
-        return _Until()
-   
-    else:
-        assert callable(until)
-
-        class _Until(object):
-            def __call__(self, **k):
-                return until(**k)
-
-            def reset(self):
-                pass
-
-        return _Until()
-
 
 @defer_operations(allowed_categories=['sequence'])
 class Sequence(Field):
-    def __init__(self, prototype, count, until, when, default=None, aligned=None):
+    def __init__(self, prototype, count=None, until=None, when=None, default=None, aligned=None):
         Field.__init__(self)
         assert isinstance(prototype, Field)
+
+        if (count is None and until is None) or (count is not None and until is not None):
+            raise ValueError("A sequence of fields (repeated or times) must have or a count "
+                             "of how many a field is repeated or a until condition to repeat "
+                             "the field as long as the condition is false. "
+                             "You must set one and only one of them.") 
 
         self.ctime = prototype.ctime
         self.default = default if default is not None else []
@@ -220,16 +189,15 @@ class Sequence(Field):
         self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
         count, until, when = self.tmp
-
-        if isinstance(count, (UnaryExpr, BinaryExpr, NaryExpr)):
-            count = compile_expr_into_callable(count)
-
-        #if isinstance(until, (UnaryExpr, BinaryExpr, NaryExpr)):
-        #   until = compile_expr_into_callable(until)
       
-        self.resolved_count = None if count is None else normalize_count_condition_into_a_callable(count)
-        self.when = None if when is None else normalize_when_condition_into_a_callable(when)
-        self.until_condition = _get_until(self.resolved_count, until)
+        self.when = None if when is None else normalize_raw_condition_into_a_callable(when)
+
+        if count is None:
+            self.get_how_many_elements  = None
+            self.until_condition = normalize_raw_condition_into_a_callable(until)
+        else:
+            self.get_how_many_elements  = normalize_count_condition_into_a_callable(count)
+            self.until_condition = None
 
         return slots + [self.seq_elem_field_name]
 
@@ -238,53 +206,53 @@ class Sequence(Field):
         self.prototype_field.init(packet, {})
     
     def unpack(self, pkt, raw, offset=0, **k):
-        self.until_condition.reset()
-
         sequence = [] 
-        setattr(pkt, self.field_name, sequence) # clean up the previous sequence, so it can be used by the 'when' and 'until' callbacks
-        
-        should_continue = True
-        if self.when:
-            should_continue = should_continue and self.when(pkt=pkt, raw=raw, offset=offset, **k)
+        setattr(pkt, self.field_name, sequence) # clean up the previous sequence (if any), 
+                                                # so it can be used by the 'when' or 'until' callbacks
 
-        if self.resolved_count:
-            should_continue = should_continue and self.resolved_count(pkt=pkt, raw=raw, offset=offset, **k) > 0
+        count_elements = 1 if not self.get_how_many_elements else \
+                           self.get_how_many_elements(pkt=pkt, raw=raw, offset=offset, **k)
+
+        when = self.when
+        if when and (count_elements <= 0 or not when(pkt=pkt, raw=raw, offset=offset, **k)):
+            return offset
 
         seq_elem_field_name = self.seq_elem_field_name
-        _unpack = self.prototype_field.unpack
-        _append = sequence.append
-        _until  = self.until_condition
-        _aligned_to = self.aligned_to
+        unpack = self.prototype_field.unpack
+        append = sequence.append
+        aligned_to = self.aligned_to
+        for _ in range(count_elements):
+            offset += (aligned_to - (offset % aligned_to)) % aligned_to
+            offset =  unpack(pkt=pkt, raw=raw, offset=offset, **k)
+
+            # because the unpack method must return a new instance or object each
+            # time that it is called, we know that all the objects returned will be
+            # different so we can append each one without worrying to be appending
+            # several times the same object (and for that we don't need to create
+            # a copy or anything else)
+            append(getattr(pkt, seq_elem_field_name))
+
+        until = self.until_condition
+        should_continue = False if until is None else not until(pkt=pkt, raw=raw, offset=offset, **k)
         while should_continue:
-            offset += (_aligned_to - (offset % _aligned_to)) % _aligned_to
-            offset =  _unpack(pkt=pkt, raw=raw, offset=offset, **k)
+            offset += (aligned_to - (offset % aligned_to)) % aligned_to
+            offset =  unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-            obj = getattr(pkt, seq_elem_field_name) 
-         
-            _append(obj)
-            should_continue = not _until(pkt=pkt, raw=raw, offset=offset, **k)
+            append(getattr(pkt, seq_elem_field_name))
+            should_continue = not until(pkt=pkt, raw=raw, offset=offset, **k)
 
-            if isinstance(obj, Packet):
-                # if this is a Packet instance, obj is the same object each iteration, 
-                # so we need a copy, a fresh object for the next round
-                setattr(pkt, seq_elem_field_name, obj.__class__(_initialize_fields=False))
-            elif not isinstance(obj, (int, long, basestring)): 
-                # Other object no constant should be copied too: TODO will this work all the times?
-                setattr(pkt, seq_elem_field_name, copy.deepcopy(obj))
-
-
-        # setattr(pkt, self.field_name, sequence) we don't need this, because the sequence is already there
         return offset
 
 
     def pack(self, pkt, fragments, **k):
         sequence = getattr(pkt, self.field_name)
         seq_elem_field_name = self.seq_elem_field_name
-        _aligned_to = self.aligned_to
+        aligned_to = self.aligned_to
+        pack = self.prototype_field.pack
         for val in sequence:
             setattr(pkt,  seq_elem_field_name, val)
-            fragments.current_offset += (_aligned_to - (fragments.current_offset % _aligned_to)) % _aligned_to
-            self.prototype_field.pack(pkt, fragments, **k)
+            fragments.current_offset += (aligned_to - (fragments.current_offset % aligned_to)) % aligned_to
+            pack(pkt, fragments, **k)
 
         return fragments
 
@@ -302,10 +270,11 @@ class Sequence(Field):
             except:
                 subregexp = ".*"
           
-            if self.resolved_count is None:
+            raise NotImplementedError() # TODO, fix this (fix the self.get_how_many_elements stuff)
+            if self.get_how_many_elements is None:
                 fragments.append("(%s)*" % subregexp, is_literal=False)
             else:
-                fragments.append("(%s){%i}" % (subregexp, self.resolved_count), is_literal=False)
+                fragments.append("(%s){%i}" % (subregexp, self.get_how_many_elements), is_literal=False)
 
         return fragments
 
@@ -332,7 +301,7 @@ class Optional(Field):
         when = self.tmp
         del self.tmp
 
-        self.when = normalize_when_condition_into_a_callable(when)
+        self.when = normalize_raw_condition_into_a_callable(when)
         return slots + [self.opt_elem_field_name]
 
     def init(self, packet, defaults):
@@ -766,7 +735,16 @@ class Ref(Field):
         if not isinstance(prototype, Packet) and not callable(prototype):
             raise ValueError("The prototype of a Ref field must be a packet (class or instance) or a callable that should return a Field or a Packet.")
 
-        # let's find a nice default
+            
+        self._lets_find_a_nice_default(prototype, default)
+
+        if embeb and not isinstance(prototype, Packet):
+            raise ValueError("The prototype must be a Packet if you want to embeb it.")
+            
+        self.prototype = prototype
+        self.embeb = embeb 
+
+    def _lets_find_a_nice_default(self, prototype, default):
         if callable(prototype):
             if default is None:
                 raise ValueError("If your are using a callable as the prototype of Ref I need a default object.")
@@ -782,12 +760,6 @@ class Ref(Field):
         else:
             assert False
 
-
-        if embeb and not isinstance(prototype, Packet):
-            raise ValueError("The prototype must be a Packet if you want to embeb it.")
-            
-        self.prototype = prototype
-        self.embeb = embeb 
    
     def _describe_yourself(self, field_name, bisturi_conf):
         desc = Field._describe_yourself(self, field_name, bisturi_conf)
