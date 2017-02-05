@@ -124,8 +124,75 @@ class Field(object):
         return fragments
 
     def repeated(self, count=None, until=None, when=None, default=None, aligned=None):
-        ''' Describe a sequence of fields instead of a single field. Repeat this field
-            'count' times or 'until' the given condition is false. '''
+        r''' The sequence can be set to a fixed amount of elements with the 'count' parameter which
+            can be a number, a field, an expression of fields or even an arbitrary callable. In any
+            case the parameter must be resolved to a positive integer.
+
+            In the other hand, the sequence can set an 'until' condition. In this case the sequence
+            will stop only when the until condition gives a true value.
+
+            The 'count' and the 'until' parameter are exclusive: one and only one of them must be set.
+
+            The 'when' condition can be used to make the whole sequence optional. If the when condition
+            is not met, the sequence will be resolved to an empty list.
+
+            The 'times' methods is an alias for 'repeated'
+
+            >>> class Bag(Packet):
+            ...     num = Int(1)
+            ...     objects = Int(1).times(num)
+            
+            >>> class Box(Packet):
+            ...     bags = Ref(Bag).repeated(until = lambda pkt, **k: pkt.bags[-1].num == 0)
+
+            >>> pkt = Box(bags=[Bag(num=1, objects=[2]), Bag()])
+            >>> len(pkt.bags)
+            2
+            >>> [(bag.num, bag.objects) for bag in pkt.bags]
+            [(1, [2]), (0, [])]
+
+            >>> str(pkt.pack()) == '\x01\x02\x00'
+            True
+
+            >>> raw = '\x02\x01\x02\x01\x04\x00'
+            >>> pkt = Box.unpack(raw)
+
+            >>> len(pkt.bags)
+            3
+            >>> [(bag.num, bag.objects) for bag in pkt.bags]
+            [(2, [1, 2]), (1, [4]), (0, [])]
+
+            >>> str(pkt.pack()) == raw
+            True
+
+            The 'aligned' parameter control how the elements of the sequence are packed (aligned) one
+            each other.
+
+            >>> class Room(Packet):
+            ...     tight = Ref(Box).repeated(2, default=[Box(bags=[Bag()]), Box(bags=[Bag()])])
+            ...     no_so_tight = Ref(Box).repeated(2, aligned=6, default=[Box(bags=[Bag()]), Box(bags=[Bag()])])
+
+            >>> pkt = Room()
+            >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.tight]
+            [[], []]
+            >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.no_so_tight]
+            [[], []]
+
+            >>> str(pkt.pack()) == '\x00\x00....\x00.....\x00'
+            True
+
+            >>> raw = '\x01A\x00\x02BC\x00.....\x01A\x00...\x02BC\x00'
+            >>> pkt = Room.unpack(raw)
+            
+            >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.tight]
+            [[65], [66, 67]]
+            >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.no_so_tight]
+            [[65], [66, 67]]
+
+            >>> str(pkt.pack()) == raw
+            True
+
+            '''
         assert not (count is None and until is None)
         assert not (count is not None and until is not None)
 
@@ -156,6 +223,9 @@ Field.times = Field.repeated
 
 @defer_operations(allowed_categories=['sequence'])
 class Sequence(Field):
+    ''' Sequence of a fields (aka list of field).
+        See the documentation of the method Field.repeated.
+        '''
     def __init__(self, prototype, count=None, until=None, when=None, default=None, aligned=None):
         Field.__init__(self)
         assert isinstance(prototype, Field)

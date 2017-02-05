@@ -77,11 +77,18 @@ class Packet(object):
         try:
             pkt.unpack_impl(raw, offset, root=pkt)
             return pkt
+        except PacketError as e:
+            e.packet = pkt
+            if silent:
+                return None
+            else:
+                raise e
         except:
             if silent:
                 return None
             else:
                 raise
+
 
     def unpack_impl(self, raw, offset, **k):
         k['local_offset'] = offset
@@ -101,7 +108,8 @@ class Packet(object):
         fragments = Fragments()
         try:
             return self.pack_impl(fragments, root=self)
-        except PacketError, e:
+        except PacketError as e:
+            e.packet = self
             raise e
          
 
