@@ -2,7 +2,7 @@ import sys, operator
 sys.path.append("../")
 
 from bisturi.packet import Packet
-from bisturi.field  import Int, Sequence, Ref, Bkpt
+from bisturi.field  import Int, Ref, Bkpt
 
 import unittest
    

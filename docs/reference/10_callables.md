@@ -39,8 +39,6 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 For sequence of objects you can set the amount of objects to be extracted, not the count of bytes:
 
 ```python
->>> from bisturi.field import Sequence
-
 >>> class FixedSeq(Packet):
 ...    seq = Int(byte_count=1).repeated(count=3)
 
