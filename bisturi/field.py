@@ -1,7 +1,5 @@
 import time, struct, sys, copy, re
 from packet import Packet, Prototype
-from structural_fields import normalize_raw_condition_into_a_callable, \
-                              normalize_count_condition_into_a_callable
 from deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 from pattern_matching import Any
 from fragments import FragmentsOfRegexps
@@ -138,6 +136,9 @@ class Field(object):
 
             The 'times' methods is an alias for 'repeated'
 
+            >>> from bisturi.packet import Packet
+            >>> from bisturi.field  import Int, Data, Ref
+
             >>> class Bag(Packet):
             ...     num = Int(1)
             ...     objects = Int(1).times(num)
@@ -193,10 +194,9 @@ class Field(object):
             True
 
             '''
-        assert not (count is None and until is None)
-        assert not (count is not None and until is not None)
-
         return Sequence(prototype=self, count=count, until=until, when=when, default=default, aligned=aligned)
+
+    times = repeated # an alias
 
     def when(self, condition, default=None):
         return Optional(prototype=self, when=condition, default=default)
@@ -217,8 +217,6 @@ class Field(object):
     def describe(self, descriptor):
         self.descriptor = descriptor
         return self
-
-Field.times = Field.repeated
 
 
 @defer_operations(allowed_categories=['sequence'])
@@ -247,6 +245,9 @@ class Sequence(Field):
       
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
+        from bisturi.structural_fields import normalize_raw_condition_into_a_callable, \
+                                      normalize_count_condition_into_a_callable
+
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
         if self.aligned_to is None:
             self.aligned_to = bisturi_conf.get('align', 1)
@@ -339,8 +340,10 @@ class Sequence(Field):
                 subregexp = f.assemble_regexp()
             except:
                 subregexp = ".*"
-          
-            raise NotImplementedError() # TODO, fix this (fix the self.get_how_many_elements stuff)
+    
+            # TODO, fix this (fix the self.get_how_many_elements stuff)
+            fragments.append("(%s)*" % subregexp, is_literal=False)
+            raise NotImplementedError() 
             if self.get_how_many_elements is None:
                 fragments.append("(%s)*" % subregexp, is_literal=False)
             else:
@@ -363,6 +366,8 @@ class Optional(Field):
       
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
+        from bisturi.structural_fields import normalize_raw_condition_into_a_callable
+
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
         self.opt_elem_field_name = "_opt_elem__"+self.field_name
         self.prototype_field.field_name = self.opt_elem_field_name
@@ -386,7 +391,7 @@ class Optional(Field):
         if proceed:
             offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
-            obj = getattr(pkt, opt_elem_field_name) # if this is a Packet instance, obj is the same object each iteration, so we need a copy
+            obj = getattr(pkt, opt_elem_field_name)
 
         setattr(pkt, self.field_name, obj)
         return offset
@@ -728,6 +733,9 @@ class Ref(Field):
         a default value for the field.
         But if it is a callable, the default is mandatory otherwise we cannot know how to create a default value
         for the field.
+
+        >>> from bisturi.packet import Packet
+        >>> from bisturi.field  import Int, Data, Ref
 
         >>> class Point(Packet):
         ...     x = Int(1)
