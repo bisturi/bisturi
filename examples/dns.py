@@ -5,6 +5,26 @@ from bisturi.packet import Packet
 from bisturi.field  import Bits, Int, Data, Ref, Bkpt
 
 import copy
+class ResponseCode(object):
+    Ok = 0      # No error condition
+
+    FormatError    = 1  # The name server was unable to interpret the query
+    ServerFailure  = 2  # The name server was unable to process this query due a problem in the server
+    NameError      = 3  # The name referenced in the query doesn't exist (valid for replies form an authoritative server)
+    NotImplemented = 4  # The name server does not support the requested kind of query
+
+'''
+                5               Refused - The name server refuses to
+                                perform the specified operation for
+                                policy reasons.  For example, a name
+                                server may not wish to provide the
+                                information to the particular requester,
+                                or a name server may not wish to perform
+                                a particular operation (e.g., zone
+                                transfer) for particular data.
+
+                6-15            Reserved for future use.
+                '''
 
 # RFC 1034, 1035
 class Label(Packet):
