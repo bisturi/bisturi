@@ -93,16 +93,18 @@ QCLASS          a two octet code that specifies the class of the query.
 '''
 
 class Message(Packet):
-   id       = Int(2)
+   id       = Int(2)    # query's id, it's copied in the corresponding reply to match up
 
-   qr       = Bits(1)
+   is_query = Bits(1)   # a message can be a query or a reply
    opcode   = Bits(4)
-   aa       = Bits(1)
-   tc       = Bits(1)
-   rd       = Bits(1)
-   ra       = Bits(1)
-   reserved = Bits(3)
-   rcode    = Bits(4)
+
+   is_authoritative  = Bits(1) # is an authoritative answer?
+   was_truncated     = Bits(1) # was the message truncated due its excessive length?
+   request_recursion = Bits(1) # the query desires to be resolved recursively; it's copied in the reply
+   
+   is_recursion_available = Bits(1) # is the server supporting recursion? it's set/cleared in the reply
+   reserved      = Bits(3)
+   response_code = Bits(4)
 
    qd_count = Int(2)
    an_count = Int(2)
@@ -219,14 +221,14 @@ if __name__ == '__main__':
 
    assert query.id == response.id == 0xfabc
    
-   assert query.opcode == query.aa == query.tc == query.reserved == query.rcode == 0
-   assert response.opcode == response.aa == response.tc == response.reserved == response.rcode == 0
+   assert query.opcode == query.is_authoritative == query.was_truncated == query.reserved == query.response_code == 0
+   assert response.opcode == response.is_authoritative == response.was_truncated == response.reserved == response.response_code == 0
 
-   assert query.qr == 0
-   assert response.qr == 1
+   assert query.is_query == 0
+   assert response.is_query == 1
 
-   assert query.rd == 1 and query.ra == 0
-   assert response.rd == 1 and response.rd == 1
+   assert query.request_recursion == 1 and query.is_recursion_available == 0
+   assert response.request_recursion == 1 and response.is_recursion_available == 1
    
    assert query.qd_count == len(query.questions) == 1
    assert query.an_count == len(query.answers) == 0
