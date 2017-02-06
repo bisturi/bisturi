@@ -370,3 +370,80 @@ class Optional(Field):
              '''
         raise SyntaxError("You cannot make optional an already optional field: something like Int(1).when(...).when(...). "
                           "Instead you need to find a single condition that represent those two conditions into a single 'when' call.")
+
+class Move(Field):
+    def __init__(self, move_arg, movement_type):
+        Field.__init__(self)
+        self.move_arg = move_arg 
+        self.movement_type = movement_type
+        self.default = ''
+
+    def unpack(self, pkt, raw, offset=0, **k):
+        if isinstance(self.move_arg, Field):
+            move_value = getattr(pkt, self.move_arg.field_name)
+
+        elif isinstance(self.move_arg, (int, long)):
+            move_value = self.move_arg
+      
+        else:
+            assert callable(self.move_arg) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
+            move_value = self.move_arg(pkt=pkt, raw=raw, offset=offset, **k)
+
+        # TODO we need to disable this, the data may be readed by other field
+        # in the future and then the packet will have duplicated data (but see pack())
+        #setattr(pkt, self.field_name, raw[offset:move_value])
+        if self.movement_type == 'absolute':
+            return move_value
+        elif self.movement_type == 'relative':
+            return offset + move_value
+        elif self.movement_type.startswith('align-'):
+            if self.movement_type == 'align-global':
+                start = 0
+            elif self.movement_type == 'align-local':
+                start = k['local_offset']
+            else:
+                raise Exception()
+
+            return offset + ((move_value - ((offset-start) % move_value)) % move_value)
+        else:     
+            raise Exception()
+   
+    def init(self, packet, defaults):
+        pass
+
+    def pack(self, pkt, fragments, **k):
+        #garbage = getattr(pkt, self.field_name)
+
+        if isinstance(self.move_arg, Field):
+            move_value = getattr(pkt, self.move_arg.field_name)
+ 
+        elif isinstance(self.move_arg, (int, long)):
+            move_value = self.move_arg
+      
+        else:
+            assert callable(self.move_arg)
+            move_value = self.move_arg(pkt=pkt, fragments=fragments, **k)
+     
+        # TODO because the "garbage" could be readed by another field in the future,
+        # this may not be garbage and if  we try to put here, the other field will
+        # try to put the same data in the same place and we get a collission.
+        #fragments.append(garbage)
+        if self.movement_type == 'absolute':
+            fragments.current_offset = move_value
+        elif self.movement_type == 'relative':
+            fragments.current_offset += move_value
+        elif self.movement_type.startswith('align-'):
+            offset = fragments.current_offset
+            if self.movement_type == 'align-global':
+                start = 0
+            elif self.movement_type == 'align-local':
+                start = k['local_offset']
+            else:
+                raise Exception()
+
+            fragments.current_offset += ((move_value - ((offset-start) % move_value)) % move_value)
+        else:
+            raise Exception()
+
+        return fragments
+
