@@ -27,7 +27,6 @@ class Field(object):
         
         Any field instance will support the following public methods besides the pack/unpack:
             - repeated: to define a sequence of fields like Int(1).repeated(4) (see the Sequence field).
-            - times: an alias for repeated.
             - when: to define a field as optional like Int(1).when(foo == True) (see the Optional field).
             - at: to define where the field should start to pack/unpack (see the Move field).
             - aligned: a variant of at.
