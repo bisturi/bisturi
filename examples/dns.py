@@ -13,18 +13,9 @@ class ResponseCode(object):
     NameError      = 3  # The name referenced in the query doesn't exist (valid for replies form an authoritative server)
     NotImplemented = 4  # The name server does not support the requested kind of query
 
-'''
-                5               Refused - The name server refuses to
-                                perform the specified operation for
-                                policy reasons.  For example, a name
-                                server may not wish to provide the
-                                information to the particular requester,
-                                or a name server may not wish to perform
-                                a particular operation (e.g., zone
-                                transfer) for particular data.
+    Refused = 5 # The server refueses to do something for policy reasons
 
-                6-15            Reserved for future use.
-                '''
+    # others values are reserved for future use
 
 # RFC 1034, 1035
 class Label(Packet):
