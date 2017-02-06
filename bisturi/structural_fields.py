@@ -250,54 +250,9 @@ class Sequence(Field):
 
 @defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an interger as well as a sequence 
 class Optional(Field):
-    r''' A field can be set as optional based on a 'when' condition.
-         This one can be a field, an expression of fields or an arbitrary callable that resolves to a boolean
-         value: True if the field must be parsed or False otherwise.
-
-         If a field is not parsed, None is used a the value for that field.
-         
-         The 'when' condition has no effect in a default packet neither during the packing phase.
-        
-         >>> from bisturi.packet import Packet
-         >>> from bisturi.field  import Int, Data, Ref
-
-         >>> class Example(Packet):
-         ...     type = Int(1)
-         ...     nonzero_msg = Data(2).when(type)
-         ...     typeone_msg = Data(2).when(type == 1)
-
-         >>> pkt = Example(nonzero_msg='X') # notice how all the fields are set...
-         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # the when is ignored
-         (0, 'X', None)
-
-         >>> pkt.nonzero_msg = 'AB'
-         >>> pkt.typeone_msg = 'CD'
-         >>> str(pkt.pack()) == '\x00ABCD' # the when is ignored here too
-         True
-
-         >>> raw = '\x00AB'
-         >>> pkt = Example.unpack(raw) # here when is honored (both field... 
-         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # aren't parsed)
-         (0, None, None)
-
-         >>> str(pkt.pack()) == '\x00'
-         True
-
-         >>> raw = '\x02AB'
-         >>> pkt = Example.unpack(raw) 
-         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-         (2, 'AB', None)
-
-         >>> raw = '\x01ABCD'
-         >>> pkt = Example.unpack(raw) 
-         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-         (1, 'AB', 'CD')
-         
-         >>> str(pkt.pack()) == raw
-         True
-
-         '''
-
+    ''' An optional field (aka the field or None).
+        See the documentation of the method Field.when.
+        '''
     def __init__(self, prototype, when, default=None):
         Field.__init__(self)
         assert isinstance(prototype, Field)
