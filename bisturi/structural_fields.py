@@ -68,7 +68,7 @@ class Sequence(Field):
         assert isinstance(prototype, Field)
 
         if (count is None and until is None) or (count is not None and until is not None):
-            raise ValueError("A sequence of fields (repeated or times) must have or a count "
+            raise ValueError("A sequence of fields (see the Field.repeated method) must have a count "
                              "of how many a field is repeated or a until condition to repeat "
                              "the field as long as the condition is false. "
                              "You must set one and only one of them.") 
@@ -189,3 +189,229 @@ class Sequence(Field):
                 fragments.append("(%s){%i}" % (subregexp, self.get_how_many_elements), is_literal=False)
 
         return fragments
+    
+    def repeated(self, *args, **kargs):
+        r''' Nop, you cannot repeat a sequence (repeat twice):
+            
+             >>> from bisturi.packet import Packet
+             >>> from bisturi.field  import Int, Data, Ref
+
+             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             ...    i = Int(1).repeated(2).repeated(4)
+             Traceback (most recent call last):
+             ...
+             SyntaxError: You cannot repeat a sequence (more than one 'repeated' call is not allowed)...
+
+             If you need this kind of 'list of list' behaviour you can do this:
+
+             >>> class ListOfInts(Packet):
+             ...    i = Int(1).repeated(2)
+
+             >>> class NonBuggy(Packet):
+             ...    i = Ref(ListOfInts).repeated(4)
+
+             >>> raw = 'ABCDEFGH'
+             >>> pkt = NonBuggy.unpack(raw)
+
+             >>> [l_ints.i for l_ints in pkt.i]
+             [[65, 66], [67, 68], [69, 70], [71, 72]]
+
+             >>> str(pkt.pack()) == raw
+             True
+
+             '''
+        raise SyntaxError("You cannot repeat a sequence (more than one 'repeated' call is not allowed): something like Int(1).repeated(...).repeated(...). "
+                          "See the documentation of Sequence.repeated for more info.")
+
+    def when(self, *args, **kargs):
+        r''' You cannot call 'when' of Sequence. Instead you can use the 'when' 
+             parameter of the Field.repeated method:
+            
+             >>> from bisturi.packet import Packet
+             >>> from bisturi.field  import Int, Data, Ref
+
+             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             ...    t = Int(1)
+             ...    i = Int(1).repeated(2).when(t)
+             Traceback (most recent call last):
+             ...
+             SyntaxError: You cannot call 'when' of Sequence...
+
+             Instead you should do something like:
+             
+             >>> class NonBuggy(Packet):
+             ...    t = Int(1)
+             ...    i = Int(1).repeated(2, when=t)
+
+             '''
+        raise SyntaxError("You cannot call 'when' of Sequence: something like Int(1).repeated(...).when(...). "
+                          "Instead you need to use the 'when' parameter of 'repeated': Int(1).repeated(..., when=...).")
+
+
+@defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an interger as well as a sequence 
+class Optional(Field):
+    r''' A field can be set as optional based on a 'when' condition.
+         This one can be a field, an expression of fields or an arbitrary callable that resolves to a boolean
+         value: True if the field must be parsed or False otherwise.
+
+         If a field is not parsed, None is used a the value for that field.
+         
+         The 'when' condition has no effect in a default packet neither during the packing phase.
+        
+         >>> from bisturi.packet import Packet
+         >>> from bisturi.field  import Int, Data, Ref
+
+         >>> class Example(Packet):
+         ...     type = Int(1)
+         ...     nonzero_msg = Data(2).when(type)
+         ...     typeone_msg = Data(2).when(type == 1)
+
+         >>> pkt = Example(nonzero_msg='X') # notice how all the fields are set...
+         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # the when is ignored
+         (0, 'X', None)
+
+         >>> pkt.nonzero_msg = 'AB'
+         >>> pkt.typeone_msg = 'CD'
+         >>> str(pkt.pack()) == '\x00ABCD' # the when is ignored here too
+         True
+
+         >>> raw = '\x00AB'
+         >>> pkt = Example.unpack(raw) # here when is honored (both field... 
+         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # aren't parsed)
+         (0, None, None)
+
+         >>> str(pkt.pack()) == '\x00'
+         True
+
+         >>> raw = '\x02AB'
+         >>> pkt = Example.unpack(raw) 
+         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
+         (2, 'AB', None)
+
+         >>> raw = '\x01ABCD'
+         >>> pkt = Example.unpack(raw) 
+         >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
+         (1, 'AB', 'CD')
+         
+         >>> str(pkt.pack()) == raw
+         True
+
+         '''
+
+    def __init__(self, prototype, when, default=None):
+        Field.__init__(self)
+        assert isinstance(prototype, Field)
+
+        self.ctime = prototype.ctime
+        self.default = default
+
+        self.prototype_field = prototype
+        self.tmp = when
+
+      
+    @exec_once
+    def _compile(self, position, fields, bisturi_conf):
+        slots = Field._compile_impl(self, position, fields, bisturi_conf)
+        self.opt_elem_field_name = "_opt_elem__"+self.field_name
+        self.prototype_field.field_name = self.opt_elem_field_name
+        self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
+
+        when = self.tmp
+        del self.tmp
+
+        self.when = normalize_raw_condition_into_a_callable(when)
+        return slots + [self.opt_elem_field_name]
+
+    def init(self, packet, defaults):
+        Field.init(self, packet, defaults)
+        self.prototype_field.init(packet, {})
+      
+    def unpack(self, pkt, raw, offset=0, **k):
+        proceed = self.when(pkt=pkt, raw=raw, offset=offset, **k)
+
+        opt_elem_field_name = self.opt_elem_field_name
+        obj = None
+        if proceed:
+            offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
+
+            obj = getattr(pkt, opt_elem_field_name)
+
+        setattr(pkt, self.field_name, obj)
+        return offset
+
+
+    def pack(self, pkt, fragments, **k):
+        obj = getattr(pkt, self.field_name)
+        opt_elem_field_name = self.opt_elem_field_name
+        if obj is not None:
+            setattr(pkt,  opt_elem_field_name, obj)
+            return self.prototype_field.pack(pkt, fragments, **k)
+
+        else:
+            return fragments
+   
+    def pack_regexp(self, pkt, fragments, **k):
+        value = getattr(pkt, self.field_name)
+        is_literal = not isinstance(value, Any)
+
+        if is_literal:
+            self.pack(pkt, fragments, **k)
+        else:
+            f = FragmentsOfRegexps()
+            try:
+                self.prototype_field.pack_regexp(pkt, f, **k)
+                subregexp = f.assemble_regexp()
+            except:
+                subregexp = ".*"
+          
+            fragments.append("(%s)?" % subregexp, is_literal=False)
+
+        return fragments
+
+
+    def repeated(self, *args, **kargs):
+        r''' Nop, you cannot repeat an optional argument:
+            
+             >>> from bisturi.packet import Packet
+             >>> from bisturi.field  import Int, Data, Ref
+
+             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             ...    t = Int(1)
+             ...    i = Int(1).when(t == 0).repeated(4)
+             Traceback (most recent call last):
+             ...
+             SyntaxError: You cannot repeat an optional argument...
+
+             Instead you should do something like:
+             
+             >>> class NonBuggy(Packet):
+             ...    t = Int(1)
+             ...    i = Int(1).repeated(4, when = t == 0 )
+
+             '''
+        raise SyntaxError("You cannot repeat an optional argument: something like Int(1).when(...).repeated(...). "
+                          "Instead you can pass the when condition to the 'repeated' method like Int(1).repeated(..., when=...). "
+                          "See the arguments of Field.repeated for more info.")
+
+    def when(self, *args, **kargs):
+        r''' This is an optional field already, you cannot chain 'when' conditions:
+            
+             >>> from bisturi.packet import Packet
+             >>> from bisturi.field  import Int, Data, Ref
+
+             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             ...    t = Int(1)
+             ...    i = Int(1).when(t > 0).when(t < 10)
+             Traceback (most recent call last):
+             ...
+             SyntaxError: You cannot make optional an already optional field...
+
+             Instead you should do something like:
+             
+             >>> class NonBuggy(Packet):
+             ...    t = Int(1)
+             ...    i = Int(1).when((t > 0) & (t < 10))
+
+             '''
+        raise SyntaxError("You cannot make optional an already optional field: something like Int(1).when(...).when(...). "
+                          "Instead you need to find a single condition that represent those two conditions into a single 'when' call.")

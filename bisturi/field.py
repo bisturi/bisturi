@@ -134,14 +134,12 @@ class Field(object):
             The 'when' condition can be used to make the whole sequence optional. If the when condition
             is not met, the sequence will be resolved to an empty list.
 
-            The 'times' methods is an alias for 'repeated'
-
             >>> from bisturi.packet import Packet
             >>> from bisturi.field  import Int, Data, Ref
 
             >>> class Bag(Packet):
             ...     num = Int(1)
-            ...     objects = Int(1).times(num)
+            ...     objects = Int(1).repeated(num)
             
             >>> class Box(Packet):
             ...     bags = Ref(Bag).repeated(until = lambda pkt, **k: pkt.bags[-1].num == 0)
@@ -197,9 +195,8 @@ class Field(object):
         from bisturi.structural_fields import Sequence
         return Sequence(prototype=self, count=count, until=until, when=when, default=default, aligned=aligned)
 
-    times = repeated # an alias
-
     def when(self, condition, default=None):
+        from bisturi.structural_fields import Optional
         return Optional(prototype=self, when=condition, default=default)
 
     def at(self, position, movement_type='absolute'):
@@ -219,81 +216,6 @@ class Field(object):
         self.descriptor = descriptor
         return self
 
-
-
-@defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an interger as well as a sequence 
-class Optional(Field):
-    def __init__(self, prototype, when, default=None):
-        Field.__init__(self)
-        assert isinstance(prototype, Field)
-
-        self.ctime = prototype.ctime
-        self.default = default
-
-        self.prototype_field = prototype
-        self.tmp = when
-
-      
-    @exec_once
-    def _compile(self, position, fields, bisturi_conf):
-        from bisturi.structural_fields import normalize_raw_condition_into_a_callable
-
-        slots = Field._compile_impl(self, position, fields, bisturi_conf)
-        self.opt_elem_field_name = "_opt_elem__"+self.field_name
-        self.prototype_field.field_name = self.opt_elem_field_name
-        self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
-
-        when = self.tmp
-        del self.tmp
-
-        self.when = normalize_raw_condition_into_a_callable(when)
-        return slots + [self.opt_elem_field_name]
-
-    def init(self, packet, defaults):
-        Field.init(self, packet, defaults)
-        self.prototype_field.init(packet, {})
-      
-    def unpack(self, pkt, raw, offset=0, **k):
-        proceed = self.when(pkt=pkt, raw=raw, offset=offset, **k)
-
-        opt_elem_field_name = self.opt_elem_field_name
-        obj = None
-        if proceed:
-            offset = self.prototype_field.unpack(pkt=pkt, raw=raw, offset=offset, **k)
-
-            obj = getattr(pkt, opt_elem_field_name)
-
-        setattr(pkt, self.field_name, obj)
-        return offset
-
-
-    def pack(self, pkt, fragments, **k):
-        obj = getattr(pkt, self.field_name)
-        opt_elem_field_name = self.opt_elem_field_name
-        if obj is not None:
-            setattr(pkt,  opt_elem_field_name, obj)
-            return self.prototype_field.pack(pkt, fragments, **k)
-
-        else:
-            return fragments
-   
-    def pack_regexp(self, pkt, fragments, **k):
-        value = getattr(pkt, self.field_name)
-        is_literal = not isinstance(value, Any)
-
-        if is_literal:
-            self.pack(pkt, fragments, **k)
-        else:
-            f = FragmentsOfRegexps()
-            try:
-                self.prototype_field.pack_regexp(pkt, f, **k)
-                subregexp = f.assemble_regexp()
-            except:
-                subregexp = ".*"
-          
-            fragments.append("(%s)?" % subregexp, is_literal=False)
-
-        return fragments
 
 
 @defer_operations(allowed_categories=['integer'])
