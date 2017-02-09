@@ -46,62 +46,22 @@ class _Builder(Packet):
     name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
          
 
+# from https://www.ietf.org/rfc/rfc1035.txt
 class ResourceRecord(Packet):
     name   = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
     type_  = Int(2, default=1)
     class_ = Int(2, default=1)
-    ttl    = Int(4)
+    ttl    = Int(4)     # time interval that the RR may be cached before the source consult it again. Zero means shouldn't cached (SOA used this)
     length = Int(2)
-    data   = Data(length)
+    data   = Data(length) # (the data varies according type_ and class_) 
 
-'''
-(from https://www.ietf.org/rfc/rfc1035.txt)
-
-NAME            an owner name, i.e., the name of the node to which this
-                resource record pertains.
-
-TYPE            two octets containing one of the RR TYPE codes.
-
-CLASS           two octets containing one of the RR CLASS codes.
-
-TTL             a 32 bit signed integer that specifies the time interval
-                that the resource record may be cached before the source
-                of the information should again be consulted.  Zero
-                values are interpreted to mean that the RR can only be
-                used for the transaction in progress, and should not be
-                cached.  For example, SOA records are always distributed
-                with a zero TTL to prohibit caching.  Zero values can
-                also be used for extremely volatile data.
-
-RDLENGTH        an unsigned 16 bit integer that specifies the length in
-                octets of the RDATA field.
-
-RDATA           a variable length string of octets that describes the
-                resource.  The format of this information varies
-                according to the TYPE and CLASS of the resource record.
-'''
 
 class Question(Packet):
     name   = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
-    type_  = Int(2, default=1)
-    class_ = Int(2, default=1)
+    type_  = Int(2, default=1)  # the values include all codes valid for this field together with some more general codes
+                                # which can match more than one type of resource records
+    class_ = Int(2, default=1)  # For example the class_ IN is for the Internet
 
-'''
-QNAME           a domain name represented as a sequence of labels, where
-                each label consists of a length octet followed by that
-                number of octets.  The domain name terminates with the
-                zero length octet for the null label of the root.  Note
-                that this field may be an odd number of octets; no
-                padding is used.
-
-QTYPE           a two octet code which specifies the type of the query.
-                The values for this field include all codes valid for a
-                TYPE field, together with some more general codes which
-                can match more than one type of RR.
-
-QCLASS          a two octet code that specifies the class of the query.
-                For example, the QCLASS field is IN for the Internet.
-'''
 
 class Message(Packet):
     id       = Int(2)    # query's id, it's copied in the corresponding reply to match up
@@ -122,10 +82,10 @@ class Message(Packet):
     ns_count = Int(2)
     ar_count = Int(2)
 
-    questions   = Ref(Question).repeated(qd_count)
-    answers     = Ref(ResourceRecord).repeated(an_count)
-    authorities = Ref(ResourceRecord).repeated(ns_count)
-    additionals = Ref(ResourceRecord).repeated(ar_count)
+    questions   = Ref(Question).repeated(qd_count)          # the question did in the reply and copied in the response
+    answers     = Ref(ResourceRecord).repeated(an_count)    # the answers
+    authorities = Ref(ResourceRecord).repeated(ns_count)    # the name servers authorities
+    additionals = Ref(ResourceRecord).repeated(ar_count)    # additional records
 
 DNS = Message #alias
 '''
@@ -207,18 +167,6 @@ RCODE           Response code - this 4 bit field is set as part of
 
                 6-15            Reserved for future use.
 
-QDCOUNT         an unsigned 16 bit integer specifying the number of
-                entries in the question section.
-
-ANCOUNT         an unsigned 16 bit integer specifying the number of
-                resource records in the answer section.
-
-NSCOUNT         an unsigned 16 bit integer specifying the number of name
-                server resource records in the authority records
-                section.
-
-ARCOUNT         an unsigned 16 bit integer specifying the number of
-                resource records in the additional records section.
 '''
 
 if __name__ == '__main__':
