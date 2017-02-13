@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import time, struct, sys, copy, re
-from packet import Packet, Prototype
-from deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
-from pattern_matching import Any
-from fragments import FragmentsOfRegexps
+from bisturi.packet import Packet, Prototype
+from bisturi.deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
+from bisturi.pattern_matching import Any
+from bisturi.fragments import FragmentsOfRegexps
 
 def exec_once(m):
     ''' Force to execute the method m only once and save its result.

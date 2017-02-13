@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from itertools import ifilter
 from re import finditer, compile, escape
 from functools import partial

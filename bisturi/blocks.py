@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import struct
 import itertools
 import hashlib
@@ -15,13 +17,17 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
             codes.extend(generate_code_for_fixed_fields(group))
         else:
             codes.append(generate_code_for_variable_fields(group))
+    if generate_for_pack or generate_for_unpack:
+        import_code = '''
+from __future__ import absolute_import
 
-    if generate_for_pack:
-        pack_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
 
+'''
+    if generate_for_pack:
+        pack_code = '''
 def pack_impl(pkt, fragments, **k):
 %(sync_descriptors_code)s
    k['local_offset'] = fragments.current_offset
@@ -93,6 +99,7 @@ def unpack_impl(pkt, raw, offset, **k):
             os.remove(module_compiled_filename)
 
         with open(module_filename, 'w') as module_file:
+            module_file.write(import_code)
             module_file.write(cookie_code)
             module_file.write(pack_code)
             module_file.write(unpack_code)
@@ -102,11 +109,11 @@ def unpack_impl(pkt, raw, offset, **k):
             os.remove(module_compiled_filename)
             os.remove(module_filename)
  
-    import packet
-    if generate_for_pack and (pkt_class.pack_impl == packet.Packet.pack_impl):
+    from bisturi.packet import Packet
+    if generate_for_pack and (pkt_class.pack_impl == Packet.pack_impl):
         pkt_class.pack_impl = module.pack_impl
 
-    if generate_for_unpack and (pkt_class.unpack_impl == packet.Packet.unpack_impl):
+    if generate_for_unpack and (pkt_class.unpack_impl == Packet.unpack_impl):
         pkt_class.unpack_impl = module.unpack_impl
  
 def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):

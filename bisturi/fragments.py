@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from bisect import insort, bisect_left, bisect_right
 import re
 

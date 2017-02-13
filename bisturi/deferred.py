@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import collections, functools, operator
 
 def if_true_then_else(condition, possible_values):

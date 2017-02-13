@@ -1,5 +1,6 @@
+from __future__ import absolute_import
 from bisturi.field import Field, exec_once
-from deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
+from bisturi.deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
 
 def normalize_raw_condition_into_a_callable(raw_condition):
     if callable(raw_condition):

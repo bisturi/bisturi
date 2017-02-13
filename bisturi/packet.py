@@ -1,5 +1,7 @@
-from fragments import Fragments, FragmentsOfRegexps
-from pattern_matching import Any
+from __future__ import absolute_import
+
+from bisturi.fragments import Fragments, FragmentsOfRegexps
+from bisturi.pattern_matching import Any
 
 try:
     import cPickle as pickle
@@ -9,7 +11,7 @@ except ImportError:
 import copy, collections
 import traceback, sys, re
 
-import packet_builder
+import bisturi.packet_builder
 
 class PacketError(Exception):
     def __init__(self, was_error_found_in_unpacking_phase, field_name, packet_class_name, offset, original_error_message):
@@ -51,7 +53,7 @@ class PacketError(Exception):
 
 
 class Packet(object):
-    __metaclass__ = packet_builder.MetaPacket
+    __metaclass__ = bisturi.packet_builder.MetaPacket
     __bisturi__ = {}
 
     def __init__(self, _initialize_fields=True, **defaults):

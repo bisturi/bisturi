@@ -1,4 +1,5 @@
-import blocks
+from __future__ import absolute_import
+import bisturi.blocks
 import copy
 
 
@@ -37,8 +38,8 @@ class PacketClassBuilder(object):
             the name 'B' was transformed into 'b'.
         '''
             
-        from packet import Packet
-        from field import Ref
+        from bisturi.packet import Packet
+        from bisturi.field import Ref
         import inspect
 
         def is_a_packet_instance(name_and_field):
@@ -62,7 +63,7 @@ class PacketClassBuilder(object):
 
             and collect [b->Int(2), c->Int(2)]
         '''
-        from field import Field
+        from bisturi.field import Field
 
         def is_a_field_instance(name_and_field):
             _, field = name_and_field
@@ -210,7 +211,7 @@ class PacketClassBuilder(object):
         ''' A class creation is in debug mode if one of its fields is 
             a breakpoint (Bkpt).
         '''
-        from field import Bkpt
+        from bisturi.field import Bkpt
         self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field in self.fields))
 
     def create_optimized_code(self):
@@ -232,7 +233,7 @@ class PacketClassBuilder(object):
 
         write_py_module = self.cls.__bisturi__.get('write_py_module', False)
 
-        blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
+        bisturi.blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
 
     def get_packet_class(self):
         return self.cls
@@ -269,7 +270,7 @@ class PacketClassBuilder(object):
 
 class PacketSpecializationClassBuilder(PacketClassBuilder):
     def __init__(self, metacls, name, bases, attrs):
-        from packet import Packet
+        from bisturi.packet import Packet
 
         self.super_class = attrs['__bisturi__']['specialization_of']
         assert isinstance(self.super_class, Packet)
