@@ -95,7 +95,7 @@ class Operations(object):
 
 
 def compile_expr(root_expr, ops=None, level=0, verbose=False):
-    from field import Field
+    from bisturi.field import Field
     next_level = level + 1
 
     if ops is None:
