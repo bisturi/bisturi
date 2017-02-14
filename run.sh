@@ -9,8 +9,32 @@ popd() {
     command popd "$@" > /dev/null
 }
 
+FILTER=""
+case "$1" in
+    DOC*)
+        CAT="DOCS"
+        ;;
+    CODE*)
+        CAT="CODE"
+        ;;
+    TEST*)
+        CAT="TESTS"
+        ;;
+    EXAMPLE*)
+        CAT="EXAMPLES"
+        ;;
+    MISC*)
+        CAT="MISC"
+        ;;
+    *)
+        CAT="ALL"
+        FILTER="$1"
+        ;;
+esac
 
-for t in docs/reference/$1*.md
+if [ "$CAT" = "ALL" -o "$CAT" = "DOCS" ]
+then
+for t in docs/reference/$FILTER*.md
 do
    if [ -e $t ]
    then
@@ -18,8 +42,11 @@ do
       $PYTHON -m doctest $t
    fi
 done
+fi
 
-for t in docs/tutorial_by_example/$1*.md
+if [ "$CAT" = "ALL" -o "$CAT" = "MISC" ]
+then
+for t in docs/tutorial_by_example/$FILTER*.md
 do
    if [ -e $t ]
    then
@@ -27,8 +54,11 @@ do
       $PYTHON -m doctest $t
    fi
 done
+fi
 
-for t in bisturi/$1*.py
+if [ "$CAT" = "ALL" -o "$CAT" = "CODE" ]
+then
+for t in bisturi/$FILTER*.py
 do
    if [ -e $t ]
    then
@@ -36,8 +66,11 @@ do
       $PYTHON -m doctest $t
    fi
 done
+fi
 
-for t in $1*.md
+if [ "$CAT" = "ALL" -o "$CAT" = "MISC" ]
+then
+for t in $FILTER*.md
 do
    if [ -e $t ]
    then
@@ -45,12 +78,15 @@ do
       $PYTHON -m doctest $t
    fi
 done
+fi
 
 
 pushd .
 cd bisturi
 
-for t in ../examples/$1*.py
+if [ "$CAT" = "ALL" -o "$CAT" = "EXAMPLES" ]
+then
+for t in ../examples/$FILTER*.py
 do
    if [ -e $t ]
    then
@@ -58,13 +94,16 @@ do
       $PYTHON $t
    fi
 done
+fi
 
 popd
 
 pushd .
 cd tests
 
-for t in test_$1*.py
+if [ "$CAT" = "ALL" -o "$CAT" = "TESTS" ]
+then
+for t in test_$FILTER*.py
 do
    if [ -e $t ]
    then
@@ -72,5 +111,6 @@ do
       $PYTHON -m unittest -q "${t%%.*}"
    fi
 done
+fi
 
 popd
