@@ -95,7 +95,7 @@ For example if we need to compute the length in bits of some data, we can do:
 
 >>> class DataExample(Packet):
 ...    length_in_bits = Int(1).describe(Auto(lambda pkt: len(pkt.a) * 8))
-...    a = Data(length_in_bits / 8)
+...    a = Data(length_in_bits // 8)
 ...
 
 ```

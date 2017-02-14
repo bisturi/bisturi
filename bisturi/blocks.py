@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division
 
 import struct
 import itertools
@@ -22,6 +23,7 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
         import_code = '''
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division
 
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments

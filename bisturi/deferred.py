@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division
 import collections, functools, operator
 
 def if_true_then_else(condition, possible_values):

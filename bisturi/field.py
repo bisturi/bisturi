@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import division
 import time, struct, sys, copy, re
 from bisturi.packet import Packet, Prototype
 from bisturi.deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
@@ -834,7 +835,7 @@ class Bits(Field):
             if not (cumshift % 8 == 0):
                 raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
 
-            I.byte_count = cumshift / 8
+            I.byte_count = cumshift // 8
             fname = "_bits__"+"_".join(name_of_members)
             I.field_name = fname
             I._compile(position=-1, fields=[], bisturi_conf={})
@@ -883,7 +884,7 @@ class Bits(Field):
                     bits.append("x" * bit_count)
 
             bits  = "".join(bits)
-            bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)/8)]
+            bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)//8)]
 
             for byte in bytes:
                 if byte == "x" * 8:                                   # xxxx xxxx pattern (all dont care)
