@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 FROM_BEGIN = 0
 FROM_END   = 2
 
@@ -60,7 +61,7 @@ del _non_printable
 
 def inspect(packet, indent="", current_level=0, aligned_to=8, truncate_values_to=8, max_items=4, max_depth=99999):
     inspection_too_deep = current_level > max_depth
-    print "%s%s%s" % (indent, packet.__class__.__name__, " [truncated]" if inspection_too_deep else "")
+    print("%s%s%s" % (indent, packet.__class__.__name__, " [truncated]" if inspection_too_deep else ""))
 
     if inspection_too_deep:
         return
@@ -95,9 +96,9 @@ def inspect(packet, indent="", current_level=0, aligned_to=8, truncate_values_to
             _value.append("%i bytes" % l)
 
             value = "  ".join(_value)
-            print "%s%s%s" % (indent_and_prefix, space, value)
+            print("%s%s%s" % (indent_and_prefix, space, value))
         elif isinstance(value, Packet):
-            print "%s%s:" % (indent, name)
+            print("%s%s:" % (indent, name))
             inspect_recursive(value, indent)
 
         elif isinstance(value, (list, tuple)):
@@ -108,27 +109,27 @@ def inspect(packet, indent="", current_level=0, aligned_to=8, truncate_values_to
                 else:
                     truncated = len(value) > max_items*8
 
-                print "%s%s: %i items %s[" % (indent, name, len(value), "[truncated] " if truncated else "")
+                print("%s%s: %i items %s[" % (indent, name, len(value), "[truncated] " if truncated else ""))
                 if isinstance(value[0], Packet):
                     for subvalue in value[:max_items]:
                         inspect_recursive(subvalue, indent+"  ")
                     
                 else:
                     try:
-                        print "%s%s" % (indent+"  ", " ".join(str(v) for v in value[:max_items*8]))
+                        print("%s%s" % (indent+"  ", " ".join(str(v) for v in value[:max_items*8])))
                     except:
-                        print "%sunknow values" % (indent + "  ")
+                        print("%sunknow values" % (indent + "  "))
 
-                print "%s]" % (indent, )
+                print("%s]" % (indent, ))
             else:
-                print "%s%s: []" % (indent, name)
+                print("%s%s: []" % (indent, name))
         else:
             try:
                 try:
-                    print "%s%s%s" % (indent_and_prefix, space, value)
+                    print("%s%s%s" % (indent_and_prefix, space, valuea))
                 except:
                     value = repr(value)
-                    print "%s%s%s" % (indent_and_prefix, space, "unknow '%s'" % value)
+                    print("%s%s%s" % (indent_and_prefix, space, "unknow '%s'" % value))
             except:
-                print "%s%s%s" % (indent_and_prefix, space, "unknow value")
+                print("%s%s%s" % (indent_and_prefix, space, "unknow value"))
 

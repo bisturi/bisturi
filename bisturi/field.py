@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 import time, struct, sys, copy, re
 from bisturi.packet import Packet, Prototype
 from bisturi.deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable

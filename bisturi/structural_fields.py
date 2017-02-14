@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 from bisturi.field import Field, exec_once
 from bisturi.deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
 
