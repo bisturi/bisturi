@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import sys
 sys.exit(0)
 sys.path.append("../")
