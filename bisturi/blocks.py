@@ -39,10 +39,10 @@ def pack_impl(pkt, fragments, **k):
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
-   except PacketError, e:
+   except PacketError as e:
       e.add_parent_field_and_packet(fragments.current_offset, name, pkt.__class__.__name__)
       raise e
-   except Exception, e:
+   except Exception as e:
       raise PacketError(False, name, pkt.__class__.__name__, fragments.current_offset, str(e))
 
    return fragments
@@ -64,10 +64,10 @@ def unpack_impl(pkt, raw, offset, **k):
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
-   except PacketError, e:
+   except PacketError as e:
       e.add_parent_field_and_packet(offset, name, pkt.__class__.__name__)
       raise e
-   except Exception, e:
+   except Exception as e:
       raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
    
 %(sync_descriptors_code)s

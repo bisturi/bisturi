@@ -66,7 +66,7 @@ class TestInt(unittest.TestCase):
          assert two_packed == raw2
 
 
-      except Exception, _e:
+      except Exception as _e:
          import pprint, sys
          _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
          raise type(_e), type(_e)(_message), sys.exc_info()[2]

@@ -562,7 +562,7 @@ class Data(Field):
                 elif callable(self.byte_count):
                     try:
                         byte_count = self.byte_count(pkt=pkt, **k)
-                    except Exception, e:
+                    except Exception as e:
                         byte_count = None
 
                 if byte_count is not None:

@@ -103,10 +103,10 @@ class Packet(object):
         try:
             for name, f, _, unpack in self.get_fields():
                 offset = unpack(pkt=self, raw=raw, offset=offset, **k)
-        except PacketError, e:
+        except PacketError as e:
             e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
             raise
-        except Exception, e:
+        except Exception as e:
             raise PacketError(True, name, self.__class__.__name__, offset, str(e))
       
         [sync(self) for sync in self.get_sync_after_unpack_methods()]
@@ -128,10 +128,10 @@ class Packet(object):
         try:
             for name, f, pack, _ in self.get_fields():
                 pack(pkt=self, fragments=fragments, **k)
-        except PacketError, e:
+        except PacketError as e:
             e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
             raise
-        except Exception, e:
+        except Exception as e:
             raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
       
         return fragments
