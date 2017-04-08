@@ -8,6 +8,7 @@ First, we create a simple packet class
 >>> from bisturi.field import Int, Data
 
 >>> class TLP(Packet):
+...    __bisturi__ = {'generate_for_unpack': False}
 ...    type = Int(1)
 ...    length = Int()
 ...    payload = Data(length)
@@ -17,7 +18,7 @@ First, we create a simple packet class
 Now, let be the next string of bytes (try to see the values encoded in it)
 
 ```python
->>> s1 = '\x02\x00\x00\x00\x03abc'
+>>> s1 = b'\x02\x00\x00\x00\x03abc'
 
 ```
 
@@ -41,7 +42,7 @@ If you need it, you can set the offset of the string where to start to read. Her
 example
 
 ```python
->>> s2 = 'xxx\x01\x00\x00\x00\x01d'
+>>> s2 = b'xxx\x01\x00\x00\x00\x01d'
 >>> q = TLP.unpack(s2, offset=3)   #ignore the first 3 bytes "xxx"
 >>> q.type
 1
@@ -89,7 +90,7 @@ If a field cannot be unpacked, an exception is raised with the full stack of pac
 >>> def some_function(raw):
 ...    q = TLP.unpack(raw)
 
->>> s = '\x00\x00\x00\x00\x04a'
+>>> s = b'\x00\x00\x00\x00\x04a'
 >>> some_function(s)                                         #doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
@@ -130,9 +131,9 @@ work like a string:
 >>>
 >>> def _string_as_seekable_file(s):  # used for testing purposes, to fake a real file
 ...   from StringIO import StringIO
-...   return SeekableFile(file=StringIO(s))
+...   return SeekableFile(StringIO(s))
 >>>
->>> seekable_file = _string_as_seekable_file('\x00\x00\x00\x00\x03abc')
+>>> seekable_file = _string_as_seekable_file(b'\x00\x00\x00\x00\x03abc')
 
 >>> p = TLP.unpack(seekable_file)
 >>> p.length

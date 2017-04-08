@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 from bisturi.fragments import Fragments, FragmentsOfRegexps
 from bisturi.pattern_matching import Any
@@ -77,6 +78,9 @@ class Packet(object):
 
     @classmethod
     def unpack(cls, raw, offset=0, silent=False):
+        if not isinstance(raw, bytes):
+            raise ValueError("The raw parameter must be 'bytes', not '%s'." % type(raw))
+
         pkt = cls(_initialize_fields=False)
         try:
             pkt.unpack_impl(raw, offset, root=pkt)
@@ -137,7 +141,7 @@ class Packet(object):
         stack = []
         self.as_regular_expression_impl(fragments, stack)
 
-        return re.compile("(?s)" + fragments.assemble_regexp(), re.DEBUG if debug else 0)
+        return re.compile(b"(?s)" + fragments.assemble_regexp(), re.DEBUG if debug else 0)
 
 
     def as_regular_expression_impl(self, fragments, stack):

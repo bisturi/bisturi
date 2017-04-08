@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import struct
 import itertools
@@ -20,7 +21,7 @@ def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, wri
         else:
             codes.append(generate_code_for_variable_fields(group))
     if generate_for_pack or generate_for_unpack:
-        import_code = '''
+        import_code = b'''
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
@@ -31,7 +32,7 @@ from bisturi.packet import PacketError
 
 '''
     if generate_for_pack:
-        pack_code = '''
+        pack_code = b'''
 def pack_impl(pkt, fragments, **k):
 %(sync_descriptors_code)s
    k['local_offset'] = fragments.current_offset
@@ -46,14 +47,14 @@ def pack_impl(pkt, fragments, **k):
 
    return fragments
 ''' % {
-      'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
+      'blocks_of_code': indent(b"\n".join([c[0] for c in codes]), level=2),
       'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=True),
     }
     else:
-        pack_code = ""
+        pack_code = b""
 
     if generate_for_unpack:
-        unpack_code = ('''
+        unpack_code = (b'''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
@@ -72,17 +73,17 @@ def unpack_impl(pkt, raw, offset, **k):
 %(sync_descriptors_code)s
    return offset
 ''' % {
-      'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
+      'blocks_of_code': indent(b"\n".join([c[1] for c in codes]), level=2),
       'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=False),
     })
     else:
-        unpack_code = ""
+        unpack_code = b""
 
     cookie_hash = hashlib.sha1()
     cookie_hash.update(pack_code)
     cookie_hash.update(unpack_code)
     cookie = cookie_hash.hexdigest()
-    cookie_code = "BISTURI_PACKET_COOKIE = '%(cookie)s'\n" % {
+    cookie_code = b"BISTURI_PACKET_COOKIE = '%(cookie)s'\n" % {
       'cookie': cookie,
     }
 
@@ -123,15 +124,15 @@ def unpack_impl(pkt, raw, offset, **k):
 def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     if sync_for_pack:
         sync_methods = pkt_class.get_sync_before_pack_methods()
-        setup_code = "   sync_methods = pkt.get_sync_before_pack_methods()\n"
+        setup_code = b"   sync_methods = pkt.get_sync_before_pack_methods()\n"
     else:
         sync_methods = pkt_class.get_sync_after_unpack_methods()
-        setup_code = "   sync_methods = pkt.get_sync_after_unpack_methods()\n"
+        setup_code = b"   sync_methods = pkt.get_sync_after_unpack_methods()\n"
    
     if not sync_methods:
-        return "   "
+        return b"   "
 
-    sync_calls = '\n'.join('   sync_methods[%i](pkt)' % i for i in range(len(sync_methods)))
+    sync_calls = b'\n'.join(b'   sync_methods[%i](pkt)' % i for i in range(len(sync_methods)))
     return setup_code + sync_calls
 
 
@@ -149,11 +150,11 @@ def generate_code_for_fixed_fields(fields):
 
 # TODO if is_bigendian  is  None means "don't care", no necessary means 'big endian (>)', so it should be joined with any other endianness
 def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
-    fmt = ">" if is_bigendian else "<"
-    fmt += "".join([f.struct_code for _, _, f in group])
+    fmt = b">" if is_bigendian else b"<"
+    fmt += b"".join([f.struct_code for _, _, f in group])
 
-    lookup_fields  = " ".join([('pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
-    unpack_code = '''
+    lookup_fields  = b" ".join([(b'pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
+    unpack_code = b'''
 name = "%(name)s" 
 next_offset = offset + %(advance)s
 %(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
@@ -162,16 +163,16 @@ offset = next_offset
          'lookup_fields': lookup_fields,
          'fmt': fmt,
          'advance': struct.calcsize(fmt),
-         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
+         'name': (b"between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
       }
 
-    pack_code = '''
+    pack_code = b'''
 name = "%(name)s" 
 fragments.append(StructPack("%(fmt)s", %(lookup_fields)s))
 ''' % {
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
-         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
+         'name': (b"between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
       }
    
     return pack_code, unpack_code
@@ -183,7 +184,7 @@ def generate_code_for_fixed_fields_without_struct_code(group):
     return (generate_code_for_loop_pack(group), generate_code_for_loop_unpack(group))
 
 def generate_code_for_loop_pack(group):
-    return ''.join(['''
+    return b''.join([b'''
 name, _, pack, _ = fields[%(field_index)i]
 pack(pkt=pkt, fragments=fragments, **k)
 ''' % {
@@ -191,7 +192,7 @@ pack(pkt=pkt, fragments=fragments, **k)
    } for field_index in range(group[0][0], group[-1][0]+1)])
 
 def generate_code_for_loop_unpack(group):
-    return ''.join(['''
+    return b''.join([b'''
 name, _, _, unpack = fields[%(field_index)i]
 offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 ''' % {
@@ -200,6 +201,6 @@ offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
 
 def indent(code, level=1):
-    i = "   " * level
-    return "\n".join([i + line for line in code.split("\n")])
+    i = b"   " * level
+    return b"\n".join([i + line for line in code.split(b"\n")])
 

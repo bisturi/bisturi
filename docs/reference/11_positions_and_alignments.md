@@ -14,7 +14,7 @@ This is fine, but in some cases it is desired to control where a field begins.
 
 
 ```python
->>> s = '\x04XXXABCD'
+>>> s = b'\x04XXXABCD'
 >>> p = Folder.unpack(s)
 
 >>> p.offset_of_file
@@ -36,7 +36,7 @@ This is fine, but in some cases it is desired to control where a field begins.
 >>> str(p.pack())
 '\x01\x00\x00\x00\x00'
 
->>> p = Folder(offset_of_file=4, file_data='ABCD')
+>>> p = Folder(offset_of_file=4, file_data=b'ABCD')
 >>> str(p.pack())
 '\x04...ABCD'
 
@@ -57,7 +57,7 @@ We can't know how to put two diferent set of data at the same position!
 ```
 
 ```python
->>> s = '\x04XXXABCDX'
+>>> s = b'\x04XXXABCDX'
 >>> p = Folder.unpack(s)
 
 >>> p.offset_of_file
@@ -117,7 +117,7 @@ field count_options
 ...   options = Ref(Option).repeated(count_options).at(3, 'relative')
 ...   checksum = Int(4)
 
->>> s = '\x02...\x01A\x04ABCDABCD'
+>>> s = b'\x02...\x01A\x04ABCDABCD'
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
@@ -145,7 +145,7 @@ If we want that the options field be alinged to 4 byte we do:
 ...   options = Ref(Option).repeated(count_options).aligned(4)
 ...   checksum = Int(4)
 
->>> s = '\x02...\x01A\x04ABCDABCD'
+>>> s = b'\x02...\x01A\x04ABCDABCD'
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
@@ -169,7 +169,7 @@ To align each option in the sequence we do:
 ...   options = Ref(Option).repeated(count_options, aligned=4)
 ...   checksum = Int(4)
 
->>> s = '\x02...\x01A..\x04ABCDABCD'
+>>> s = b'\x02...\x01A..\x04ABCDABCD'
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
@@ -194,7 +194,7 @@ resolve this easly:
 ...   options = Ref(Option).repeated(count_options)
 ...   checksum = Int(4)
 
->>> s = '\x02...\x01A..\x04ABCD...ABCD'
+>>> s = b'\x02...\x01A..\x04ABCD...ABCD'
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
@@ -217,7 +217,7 @@ For example, if we have this:
 ...   x = Int(2)
 ...   y = Int(2).aligned(4)
 
->>> s = '\x00\x01..\x00\x02'
+>>> s = b'\x00\x01..\x00\x02'
 >>> p = Point.unpack(s)
 
 >>> p.pack() == s
@@ -229,10 +229,10 @@ But if we put this point in another packet, see what happen:
 
 ```python
 >>> class NamedPoint(Packet):
-...   name  = Data(until_marker='\0')
+...   name  = Data(until_marker=b'\0')
 ...   point = Ref(Point)
 
->>> s  = 'f\x00\x00\x01\x00\x02'
+>>> s  = b'f\x00\x00\x01\x00\x02'
 >>> np = NamedPoint.unpack(s)
 
 >>> np.pack() == s
@@ -253,7 +253,7 @@ fields are aligned inside the packet but not necessary outside:
 ...   x = Int(2)
 ...   y = Int(2).aligned(4, local=True)
 
->>> s = '\x00\x01..\x00\x02'
+>>> s = b'\x00\x01..\x00\x02'
 >>> p = Point.unpack(s)
 
 >>> p.x, p.y
@@ -263,10 +263,10 @@ fields are aligned inside the packet but not necessary outside:
 True
 
 >>> class NamedPoint(Packet):
-...   name  = Data(until_marker='\0')
+...   name  = Data(until_marker=b'\0')
 ...   point = Ref(Point)
 
->>> s  = 'f\x00\x00\x01..\x00\x02'
+>>> s  = b'f\x00\x00\x01..\x00\x02'
 >>> np = NamedPoint.unpack(s)
 
 >>> np.name
@@ -297,7 +297,7 @@ will introduce any byte during the packing.
 ...   tail = Em().aligned(4)
 
 >>> # First case, the packet already is multiple of 4
->>> s = '\x03ABC'
+>>> s = b'\x03ABC'
 >>> p = Datagram.unpack(s)
 
 >>> p.size
@@ -310,7 +310,7 @@ will introduce any byte during the packing.
 True
 
 >>> # No so lucky this time, we need to add 3 bytes to be multiple of 4
->>> s = '\x04ABCD...'
+>>> s = b'\x04ABCD...'
 >>> p = Datagram.unpack(s)
 
 >>> p.size

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -56,7 +57,7 @@ class PixelRow(Packet):
 class BMP(Packet):
   __bisturi__ = {'endianness': 'little', 'write_py_module': True}
 
-  signature = Data(2, default="BM")
+  signature = Data(2, default=b"BM")
 
   file_size = Int(4)
   reserved1 = Int(2)
@@ -73,11 +74,11 @@ class BMP(Packet):
 if __name__ == '__main__':
     from base64 import b16decode, b16encode
 
-    raw_img = b16decode('424D4E0000000000000036000000280000000300000002000000010018000000000018000000C40E0000C40E00000000000000000000FFFFFF8080800000000000000000FF00FF00FF0000000000', True)
+    raw_img = b16decode(b'424D4E0000000000000036000000280000000300000002000000010018000000000018000000C40E0000C40E00000000000000000000FFFFFF8080800000000000000000FF00FF00FF0000000000', True)
 
     img = BMP.unpack(raw_img)
 
-    assert img.signature == "BM"
+    assert img.signature == b"BM"
     assert img.file_size == 78
     assert img.offset_pixel_array == 54
 
@@ -102,4 +103,4 @@ if __name__ == '__main__':
                               0,    0,    0, # black
                         ]
 
-    assert str(img.pack()).replace('.', '\0') == raw_img
+    assert str(img.pack()).replace(b'.', b'\0') == raw_img

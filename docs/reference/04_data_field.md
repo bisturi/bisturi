@@ -17,15 +17,15 @@ For now, take the following example
 ...    b = Data(length)
 ...    c = Data(until_marker='\0')
 ...    d = Data(until_marker='eof')
-...    e = Data(until_marker=re.compile('X+|$'))
-...    f = Data(until_marker=re.compile('X+|$'))
+...    e = Data(until_marker=re.compile(b'X+|$'))
+...    f = Data(until_marker=re.compile(b'X+|$'))
 
 ```
 
 Let see what happen when the packet is built from this string
 
 ```python
->>> s = '\x01abCddd\x00eeeeoffghiXjk'
+>>> s = b'\x01abCddd\x00eeeeoffghiXjk'
 >>> p = DataExample.unpack(s)
 >>> p.length
 1
@@ -76,12 +76,12 @@ If you need that the token be part of the result, you can use the keyword 'inclu
 ...    length = Int(1)
 ...    a = Data(2)
 ...    b = Data(length)
-...    c = Data(until_marker='\0', include_delimiter=True)
-...    d = Data(until_marker='eof', include_delimiter=True)
-...    e = Data(until_marker=re.compile('X+|$'), include_delimiter=True)
-...    f = Data(until_marker=re.compile('X+|$'), include_delimiter=True)
+...    c = Data(until_marker=b'\0', include_delimiter=True)
+...    d = Data(until_marker=b'eof', include_delimiter=True)
+...    e = Data(until_marker=re.compile(b'X+|$'), include_delimiter=True)
+...    f = Data(until_marker=re.compile(b'X+|$'), include_delimiter=True)
 
->>> s = '\x01abCddd\x00eeeeoffghiXjk'
+>>> s = b'\x01abCddd\x00eeeeoffghiXjk'
 >>> p = DataExample.unpack(s)
 >>> p.length
 1
@@ -119,9 +119,9 @@ Let see an example:
 >>> class DataWithSearchLengthLimit(Packet):
 ...    __bisturi__ = { 'search_buffer_length': 4 }
 ...
-...    a = Data(until_marker='\0', include_delimiter=False)
+...    a = Data(until_marker=b'\0', include_delimiter=False)
 
->>> s = 'ab\x00eeee'
+>>> s = b'ab\x00eeee'
 >>> p = DataWithSearchLengthLimit.unpack(s)
 >>> p.a
 'ab'
@@ -135,9 +135,9 @@ if the marker does't exist in the whole string
 >>> class DataWithSearchLengthLimitTooShort(Packet):
 ...    __bisturi__ = { 'search_buffer_length': 2 }
 ...
-...    a = Data(until_marker='\0', include_delimiter=False)
+...    a = Data(until_marker=b'\0', include_delimiter=False)
 
->>> s = 'ab\x00eeee'
+>>> s = b'ab\x00eeee'
 >>> p = DataWithSearchLengthLimitTooShort.unpack(s)        # doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
@@ -153,9 +153,9 @@ ignoring the search buffer length:
 >>> class DataWithSearchLengthLimitTooShortButIgnored(Packet):
 ...    __bisturi__ = { 'search_buffer_length': 2 }
 ...
-...    a = Data(until_marker=re.compile('$'), include_delimiter=False)
+...    a = Data(until_marker=re.compile(b'$'), include_delimiter=False)
 
->>> s = 'abeeee'
+>>> s = b'abeeee'
 >>> p = DataWithSearchLengthLimitTooShortButIgnored.unpack(s) 
 >>> p.a
 'abeeee'
@@ -191,11 +191,11 @@ is not equal to 255. When 'size' is 255, the payload will consume all the bytes 
 end of the packet. 
 
 ```python
->>> s1 = '\x01a'
->>> s2 = '\x02ab'
->>> s3 = '\x01abc'
->>> s4 = '\xffa'
->>> s5 = '\xffabc'
+>>> s1 = b'\x01a'
+>>> s2 = b'\x02ab'
+>>> s3 = b'\x01abc'
+>>> s4 = b'\xffa'
+>>> s5 = b'\xffabc'
 
 >>> DataExample.unpack(s1).payload
 'a'
@@ -224,9 +224,9 @@ writing the expression directly:
 ...    size = Int(1)
 ...    payload = Data(size * 2)
 
->>> s1 = '\x01aazzxx'
->>> s2 = '\x02abcdzz'
->>> s3 = '\x01aabb'
+>>> s1 = b'\x01aazzxx'
+>>> s2 = b'\x02abcdzz'
+>>> s3 = b'\x01aabb'
 
 >>> DataWithExpr.unpack(s1).payload
 'aa'

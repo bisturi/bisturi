@@ -1,13 +1,24 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+
 FROM_BEGIN = 0
 FROM_END   = 2
 
-class SeekableFile(object):
-    def __init__(self, file):
-        self._file = file
+def to_bytes(bytes_or_text):
+    return bytes_or_text if isinstance(bytes_or_text, bytes) else bytes(bytes_or_text, 'ascii')
+
+class SeekableFile(bytes):
+    def __new__(cls, file_open):
+        self = bytes.__new__(cls)
+        
+        self._file = file_open
         self._file_length = self._calculate_file_length()
+        
+        return self
+
+    def __getslice__(self, i, j): # deprecated, but still necessary to redefine the behavior of 'bytes'
+        return self._slice(slice(i, j))
 
     def __getitem__(self, index):
         if isinstance(index, (int, long)):
@@ -15,17 +26,21 @@ class SeekableFile(object):
             return self._file.read(1)
 
         elif isinstance(index, slice):
-            start, stop, step = index.indices(self._file_length)
-            
-            if step == 1:
-                self._seek(start)
-                return self._file.read(stop-start)
-
-            else:
-                return "".join((self[i] for i in irange(start, stop, step)))
+            return self._slice(index)
 
         else:
             raise TypeError("Invalid index/slice")
+
+    def _slice(self, index):
+        start, stop, step = index.indices(self._file_length)
+        
+        if step == 1:
+            self._seek(start)
+            return self._file.read(stop-start)
+
+        else:
+            return b"".join((self[i] for i in irange(start, stop, step)))
+
 
     def __str__(self):
         self._seek(0)
@@ -45,7 +60,7 @@ class SeekableFile(object):
 
 def _string_as_seekable_file(s):
     from StringIO import StringIO
-    return SeekableFile(file=StringIO(s))
+    return SeekableFile(file_open=StringIO(s))
 
 
 import array

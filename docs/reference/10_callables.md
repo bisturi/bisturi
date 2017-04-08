@@ -26,7 +26,7 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 ...    bits = Bits(bit_count=8)
 
 
->>> raw = "\x01\x02\x03"
+>>> raw = b"\x01\x02\x03"
 >>> pkt = AllFixed.unpack(raw)
 >>> pkt.num, pkt.data, pkt.bits
 (1, '\x02', 3)
@@ -42,7 +42,7 @@ For sequence of objects you can set the amount of objects to be extracted, not t
 >>> class FixedSeq(Packet):
 ...    seq = Int(byte_count=1).repeated(count=3)
 
->>> raw = "\x01\x02\x03"
+>>> raw = b"\x01\x02\x03"
 >>> pkt = FixedSeq.unpack(raw)
 >>> pkt.seq
 [1, 2, 3]
@@ -64,7 +64,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 ...    seq    = Int(byte_count=1).repeated(count=amount)
 
 
->>> raw = "\x01\x01\x02"
+>>> raw = b"\x01\x01\x02"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('\x01', [2])
@@ -72,7 +72,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> str(pkt.pack())
 '\x01\x01\x02'
 
->>> raw = "\x02AA\x01\x02"
+>>> raw = b"\x02AA\x01\x02"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('AA', [1, 2])
@@ -94,7 +94,7 @@ For example
 ...    seq     = Int(byte_count=1).repeated(count=triplet * 3)
 
 
->>> raw = "\x01ABC\x01\x02\x03"
+>>> raw = b"\x01ABC\x01\x02\x03"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('ABC', [1, 2, 3])
@@ -102,7 +102,7 @@ For example
 >>> str(pkt.pack())
 '\x01ABC\x01\x02\x03'
 
->>> raw = "\x02ABCDEF\x01\x02\x03\x04\x05\x06"
+>>> raw = b"\x02ABCDEF\x01\x02\x03\x04\x05\x06"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
 ('ABCDEF', [1, 2, 3, 4, 5, 6])
@@ -121,7 +121,7 @@ Don't be shy, lets do more complex expressions
 ...    matrix = Int(byte_count=1).repeated(count=rows * cols)
 
 
->>> raw = "\x01\x02\x01\x02XXXX"
+>>> raw = b"\x01\x02\x01\x02XXXX"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.matrix
 [1, 2]
@@ -129,7 +129,7 @@ Don't be shy, lets do more complex expressions
 >>> str(pkt.pack())
 '\x01\x02\x01\x02'
 
->>> raw = "\x02\x03\x01\x02\x03\x04\x05\x06"
+>>> raw = b"\x02\x03\x01\x02\x03\x04\x05\x06"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.matrix
 [1, 2, 3, 4, 5, 6]
@@ -141,12 +141,12 @@ Don't be shy, lets do more complex expressions
 
 ```python
 >>> class Magic(Packet):
-...    magic = Data(4, default='v002')
-...    v2_only_field = Data(2).when(magic == 'v002')
-...    hidden_field  = Data(4).when((magic[:3] == 'xyz') & (magic[3] != '\x00'))
+...    magic = Data(4, default=b'v002')
+...    v2_only_field = Data(2).when(magic == b'v002')
+...    hidden_field  = Data(4).when((magic[:3] == b'xyz') & (magic[3] != b'\x00'))
 
 
->>> raw = "v002AB"
+>>> raw = b"v002AB"
 >>> pkt = Magic.unpack(raw)
 >>> pkt.v2_only_field
 'AB'
@@ -156,7 +156,7 @@ True
 >>> str(pkt.pack())
 'v002AB'
 
->>> raw = "xyz1beef"
+>>> raw = b"xyz1beef"
 >>> pkt = Magic.unpack(raw)
 >>> pkt.v2_only_field is None
 True
@@ -176,7 +176,7 @@ We can go further to use expressions in the until and when conditions:
 ...    opt   = Int(byte_count=1).when(type != 0)
 
 
->>> raw = "\x01\x02XXX"
+>>> raw = b"\x01\x02XXX"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.opt
 2
@@ -184,7 +184,7 @@ We can go further to use expressions in the until and when conditions:
 >>> str(pkt.pack())
 '\x01\x02'
 
->>> raw = "\x00XXX"
+>>> raw = b"\x00XXX"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.opt is None
 True
@@ -205,7 +205,7 @@ You can use any kind of callable: functions, methods or lambdas.
 ...    seq    = Int(byte_count=1).repeated(count=lambda pkt, **k: pkt.amount * 2)
 ...    seq2   = Int(byte_count=1).repeated(until=lambda pkt, **k: pkt.seq2[-1]==0)
 
->>> raw = "\x01\x00\x01\x02\x03\x00"
+>>> raw = b"\x01\x00\x01\x02\x03\x00"
 >>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
 ('\x00\x01', [2, 3], [0])
@@ -213,7 +213,7 @@ You can use any kind of callable: functions, methods or lambdas.
 >>> str(pkt.pack())
 '\x01\x00\x01\x02\x03\x00'
 
->>> raw = "\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
+>>> raw = b"\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
 >>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
 ('AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
@@ -241,7 +241,7 @@ available arguments:
 ...    amount = Int(byte_count=1)
 ...    lower  = Ref(Lower)
 
->>> raw = "\x02AA"
+>>> raw = b"\x02AA"
 >>> pkt = Higher.unpack(raw)
 >>> pkt.amount, pkt.lower.data
 (2, 'AA')

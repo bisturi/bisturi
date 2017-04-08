@@ -42,7 +42,7 @@ he can dynamically reference to a Packet or another Field using a callable.
 ...                           0x01: Data(4),    # IP v4
 ...                           0x04: Data(8),    # IP v6
 ...                           0x03: NData(),    # domain name
-...                           }[pkt.type],  default='\x00\x00\x00\x00')
+...                           }[pkt.type],  default=b'\x00\x00\x00\x00')
 
 ```
 
@@ -52,7 +52,7 @@ Because the object referenced is determined at unpacking time (using the callabl
 you need to set a default value (this is mandatory)
 
 ```python
->>> s = '\x01\x01\x02\x03\x04'
+>>> s = b'\x01\x01\x02\x03\x04'
 >>> p = SOCKS.unpack(s)
 >>> p.type
 1
@@ -61,7 +61,7 @@ you need to set a default value (this is mandatory)
 >>> p.pack() == s
 True
 
->>> s = '\x04\x01\x02\x03\x04\x05\x06\x07\x08'
+>>> s = b'\x04\x01\x02\x03\x04\x05\x06\x07\x08'
 >>> p = SOCKS.unpack(s)
 >>> p.type
 4
@@ -70,7 +70,7 @@ True
 >>> p.pack() == s
 True
 
->>> s = '\x03\x0bexample.com'
+>>> s = b'\x03\x0bexample.com'
 >>> p = SOCKS.unpack(s)
 >>> p.type
 3

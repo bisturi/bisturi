@@ -1,11 +1,15 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
+
 import time, struct, sys, copy, re
+
 from bisturi.packet import Packet, Prototype
 from bisturi.deferred import defer_operations, UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable
 from bisturi.pattern_matching import Any
 from bisturi.fragments import FragmentsOfRegexps
+from bisturi.util import to_bytes
 
 def exec_once(m):
     ''' Force to execute the method m only once and save its result.
@@ -154,10 +158,10 @@ class Field(object):
             >>> [(bag.num, bag.objects) for bag in pkt.bags]
             [(1, [2]), (0, [])]
 
-            >>> str(pkt.pack()) == '\x01\x02\x00'
+            >>> str(pkt.pack()) == b'\x01\x02\x00'
             True
 
-            >>> raw = '\x02\x01\x02\x01\x04\x00'
+            >>> raw = b'\x02\x01\x02\x01\x04\x00'
             >>> pkt = Box.unpack(raw)
 
             >>> len(pkt.bags)
@@ -181,10 +185,10 @@ class Field(object):
             >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.no_so_tight]
             [[], []]
 
-            >>> str(pkt.pack()) == '\x00\x00....\x00.....\x00'
+            >>> str(pkt.pack()) == b'\x00\x00....\x00.....\x00'
             True
 
-            >>> raw = '\x01A\x00\x02BC\x00.....\x01A\x00...\x02BC\x00'
+            >>> raw = b'\x01A\x00\x02BC\x00.....\x01A\x00...\x02BC\x00'
             >>> pkt = Room.unpack(raw)
             
             >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.tight]
@@ -216,32 +220,32 @@ class Field(object):
              ...     nonzero_msg = Data(2).when(type)
              ...     typeone_msg = Data(2).when(type == 1)
 
-             >>> pkt = Example(nonzero_msg='X') # notice how all the fields are set...
+             >>> pkt = Example(nonzero_msg=b'X') # notice how all the fields are set...
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # the when is ignored
-             (0, 'X', None)
+             (0, b'X', None)
 
-             >>> pkt.nonzero_msg = 'AB'
-             >>> pkt.typeone_msg = 'CD'
-             >>> str(pkt.pack()) == '\x00ABCD' # the when is ignored here too
+             >>> pkt.nonzero_msg = b'AB'
+             >>> pkt.typeone_msg = b'CD'
+             >>> str(pkt.pack()) == b'\x00ABCD' # the when is ignored here too
              True
 
-             >>> raw = '\x00AB'
+             >>> raw = b'\x00AB'
              >>> pkt = Example.unpack(raw) # here when is honored (both field... 
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # aren't parsed)
              (0, None, None)
 
-             >>> str(pkt.pack()) == '\x00'
+             >>> str(pkt.pack()) == b'\x00'
              True
 
-             >>> raw = '\x02AB'
+             >>> raw = b'\x02AB'
              >>> pkt = Example.unpack(raw) 
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-             (2, 'AB', None)
+             (2, b'AB', None)
 
-             >>> raw = '\x01ABCD'
+             >>> raw = b'\x01ABCD'
              >>> pkt = Example.unpack(raw) 
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-             (1, 'AB', 'CD')
+             (1, b'AB', b'CD')
              
              >>> str(pkt.pack()) == raw
              True
@@ -290,20 +294,20 @@ class Int(Field):
         self.is_bigendian = (self.endianness in ('big', 'network')) or (self.endianness == 'local' and sys.byteorder == 'big')
       
         if self.byte_count in (1, 2, 4, 8): 
-            code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
+            code = {1:b'B', 2:b'H', 4:b'I', 8:b'Q'}[self.byte_count]
             if self.is_signed:
                 code = code.lower()
 
             self.struct_code = code
-            fmt = (">" if self.is_bigendian else "<") + code
+            fmt = (b">" if self.is_bigendian else b"<") + code
             self.struct_obj = struct.Struct(fmt)
 
             self.pack, self.unpack = self._pack_fixed_and_primitive_size, self._unpack_fixed_and_primitive_size
 
         else:
             self.struct_code = None
-            self.base = 2**(self.byte_count*8) 
-            self.xcode = ("%0" + str(self.byte_count*2) + "x")
+            self.base = 2**(self.byte_count*8)
+            self.xcode = b"%%0%(count)ix" % {'count': self.byte_count*2}
 
             self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
@@ -363,25 +367,37 @@ class Int(Field):
         if is_literal:
             self.pack(pkt, fragments, **k)
         else:
-            fragments.append(".{%i}" % self.byte_count, is_literal=False)
+            fragments.append(b".{%i}" % self.byte_count, is_literal=False)
 
         return fragments
 
 @defer_operations(allowed_categories=['sequence'])
 class Data(Field):
-    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=''):
+    def __init__(self, byte_count=None, until_marker=None, include_delimiter=False, consume_delimiter=True, default=b''):
         Field.__init__(self)
         assert (byte_count is None and until_marker is not None) or (until_marker is None and byte_count is not None)
 
+        if until_marker:
+            if hasattr(until_marker, 'search'): # aka regex
+                pattern = until_marker.pattern
+                if not isinstance(pattern, bytes):
+                    raise ValueError("The until marker is a regular expression which pattern is of type '%s' but it must be 'bytes'." % type(pattern))
+            else:  
+                if not isinstance(until_marker, bytes): 
+                    raise ValueError("The until marker must be 'bytes' or a regular expression, not '%s'." % type(until_marker))
+
+        if default and not isinstance(default, bytes):
+            raise ValueError("The default must be 'bytes' not '%s'." % type(default))
+        
         self.default = default
         if not default and isinstance(byte_count, (int, long)):
-            self.default = "\x00" * byte_count
+            self.default = b"\x00" * byte_count
       
         self.byte_count = byte_count 
         self.until_marker = until_marker
 
         self.include_delimiter = include_delimiter
-        self.delimiter_to_be_included = self.until_marker if isinstance(self.until_marker, basestring) and not include_delimiter else ''
+        self.delimiter_to_be_included = self.until_marker if isinstance(self.until_marker, bytes) and not include_delimiter else b''
 
         assert not (consume_delimiter == False and include_delimiter == True)
         self.consume_delimiter = consume_delimiter #XXX document this!
@@ -393,7 +409,7 @@ class Data(Field):
 
         if self.byte_count is not None:
             if isinstance(self.byte_count, (int, long)):
-                self.struct_code = "%is" % self.byte_count
+                self.struct_code = b"%is" % self.byte_count
                 self.unpack = self._unpack_fixed_size
          
             elif isinstance(self.byte_count, Field):
@@ -414,7 +430,7 @@ class Data(Field):
             if self._search_buffer_length is not None:
                 assert self._search_buffer_length >= 0 # the length can be 0 or None (means infinite) or a positive number
 
-            if isinstance(self.until_marker, basestring):
+            if isinstance(self.until_marker, bytes):
                 self.unpack = self._unpack_with_string_marker
 
             elif hasattr(self.until_marker, 'search'):
@@ -507,7 +523,7 @@ class Data(Field):
             search_buffer = raw[offset:]
 
         extra_count = 0
-        if until_marker.pattern == "$":    # shortcut
+        if until_marker.pattern == b"$":    # shortcut
             count = len(raw) - offset
         else:
             match = until_marker.search(search_buffer, 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
@@ -535,7 +551,7 @@ class Data(Field):
             self.pack(pkt, fragments, **k)
 
         else:
-            custom_regexp = value.regexp.pattern if value.regexp is not None else ".*"
+            custom_regexp = value.regexp.pattern if value.regexp is not None else b".*"
             if self.byte_count is not None:
                 if isinstance(self.byte_count, (int, long)):
                     byte_count = self.byte_count
@@ -550,7 +566,7 @@ class Data(Field):
                         byte_count = None
 
                 if byte_count is not None:
-                    fragments.append(".{%i}" % byte_count, is_literal=False) # TODO ignoring the custom regexp!!
+                    fragments.append(b".{%i}" % byte_count, is_literal=False) # TODO ignoring the custom regexp!!
                 else:
                     fragments.append(custom_regexp, is_literal=False)
 
@@ -599,10 +615,10 @@ class Ref(Field):
         >>> (pkt.extra.x, pkt.extra.y)
         (0, 7)
 
-        >>> str(pkt.pack()) == '\x01\x02\x00\x00\x00\x07'
+        >>> str(pkt.pack()) == b'\x01\x02\x00\x00\x00\x07'
         True
 
-        >>> raw = '\x01\x02\x03\x04\x05\x06'
+        >>> raw = b'\x01\x02\x03\x04\x05\x06'
         >>> pkt = Line.unpack(raw)
         
         >>> (pkt.begin.x, pkt.begin.y)
@@ -630,15 +646,15 @@ class Ref(Field):
 
         >>> pkt.x = 8
         >>> pkt.point_2d.y = 9
-        >>> str(pkt.pack()) == '\x08\x00\x00' # XXX but it should be 08 09 00
+        >>> str(pkt.pack()) == b'\x08\x00\x00' # XXX but it should be 08 09 00
         True
 
-        >>> raw = '\x01\x02\x03'
+        >>> raw = b'\x01\x02\x03'
         >>> pkt = Point3D.unpack(raw)
         >>> (pkt.x, pkt.y, pkt.z)
         (1, 2, 3)
 
-        >>> str(pkt.pack()) == '\x01\x02\x03'
+        >>> str(pkt.pack()) == b'\x01\x02\x03'
         True
 
         '''
@@ -884,11 +900,11 @@ class Bits(Field):
                     bits.append("x" * bit_count)
 
             bits  = "".join(bits)
-            bytes = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)//8)]
+            bytes_ = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)//8)]
 
-            for byte in bytes:
+            for byte in bytes_:
                 if byte == "x" * 8:                                   # xxxx xxxx pattern (all dont care)
-                    fragments.append(".{1}", is_literal=False)
+                    fragments.append(b".{1}", is_literal=False)
                 else:
                     first_dont_care = byte.find("x")
                     if first_dont_care == -1:                         # 0000 0000 pattern (all fixed)
@@ -902,7 +918,7 @@ class Bits(Field):
 
                         lower_literal = re.escape(lower_char)
                         higher_literal = re.escape(higher_char)
-                        fragments.append("[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
+                        fragments.append(b"[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
                   
                     else:                                             # 00xx x0x0 pattern (mixed pattern)
                         all_patterns   = range(256)
@@ -912,7 +928,7 @@ class Bits(Field):
                         mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
                      
                         literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
-                        fragments.append("[%s]" % "".join(literal_patterns), is_literal=False)
+                        fragments.append(b"[%s]" % b"".join(literal_patterns), is_literal=False)
 
         return fragments
 
@@ -952,6 +968,6 @@ class Em(Field):
         return offset
 
     def pack(self, pkt, fragments, **k):
-        fragments.append("")
+        fragments.append(b"")
         return fragments
 

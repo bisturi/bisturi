@@ -56,7 +56,7 @@ True
 For debugging we can ask what is the pattern of this incomplete packet
 
 ```python
->>> ip.as_regular_expression().pattern
+>>> bytes(ip.as_regular_expression().pattern)
 '(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.*.*'
 
 ```
@@ -66,7 +66,7 @@ But we can improve this setting some values. For example if we want to search al
 address:
 
 ```python
->>> ip.destination_address = "\xff\xff\xff\xff" # broadcast address
+>>> ip.destination_address = b"\xff\xff\xff\xff" # broadcast address
 >>> ip.as_regular_expression().pattern
 '(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}\\\xff\\\xff\\\xff\\\xff.*.*'
 
@@ -254,7 +254,7 @@ For example, to search all the packets that contain the famous two byte sequence
 ```python
 >>> ip.total_length = Any()
 >>> ip.identification = Any()
->>> ip.data = Any(contains="\xde\xad")
+>>> ip.data = Any(contains=b"\xde\xad")
 >>> ip.as_regular_expression().pattern
 '(?s)E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*\\\xde\\\xad.*'
 

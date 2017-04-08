@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -39,10 +40,10 @@ class ClientRequest(Packet):
     command = Int(1, default=ClientCommand.CONNECT) # see ClientCommand
 
     dst_port = Int(2)
-    dst_ip   = Data(4, default='\x00\x00\x00\x01')
+    dst_ip   = Data(4, default=b'\x00\x00\x00\x01')
 
-    user_id = Data(until_marker='\x00')
-    domain_name = Data(until_marker='\x00').when((dst_ip[:3] == '\x00\x00\x00') & (dst_ip[3] != '\x00'))
+    user_id = Data(until_marker=b'\x00')
+    domain_name = Data(until_marker=b'\x00').when((dst_ip[:3] == b'\x00\x00\x00') & (dst_ip[3] != b'\x00'))
 
 
 class ServerResponse(Packet):
@@ -58,8 +59,8 @@ if __name__ == '__main__':
     # Example from wikipedia: https://en.wikipedia.org/wiki/SOCKS
 
     # Socks v4 #################################
-    raw_request = b16decode('04 01 0050 42660763 4672656400'.replace(' ', ''), True)
-    raw_response = b16decode('00 5a 0050 42660763'.replace(' ', ''), True)
+    raw_request = b16decode(b'04 01 0050 42660763 4672656400'.replace(b' ', b''), True)
+    raw_response = b16decode(b'00 5a 0050 42660763'.replace(b' ', b''), True)
 
     client_request = ClientRequest.unpack(raw_request)
     server_response = ServerResponse.unpack(raw_response)
@@ -68,11 +69,11 @@ if __name__ == '__main__':
     assert client_request.version == 0x04
     assert client_request.command == ClientCommand.CONNECT
 
-    ip = '66.102.7.99'
-    raw_ip = ''.join(chr(int(octet)) for octet in ip.replace('.', ' ').split())
+    ip = b'66.102.7.99'
+    raw_ip = b''.join(chr(int(octet)) for octet in ip.replace(b'.', b' ').split())
     assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
-    assert client_request.user_id == 'Fred'
+    assert client_request.user_id == b'Fred'
     assert client_request.domain_name is None
 
     # server -------------------------
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     assert server_response.pack() == raw_response
 
     # Socks v4a (4a extension) #################
-    raw_request = b16decode('04 01 0050 00000001 4672656400 6578616d706c652e636f6d00'.replace(' ', ''), True)
+    raw_request = b16decode(b'04 01 0050 00000001 4672656400 6578616d706c652e636f6d00'.replace(b' ', b''), True)
 
     client_request = ClientRequest.unpack(raw_request)
 
@@ -91,12 +92,12 @@ if __name__ == '__main__':
     assert client_request.version == 0x04
     assert client_request.command == ClientCommand.CONNECT
 
-    ip = '0.0.0.1'
-    raw_ip = ''.join(chr(int(octet)) for octet in ip.replace('.', ' ').split())
+    ip = b'0.0.0.1'
+    raw_ip = b''.join(chr(int(octet)) for octet in ip.replace(b'.', b' ').split())
     assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
-    assert client_request.user_id == 'Fred'
-    assert client_request.domain_name == 'example.com'
+    assert client_request.user_id == b'Fred'
+    assert client_request.domain_name == b'example.com'
 
     assert client_request.pack() == raw_request
 

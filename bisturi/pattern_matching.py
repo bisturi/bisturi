@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
+
 from itertools import ifilter
 from re import finditer, compile, escape
 from functools import partial
@@ -15,9 +17,9 @@ class Any(object):
 
             return
 
-        middle = ".*" if contains is None else (".*%s.*" % escape(contains))
+        middle = b".*" if contains is None else (b".*%s.*" % escape(contains))
 
-        self.regexp = ""
+        self.regexp = b""
         if startswith is not None:
             self.regexp += escape(startswith)
 

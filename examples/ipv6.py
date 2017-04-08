@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -42,13 +43,13 @@ class IPAddr(Field):
 
       self.byte_count = 4 if version == 4 else 16
       self.cls_address = IPv4Address if version == 4 else IPv6Address
-      self.default = self.cls_address(default if default is not None else ('0.0.0.0' if version == 4 else '::'))
+      self.default = self.cls_address(default if default is not None else (b'0.0.0.0' if version == 4 else '::'))
 
    def unpack(self, pkt, raw, offset=0, **k):
       raw_data = raw[offset:offset+self.byte_count]
       
       chunks = [base64.b16encode(raw_data[i:i+2]) for i in range(0, len(raw_data), 2)]
-      ip_address = self.cls_address(":".join(chunks)) # work around for Python 2.7
+      ip_address = self.cls_address(b":".join(chunks)) # work around for Python 2.7
 
       setattr(pkt, self.field_name, ip_address)
       return self.byte_count + offset
@@ -80,14 +81,14 @@ class IPv6(Packet):
    extentions  = Ref(Extention).repeated(until = lambda pkt, **k: pkt.extentions[-1].next_header in (59, 6),
                                            when = lambda pkt, **k: pkt.next_header not in (59, 6))
 
-   payload     = Data(0) # TODO aca debe ir un pkt.length-len(pkt.extentions)
+   payload     = Data(0) # TODO pkt.length-len(pkt.extentions)
 
 
 if __name__ == '__main__':
    from base64 import b16decode
 
    # Without extentions neither payload
-   raw = b16decode('10200003 0000 3b 00 01020304000000000000000000000000 0a0b0000000000000000000000000c0d'.replace(' ', ''), True)
+   raw = b16decode(b'10200003 0000 3b 00 01020304000000000000000000000000 0a0b0000000000000000000000000c0d'.replace(b' ', b''), True)
 
    ip = IPv6.unpack(raw)
 
@@ -95,21 +96,21 @@ if __name__ == '__main__':
    assert ip.length == 0
    assert ip.next_header == 59
    assert ip.hop_limit == 0
-   assert ip.src_addr == IPv6Address("0102:0304::")
-   assert ip.dst_addr == IPv6Address("0a0b::0c0d")
+   assert ip.src_addr == IPv6Address(b"0102:0304::")
+   assert ip.dst_addr == IPv6Address(b"0a0b::0c0d")
 
    assert len(ip.extentions) == 0
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    # One extention with padding: no options
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00000000000000'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00000000000000'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -117,14 +118,14 @@ if __name__ == '__main__':
    assert len(ip.extentions[0].val.options) == 6
    
    # One extention with one small option and padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0102aabb 0000'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0102aabb 0000'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -133,17 +134,17 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 2
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aabb", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aabb", True)
    
    # One extention with one small option and without padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0104aabbccdd'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0104aabbccdd'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -152,18 +153,18 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 4
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aabbccdd", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aabbccdd", True)
 
 
    # One extention with one big option and without padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0106aabbccddeeff'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0106aabbccddeeff'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -172,17 +173,17 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 6
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aabbccddeeff", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aabbccddeeff", True)
    
    # One extention with two options and without padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0101aa 0101bb'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b00 0101aa 0101bb'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -191,20 +192,20 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 1
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aa", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aa", True)
    assert ip.extentions[0].val.options[1].type == 1
    assert ip.extentions[0].val.options[1].payload.length == 1
-   assert ip.extentions[0].val.options[1].payload.value == b16decode("bb", True)
+   assert ip.extentions[0].val.options[1].payload.value == b16decode(b"bb", True)
 
    # One big extention with two options and padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b01 0103aabbcc 0105aabbccddee 0000'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 3b01 0103aabbcc 0105aabbccddee 0000'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 1
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 59
@@ -213,20 +214,20 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 3
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aabbcc", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aabbcc", True)
    assert ip.extentions[0].val.options[1].type == 1
    assert ip.extentions[0].val.options[1].payload.length == 5
-   assert ip.extentions[0].val.options[1].payload.value == b16decode("aabbccddee", True)
+   assert ip.extentions[0].val.options[1].payload.value == b16decode(b"aabbccddee", True)
    
    # Three extentions with one option and padding.
-   raw = b16decode('00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 0000 0104aaaaaaaa 0001 0107bbbbbbbbbbbbbb 0000000000 3b00 0102cccc 0000'.replace(' ', ''), True)
+   raw = b16decode(b'00000000 0000 00 00 00000000000000000000000000000000 00000000000000000000000000000000 0000 0104aaaaaaaa 0001 0107bbbbbbbbbbbbbb 0000000000 3b00 0102cccc 0000'.replace(b' ', b''), True)
    
    ip = IPv6.unpack(raw)
 
    assert ip.length == 0
    assert ip.next_header == 0
    assert len(ip.extentions) == 3
-   assert ip.payload == ""
+   assert ip.payload == b""
 
    assert isinstance(ip.extentions[0].val, HopByHop)
    assert ip.extentions[0].next_header == 0
@@ -241,10 +242,10 @@ if __name__ == '__main__':
 
    assert ip.extentions[0].val.options[0].type == 1
    assert ip.extentions[0].val.options[0].payload.length == 4
-   assert ip.extentions[0].val.options[0].payload.value == b16decode("aaaaaaaa", True)
+   assert ip.extentions[0].val.options[0].payload.value == b16decode(b"aaaaaaaa", True)
    assert ip.extentions[1].val.options[0].type == 1
    assert ip.extentions[1].val.options[0].payload.length == 7
-   assert ip.extentions[1].val.options[0].payload.value == b16decode("bbbbbbbbbbbbbb", True)
+   assert ip.extentions[1].val.options[0].payload.value == b16decode(b"bbbbbbbbbbbbbb", True)
    assert ip.extentions[2].val.options[0].type == 1
    assert ip.extentions[2].val.options[0].payload.length == 2
-   assert ip.extentions[2].val.options[0].payload.value == b16decode("cccc", True)
+   assert ip.extentions[2].val.options[0].payload.value == b16decode(b"cccc", True)

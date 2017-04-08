@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
+
 from bisturi.field import Field, exec_once
 from bisturi.deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
 
@@ -181,15 +183,15 @@ class Sequence(Field):
                 self.prototype_field.pack_regexp(pkt, f, **k)
                 subregexp = f.assemble_regexp()
             except:
-                subregexp = ".*"
+                subregexp = b".*"
     
             # TODO, fix this (fix the self.get_how_many_elements stuff)
-            fragments.append("(%s)*" % subregexp, is_literal=False)
+            fragments.append(b"(%s)*" % subregexp, is_literal=False)
             raise NotImplementedError() 
             if self.get_how_many_elements is None:
-                fragments.append("(%s)*" % subregexp, is_literal=False)
+                fragments.append(b"(%s)*" % subregexp, is_literal=False)
             else:
-                fragments.append("(%s){%i}" % (subregexp, self.get_how_many_elements), is_literal=False)
+                fragments.append(b"(%s){%i}" % (subregexp, self.get_how_many_elements), is_literal=False)
 
         return fragments
     
@@ -213,7 +215,7 @@ class Sequence(Field):
              >>> class NonBuggy(Packet):
              ...    i = Ref(ListOfInts).repeated(4)
 
-             >>> raw = 'ABCDEFGH'
+             >>> raw = b'ABCDEFGH'
              >>> pkt = NonBuggy.unpack(raw)
 
              >>> [l_ints.i for l_ints in pkt.i]
@@ -320,9 +322,9 @@ class Optional(Field):
                 self.prototype_field.pack_regexp(pkt, f, **k)
                 subregexp = f.assemble_regexp()
             except:
-                subregexp = ".*"
+                subregexp = b".*"
           
-            fragments.append("(%s)?" % subregexp, is_literal=False)
+            fragments.append(b"(%s)?" % subregexp, is_literal=False)
 
         return fragments
 
@@ -379,7 +381,7 @@ class Move(Field):
         Field.__init__(self)
         self.move_arg = move_arg 
         self.movement_type = movement_type
-        self.default = ''
+        self.default = b''
 
     def unpack(self, pkt, raw, offset=0, **k):
         if isinstance(self.move_arg, Field):

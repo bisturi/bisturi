@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -25,7 +26,7 @@ class ResponseCode(object):
 class Label(Packet):
     length = Int(1)
     name   = Ref(lambda pkt, **k: Int(1) if pkt.is_compressed() else Data(pkt.length),
-                    default='')
+                    default=b'')
 
     def is_root(self):
         return self.length == 0
@@ -44,7 +45,7 @@ class Label(Packet):
             return self.name
         else:
             builder = _Builder.unpack(raw, offset=self.offset())
-            return ".".join(n.uncompressed_name(raw, offset) for n in builder.name)
+            return b".".join(n.uncompressed_name(raw, offset) for n in builder.name)
             
 class _Builder(Packet):
     name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
@@ -176,8 +177,8 @@ RCODE           Response code - this 4 bit field is set as part of
 if __name__ == '__main__':
     from base64 import b16decode
 
-    raw_query = b16decode('fabc010000010000000000010377777706676f6f676c6503636f6d00000100010000291000000000000000', True)
-    raw_response = b16decode('fabc818000010006000400050377777706676f6f676c6503636f6d0000010001c00c000100010000006400044a7d8368c00c000100010000006400044a7d8369c00c000100010000006400044a7d836ac00c000100010000006400044a7d8393c00c000100010000006400044a7d8363c00c000100010000006400044a7d8367c010000200010000016f0006036e7331c010c010000200010000016f0006036e7332c010c010000200010000016f0006036e7334c010c010000200010000016f0006036e7333c010c08c000100010001397d0004d8ef200ac09e000100010000b3600004d8ef220ac0c20001000100010a7a0004d8ef240ac0b0000100010000db710004d8ef260a0000291000000000000000', True)
+    raw_query = b16decode(b'fabc010000010000000000010377777706676f6f676c6503636f6d00000100010000291000000000000000', True)
+    raw_response = b16decode(b'fabc818000010006000400050377777706676f6f676c6503636f6d0000010001c00c000100010000006400044a7d8368c00c000100010000006400044a7d8369c00c000100010000006400044a7d836ac00c000100010000006400044a7d8393c00c000100010000006400044a7d8363c00c000100010000006400044a7d8367c010000200010000016f0006036e7331c010c010000200010000016f0006036e7332c010c010000200010000016f0006036e7334c010c010000200010000016f0006036e7333c010c08c000100010001397d0004d8ef200ac09e000100010000b3600004d8ef220ac0c20001000100010a7a0004d8ef240ac0b0000100010000db710004d8ef260a0000291000000000000000', True)
 
     query = Message.unpack(raw_query)
     response = Message.unpack(raw_response)
@@ -205,18 +206,18 @@ if __name__ == '__main__':
    
 
     the_question = query.questions[0]
-    assert list(map(lambda n: n.name, the_question.name)) == ['www', 'google', 'com', '']
+    assert list(map(lambda n: n.name, the_question.name)) == [b'www', b'google', b'com', b'']
 
     the_question = response.questions[0]
-    assert list(map(lambda n: n.name, the_question.name)) == ['www', 'google', 'com', '']
+    assert list(map(lambda n: n.name, the_question.name)) == [b'www', b'google', b'com', b'']
  
-    BASE = "google.com."
-    W    = "www." + BASE
-    NS1  = "ns1." + BASE
-    NS2  = "ns2." + BASE
-    NS3  = "ns3." + BASE
-    NS4  = "ns4." + BASE
-    ROOT = ""
+    BASE = b"google.com."
+    W    = b"www." + BASE
+    NS1  = b"ns1." + BASE
+    NS2  = b"ns2." + BASE
+    NS3  = b"ns3." + BASE
+    NS4  = b"ns4." + BASE
+    ROOT = b""
     for resource_records, expecteds in zip(
             (response.questions, response.answers, response.authorities, response.additionals),
             ([W], [W]*6, [BASE]*4, [NS1, NS2, NS3, NS4, ROOT])):
@@ -224,7 +225,7 @@ if __name__ == '__main__':
         assert len(resource_records) == len(expecteds)
         for one_record, expected_name in zip(resource_records, expecteds):
             labels = one_record.name 
-            name = ".".join([label.uncompressed_name(raw_response) for label in labels])
+            name = b".".join([label.uncompressed_name(raw_response) for label in labels])
          
             assert name == expected_name
    

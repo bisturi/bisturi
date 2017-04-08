@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -79,14 +80,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(), 
          obj_two = Double(),
-         one_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
+         one_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x00',
          obj_one_defaults = (0, 0), 
          obj_two_defaults = (0, 0), 
-         first_raw_for_one =   '\x00\x00\x00\x01\x00\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x00\x01\x00\x00\x00\x02',   
          obj_one_first_values = (1, 2),
-         second_raw_for_one =  '\x00\x00\x00\x03\x00\x00\x00\x04', 
-         second_raw_for_two = '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw_for_one =  b'\x00\x00\x00\x03\x00\x00\x00\x04', 
+         second_raw_for_two =  b'\x00\x00\x00\x05\x00\x00\x00\x06', 
          obj_one_second_values = (3, 4), 
          obj_two_second_values = (5, 6)
       )
@@ -99,14 +100,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = WithDefaults(), 
          obj_two = WithDefaults(),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
-         two_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x02',
+         two_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x02',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x00\x00\x00\x03\x00\x00\x00\x04',   
+         first_raw_for_one =   b'\x00\x00\x00\x03\x00\x00\x00\x04',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x00\x00\x00\x05\x00\x00\x00\x06', 
-         second_raw_for_two = '\x00\x00\x00\x07\x00\x00\x00\x08', 
+         second_raw_for_one =  b'\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw_for_two =  b'\x00\x00\x00\x07\x00\x00\x00\x08', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -119,14 +120,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = MinusOneSigned(), 
          obj_two = MinusOneSigned(),
-         one_default_raw = '\xff\xff\x00\x01',
-         two_default_raw = '\xff\xff\x00\x01',
+         one_default_raw = b'\xff\xff\x00\x01',
+         two_default_raw = b'\xff\xff\x00\x01',
          obj_one_defaults = (-1, 1), 
          obj_two_defaults = (-1, 1), 
-         first_raw_for_one =   '\xff\xfe\x00\x02',   
+         first_raw_for_one =   b'\xff\xfe\x00\x02',   
          obj_one_first_values = (-2, 2),
-         second_raw_for_one =  '\x80\x02\x00\x03', 
-         second_raw_for_two = '\x80\x04\x00\x05', 
+         second_raw_for_one =  b'\x80\x02\x00\x03', 
+         second_raw_for_two =  b'\x80\x04\x00\x05', 
          obj_one_second_values = (-32766, 3), 
          obj_two_second_values = (-32764, 5)
       )
@@ -139,14 +140,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = ChangedEndianess(), 
          obj_two = ChangedEndianess(),
-         one_default_raw = '\x01\x00\x00\x00\x02\x00\x00\x00',
-         two_default_raw = '\x01\x00\x00\x00\x02\x00\x00\x00',
+         one_default_raw = b'\x01\x00\x00\x00\x02\x00\x00\x00',
+         two_default_raw = b'\x01\x00\x00\x00\x02\x00\x00\x00',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x03\x00\x00\x00\x04\x00\x00\x00',   
+         first_raw_for_one =   b'\x03\x00\x00\x00\x04\x00\x00\x00',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x05\x00\x00\x00\x06\x00\x00\x00', 
-         second_raw_for_two = '\x07\x00\x00\x00\x08\x00\x00\x00', 
+         second_raw_for_one =  b'\x05\x00\x00\x00\x06\x00\x00\x00', 
+         second_raw_for_two =  b'\x07\x00\x00\x00\x08\x00\x00\x00', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -160,14 +161,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = RareSizeWithDefaults(), 
          obj_two = RareSizeWithDefaults(),
-         one_default_raw = '\x00\x00\x01\x00\x00\x02',
-         two_default_raw = '\x00\x00\x01\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x01\x00\x00\x02',
+         two_default_raw = b'\x00\x00\x01\x00\x00\x02',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x00\x00\x03\x00\x00\x04',   
+         first_raw_for_one =   b'\x00\x00\x03\x00\x00\x04',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x00\x00\x05\x00\x00\x06', 
-         second_raw_for_two = '\x00\x00\x07\x00\x00\x08', 
+         second_raw_for_one =  b'\x00\x00\x05\x00\x00\x06', 
+         second_raw_for_two =  b'\x00\x00\x07\x00\x00\x08', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -180,14 +181,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = RareSizeMinusOneSigned(), 
          obj_two = RareSizeMinusOneSigned(),
-         one_default_raw = '\xff\xff\xff\x00\x00\x01',
-         two_default_raw = '\xff\xff\xff\x00\x00\x01',
+         one_default_raw = b'\xff\xff\xff\x00\x00\x01',
+         two_default_raw = b'\xff\xff\xff\x00\x00\x01',
          obj_one_defaults = (-1, 1), 
          obj_two_defaults = (-1, 1), 
-         first_raw_for_one =   '\xff\xff\xfe\x00\x00\x02',   
+         first_raw_for_one =   b'\xff\xff\xfe\x00\x00\x02',   
          obj_one_first_values = (-2, 2),
-         second_raw_for_one =  '\x80\x00\x02\x00\x00\x03', 
-         second_raw_for_two = '\x80\x00\x04\x00\x00\x05', 
+         second_raw_for_one =  b'\x80\x00\x02\x00\x00\x03', 
+         second_raw_for_two =  b'\x80\x00\x04\x00\x00\x05', 
          obj_one_second_values = (-8388606, 3), 
          obj_two_second_values = (-8388604, 5)
       )
@@ -200,14 +201,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = RareSizeMinusOneChangedEndianess(), 
          obj_two = RareSizeMinusOneChangedEndianess(),
-         one_default_raw = '\x01\x00\x00\x02\x00\x00',
-         two_default_raw = '\x01\x00\x00\x02\x00\x00',
+         one_default_raw = b'\x01\x00\x00\x02\x00\x00',
+         two_default_raw = b'\x01\x00\x00\x02\x00\x00',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x03\x00\x00\x04\x00\x00',   
+         first_raw_for_one =   b'\x03\x00\x00\x04\x00\x00',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x05\x00\x00\x06\x00\x00', 
-         second_raw_for_two = '\x07\x00\x00\x08\x00\x00', 
+         second_raw_for_one =  b'\x05\x00\x00\x06\x00\x00', 
+         second_raw_for_two =  b'\x07\x00\x00\x08\x00\x00', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -220,14 +221,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(first=1), 
          obj_two = Double(second=2),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x02',
          obj_one_defaults = (1, 0), 
          obj_two_defaults = (0, 2), 
-         first_raw_for_one =   '\x00\x00\x00\x03\x00\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x00\x03\x00\x00\x00\x02',   
          obj_one_first_values = (3, 2),
-         second_raw_for_one =  '\x00\x00\x00\x04\x00\x00\x00\x05', 
-         second_raw_for_two = '\x00\x00\x00\x06\x00\x00\x00\x07', 
+         second_raw_for_one =  b'\x00\x00\x00\x04\x00\x00\x00\x05', 
+         second_raw_for_two =  b'\x00\x00\x00\x06\x00\x00\x00\x07', 
          obj_one_second_values = (4, 5), 
          obj_two_second_values = (6, 7)
       )
@@ -240,14 +241,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(first=1), 
          obj_two = Double(second=2),
-         one_default_raw = '\x00\x00\x01\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x01\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x02',
          obj_one_defaults = (1, 0), 
          obj_two_defaults = (0, 2), 
-         first_raw_for_one =   '\x00\x00\x03\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x03\x00\x00\x02',   
          obj_one_first_values = (3, 2),
-         second_raw_for_one =  '\x00\x00\x04\x00\x00\x05', 
-         second_raw_for_two = '\x00\x00\x06\x00\x00\x07', 
+         second_raw_for_one =  b'\x00\x00\x04\x00\x00\x05', 
+         second_raw_for_two =  b'\x00\x00\x06\x00\x00\x07', 
          obj_one_second_values = (4, 5), 
          obj_two_second_values = (6, 7)
       )
@@ -261,14 +262,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(), 
          obj_two = Double(),
-         one_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x00',
+         one_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x00',
          obj_one_defaults = (0, 0), 
          obj_two_defaults = (0, 0), 
-         first_raw_for_one =   '\x00\x00\x00\x01\x00\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x00\x01\x00\x00\x00\x02',   
          obj_one_first_values = (1, 2),
-         second_raw_for_one =  '\x00\x00\x00\x03\x00\x00\x00\x04', 
-         second_raw_for_two = '\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw_for_one =  b'\x00\x00\x00\x03\x00\x00\x00\x04', 
+         second_raw_for_two =  b'\x00\x00\x00\x05\x00\x00\x00\x06', 
          obj_one_second_values = (3, 4), 
          obj_two_second_values = (5, 6)
       )
@@ -282,14 +283,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = WithDefaults(), 
          obj_two = WithDefaults(),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
-         two_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x02',
+         two_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x02',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x00\x00\x00\x03\x00\x00\x00\x04',   
+         first_raw_for_one =   b'\x00\x00\x00\x03\x00\x00\x00\x04',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x00\x00\x00\x05\x00\x00\x00\x06', 
-         second_raw_for_two = '\x00\x00\x00\x07\x00\x00\x00\x08', 
+         second_raw_for_one =  b'\x00\x00\x00\x05\x00\x00\x00\x06', 
+         second_raw_for_two =  b'\x00\x00\x00\x07\x00\x00\x00\x08', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -304,14 +305,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = RareSizeWithDefaults(), 
          obj_two = RareSizeWithDefaults(),
-         one_default_raw = '\x00\x00\x01\x00\x00\x02',
-         two_default_raw = '\x00\x00\x01\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x01\x00\x00\x02',
+         two_default_raw = b'\x00\x00\x01\x00\x00\x02',
          obj_one_defaults = (1, 2), 
          obj_two_defaults = (1, 2), 
-         first_raw_for_one =   '\x00\x00\x03\x00\x00\x04',   
+         first_raw_for_one =   b'\x00\x00\x03\x00\x00\x04',   
          obj_one_first_values = (3, 4),
-         second_raw_for_one =  '\x00\x00\x05\x00\x00\x06', 
-         second_raw_for_two = '\x00\x00\x07\x00\x00\x08', 
+         second_raw_for_one =  b'\x00\x00\x05\x00\x00\x06', 
+         second_raw_for_two =  b'\x00\x00\x07\x00\x00\x08', 
          obj_one_second_values = (5, 6), 
          obj_two_second_values = (7, 8)
       )
@@ -325,14 +326,14 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(first=1), 
          obj_two = Double(second=2),
-         one_default_raw = '\x00\x00\x00\x01\x00\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x00\x01\x00\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x00\x00\x02',
          obj_one_defaults = (1, 0), 
          obj_two_defaults = (0, 2), 
-         first_raw_for_one =   '\x00\x00\x00\x03\x00\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x00\x03\x00\x00\x00\x02',   
          obj_one_first_values = (3, 2),
-         second_raw_for_one =  '\x00\x00\x00\x04\x00\x00\x00\x05', 
-         second_raw_for_two = '\x00\x00\x00\x06\x00\x00\x00\x07', 
+         second_raw_for_one =  b'\x00\x00\x00\x04\x00\x00\x00\x05', 
+         second_raw_for_two =  b'\x00\x00\x00\x06\x00\x00\x00\x07', 
          obj_one_second_values = (4, 5), 
          obj_two_second_values = (6, 7)
       )
@@ -346,14 +347,15 @@ class TestInt(unittest.TestCase):
       self._test_ints(
          obj_one = Double(first=1), 
          obj_two = Double(second=2),
-         one_default_raw = '\x00\x00\x01\x00\x00\x00',
-         two_default_raw = '\x00\x00\x00\x00\x00\x02',
+         one_default_raw = b'\x00\x00\x01\x00\x00\x00',
+         two_default_raw = b'\x00\x00\x00\x00\x00\x02',
          obj_one_defaults = (1, 0), 
          obj_two_defaults = (0, 2), 
-         first_raw_for_one =   '\x00\x00\x03\x00\x00\x02',   
+         first_raw_for_one =   b'\x00\x00\x03\x00\x00\x02',   
          obj_one_first_values = (3, 2),
-         second_raw_for_one =  '\x00\x00\x04\x00\x00\x05', 
-         second_raw_for_two = '\x00\x00\x06\x00\x00\x07', 
+         second_raw_for_one =  b'\x00\x00\x04\x00\x00\x05', 
+         second_raw_for_two =  b'\x00\x00\x06\x00\x00\x07', 
          obj_one_second_values = (4, 5), 
          obj_two_second_values = (6, 7)
       )
+

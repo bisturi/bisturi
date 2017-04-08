@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
 
 import sys
 sys.path.append("../")
@@ -36,8 +37,8 @@ class ARP_EthIP(Packet):
 if __name__ == '__main__':
    from base64 import b16decode
 
-   raw_query = b16decode('00010800060400010018f7f6f7fdc0a80103000000000000c0a8010c', True)
-   raw_response = b16decode('0001080006040002002f6f5fdfdfc0a8010c0018f7f6f7fdc0a80103', True)
+   raw_query = b16decode(b'00010800060400010018f7f6f7fdc0a80103000000000000c0a8010c', True)
+   raw_response = b16decode(b'0001080006040002002f6f5fdfdfc0a8010c0018f7f6f7fdc0a80103', True)
 
    arp_query = ARP.unpack(raw_query)
    arp_response = ARP.unpack(raw_response)
@@ -48,9 +49,9 @@ if __name__ == '__main__':
    assert arp_query.hw_len == arp_response.hw_len == 6
    assert arp_query.prot_len == arp_response.prot_len == 4
 
-   assert arp_query.sender_hw_addr == arp_response.target_hw_addr == b16decode('0018f7f6f7fd', True)
-   assert arp_query.sender_prot_addr == arp_response.target_prot_addr == b16decode('c0a80103', True)
+   assert arp_query.sender_hw_addr == arp_response.target_hw_addr == b16decode(b'0018f7f6f7fd', True)
+   assert arp_query.sender_prot_addr == arp_response.target_prot_addr == b16decode(b'c0a80103', True)
 
-   assert arp_query.target_hw_addr == b16decode('000000000000', True)
-   assert arp_response.sender_hw_addr == b16decode('002f6f5fdfdf', True)
-   assert arp_query.target_prot_addr == arp_response.sender_prot_addr == b16decode('c0a8010c', True)
+   assert arp_query.target_hw_addr == b16decode(b'000000000000', True)
+   assert arp_response.sender_hw_addr == b16decode(b'002f6f5fdfdf', True)
+   assert arp_query.target_prot_addr == arp_response.sender_prot_addr == b16decode(b'c0a8010c', True)

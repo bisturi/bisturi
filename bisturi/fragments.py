@@ -1,11 +1,13 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
+
 from bisect import insort, bisect_left, bisect_right
 import re
 
 class Fragments(object):
-    def __init__(self, fill='.'):
+    def __init__(self, fill=b'.'):
         self.fragments = {}
         self.begin_of_fragments = []
         self.current_offset = 0
@@ -55,7 +57,7 @@ class Fragments(object):
             result.append(s)
             begin = offset + len(s)
 
-        return ''.join(result)
+        return b''.join(result)
 
     def __repr__(self):
         return repr(sorted(self.fragments.iteritems()))
@@ -93,7 +95,7 @@ class FragmentsOfRegexps(Fragments):
 
         else:
             regexp = string
-            string = "x"
+            string = b"x"
 
         Fragments.insert(self, position, string)
 
@@ -107,10 +109,10 @@ class FragmentsOfRegexps(Fragments):
 
             hole_length = (offset-begin)
             if hole_length > 0:
-                result.append("(?:.{%i})" % hole_length)
+                result.append(b"(?:.{%i})" % hole_length)
 
             result.append(regexp)
             begin = offset + len(string)
 
-        return ''.join(result)
+        return b''.join(result)
 

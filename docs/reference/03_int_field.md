@@ -23,12 +23,12 @@ Let see an example
 The code should be self explaining. But to remove any doubt,
 
 ```python
->>> a = '\x00\x00\x00\x01'  # 1
->>> b = '\x02'              # 2
->>> c = '\x03\x00\x00\x00'  # 3 in little endian
->>> d = '\xfc'              # -4
->>> e = '\x00\x00\x00\x05'  # 5 in big endian (or network order)
->>> f = '\x00\x00\x00\x06'  # 6 if this machine is big endian, but i don't know.
+>>> a = b'\x00\x00\x00\x01'  # 1
+>>> b = b'\x02'              # 2
+>>> c = b'\x03\x00\x00\x00'  # 3 in little endian
+>>> d = b'\xfc'              # -4
+>>> e = b'\x00\x00\x00\x05'  # 5 in big endian (or network order)
+>>> f = b'\x00\x00\x00\x06'  # 6 if this machine is big endian, but i don't know.
 
 >>> s = a+b+c+d+e+f
 >>> p = IntExample.unpack(s)
@@ -56,11 +56,11 @@ But Int can handle other cases, using a hand-crafted implementation. It is slowe
 ...    d = Int(3, endianness='network')
 ...    e = Int(3, endianness='local')
 
->>> a = '\x00\x00\x01'      # 1
->>> b = '\x02\x00\x00'      # 2 in little endian
->>> c = '\xff'*15 + '\xfd'  # -3 (using 16 bytes)
->>> d = '\x00\x00\x04'      # 4 in big endian (or network order)
->>> e = '\x00\x00\x05'      # 5 if this machine is big endian, but i don't know.
+>>> a = b'\x00\x00\x01'      # 1
+>>> b = b'\x02\x00\x00'      # 2 in little endian
+>>> c = b'\xff'*15 + b'\xfd' # -3 (using 16 bytes)
+>>> d = b'\x00\x00\x04'      # 4 in big endian (or network order)
+>>> e = b'\x00\x00\x05'      # 5 if this machine is big endian, but i don't know.
 
 >>> s = a+b+c+d+e
 >>> p = IntExample.unpack(s)
@@ -87,7 +87,7 @@ To see the 'cost' of both implementations, we can mount a very rudimentary test.
 ...    a = Int(3)
 ...    b = Int(5)
 >>> 
->>> s = '\x00\xff\x00\x00\x00\x00\xff\x00'
+>>> s = b'\x00\xff\x00\x00\x00\x00\xff\x00'
 >>> topt = timeit.Timer(lambda: IntOptimized.unpack(s))
 >>> tgen = timeit.Timer(lambda: IntGeneral.unpack(s))
 >>>
@@ -112,9 +112,9 @@ Changeing this in each Int is terrible, so we can change the default policy dire
 ...    b = Int(2)    # now, littleendian by default
 ...    c = Int(2, endianness='network')
 
->>> a = '\x01\x00'          # 1 in little endian
->>> b = '\x02\x00'          # 2 in little endian too
->>> c = '\x00\x03'          # 3 in big endian (or network order)
+>>> a = b'\x01\x00'          # 1 in little endian
+>>> b = b'\x02\x00'          # 2 in little endian too
+>>> c = b'\x00\x03'          # 3 in big endian (or network order)
 
 >>> s = a+b+c
 >>> p = IntWithDifferentDefault.unpack(s)

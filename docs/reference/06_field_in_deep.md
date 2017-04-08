@@ -102,7 +102,7 @@ True
 >>> str(p.pack())
 '\x7f\x00\x00\x01\x00\x00\x00\x00'
 
->>> s = '\xc0\xa8\x01\x01\xc0\xa8\x01\x02'
+>>> s = b'\xc0\xa8\x01\x01\xc0\xa8\x01\x02'
 >>> p = IP_Example.unpack(s)
 >>> str(p.destination)
 '192.168.1.1'

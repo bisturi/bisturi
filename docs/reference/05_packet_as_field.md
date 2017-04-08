@@ -35,8 +35,8 @@ the Ref field in the Ethernet packet to reference another packet, the MAC packet
 So, we can do this
 
 ```python
->>> s1 = '\x00\x01\x01\x00\x00\x01\x00\x01\x01\x00\x00\x02\x05hello'
->>> s2 = '\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
+>>> s1 = b'\x00\x01\x01\x00\x00\x01\x00\x01\x01\x00\x00\x02\x05hello'
+>>> s2 = b'\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
 >>>
 >>> p = Ethernet.unpack(s1)
 >>> q = Ethernet.unpack(s2)
@@ -72,8 +72,8 @@ to set defaults parameters to the referenced object, you need to pass it instead
 
 ```python
 >>> class Ethernet(Packet):
-...    destination = Ref(MAC(nic='\xff\xff\x01'))
-...    source = Ref(MAC(nic='\xff\xff\x02'))
+...    destination = Ref(MAC(nic=b'\xff\xff\x01'))
+...    source = Ref(MAC(nic=b'\xff\xff\x02'))
 ...    size = Int(1)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 
@@ -115,7 +115,7 @@ Ref. This is an example:
 ...    age = Int(1)
 ...
 
->>> s = "\x04john\x05\x03\x07\xda\x16"
+>>> s = b"\x04john\x05\x03\x07\xda\x16"
 >>> p = Person.unpack(s)
 
 >>> p.length

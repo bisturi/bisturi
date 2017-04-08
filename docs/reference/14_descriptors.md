@@ -26,14 +26,14 @@ The field length will be access through the AutoLength descriptor. In this case,
 __get__ method will return the length of the field tracked ("a" in this case)
 
 ```python
->>> s = '\x02ab'
+>>> s = b'\x02ab'
 >>> p = DataExample.unpack(s)
 >>> p.length
 2
 >>> p.a
 'ab'
 
->>> p.a = "abc"     # change only this field
+>>> p.a = b"abc"     # change only this field
 >>> p.length        # and this other gets updated automatically
 3
 >>> p.a
@@ -65,7 +65,7 @@ The AutoLength descriptor implement sync_before_pack so th pack method works as 
 AutoLength support to force a value disabling the auto-functionality
 
 ```python
->>> q = DataExample(length=3, a='ab')
+>>> q = DataExample(length=3, a=b'ab')
 >>> q.length
 3
 >>> q.a
@@ -103,14 +103,14 @@ For example if we need to compute the length in bits of some data, we can do:
 An this descriptor will works in the same way that AutoLength:
 
 ```python
->>> s = '\x10ab'
+>>> s = b'\x10ab'
 >>> p = DataExample.unpack(s)
 >>> p.length_in_bits
 16
 >>> p.a
 'ab'
 
->>> p.a = "abc" 
+>>> p.a = b"abc" 
 >>> p.length_in_bits
 24
 >>> p.a

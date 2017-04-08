@@ -15,7 +15,7 @@ As you can see, it is 12,4.
 The default interpretation of the field is like an integer.
 
 ```python
->>> s = '\x00\x12'
+>>> s = b'\x00\x12'
 >>> p = BitsExample.unpack(s)
 >>>
 >>> p.fragment_offset
