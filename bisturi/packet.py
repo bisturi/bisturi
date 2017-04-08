@@ -16,6 +16,8 @@ import traceback, sys, re
 
 import bisturi.packet_builder
 
+from bisturi.six import with_metaclass
+
 class PacketError(Exception):
     def __init__(self, was_error_found_in_unpacking_phase, field_name, packet_class_name, offset, original_error_message):
         Exception.__init__(self, "")
@@ -54,9 +56,7 @@ class PacketError(Exception):
 
         return msg
 
-
-class Packet(object):
-    __metaclass__ = bisturi.packet_builder.MetaPacket
+class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
     __bisturi__ = {}
 
     def __init__(self, _initialize_fields=True, **defaults):
