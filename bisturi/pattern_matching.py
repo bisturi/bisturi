@@ -3,7 +3,11 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 
-from itertools import ifilter
+try:
+    from itertools import ifilter
+except:
+    ifilter = filter
+
 from re import finditer, compile, escape
 from functools import partial
 from operator import eq as equals_to
