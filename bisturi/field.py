@@ -296,12 +296,12 @@ class Int(Field):
         self.is_bigendian = (self.endianness in ('big', 'network')) or (self.endianness == 'local' and sys.byteorder == 'big')
       
         if self.byte_count in (1, 2, 4, 8): 
-            code = {1:b'B', 2:b'H', 4:b'I', 8:b'Q'}[self.byte_count]
+            code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
             if self.is_signed:
                 code = code.lower()
 
             self.struct_code = code
-            fmt = (b">" if self.is_bigendian else b"<") + code
+            fmt = (">" if self.is_bigendian else "<") + code
             self.struct_obj = struct.Struct(fmt)
 
             self.pack, self.unpack = self._pack_fixed_and_primitive_size, self._unpack_fixed_and_primitive_size
@@ -309,7 +309,7 @@ class Int(Field):
         else:
             self.struct_code = None
             self.base = 2**(self.byte_count*8)
-            self.xcode = b"%%0%(count)ix" % {'count': self.byte_count*2}
+            self.xcode = "%%0%(count)ix" % {'count': self.byte_count*2}
 
             self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
@@ -411,7 +411,7 @@ class Data(Field):
 
         if self.byte_count is not None:
             if isinstance(self.byte_count, integer_types):
-                self.struct_code = b"%is" % self.byte_count
+                self.struct_code = "%is" % self.byte_count
                 self.unpack = self._unpack_fixed_size
          
             elif isinstance(self.byte_count, Field):
