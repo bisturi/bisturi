@@ -49,7 +49,7 @@ class PacketClassBuilder(object):
             _, field = name_and_field
             return inspect.isclass(field) and issubclass(field, Packet)
 
-        names_and_subpackets = filter(is_a_packet_instance, self.attrs.iteritems())
+        names_and_subpackets = filter(is_a_packet_instance, self.attrs.items())
         subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name), 
                                Ref(prototype=subpacket, _is_a_subpacket_definition=True)) for name, subpacket in names_and_subpackets]
 
@@ -76,8 +76,8 @@ class PacketClassBuilder(object):
             _, field = name_and_field
             return field.ctime
 
-        self.fields_in_class = filter(is_a_field_instance, self.attrs.iteritems())
-        self.fields_in_class.sort(key=creation_time_of_field)
+        self.fields_in_class = filter(is_a_field_instance, self.attrs.items())
+        self.fields_in_class = sorted(self.fields_in_class, key=creation_time_of_field)
 
         self.original_fields_in_class = list(self.fields_in_class)
 

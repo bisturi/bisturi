@@ -52,7 +52,7 @@ class Fragments(object):
     def __str__(self):
         begin = 0
         result = []
-        for offset, s in sorted(self.fragments.iteritems()):
+        for offset, s in sorted(self.fragments.items()):
             result.append(self.fill * (offset-begin))
             result.append(s)
             begin = offset + len(s)
@@ -60,7 +60,7 @@ class Fragments(object):
         return b''.join(result)
 
     def __repr__(self):
-        return repr(sorted(self.fragments.iteritems()))
+        return repr(sorted(self.fragments.items()))
 
     def __eq__(self, other):
         if isinstance(other, basestring):
@@ -104,7 +104,7 @@ class FragmentsOfRegexps(Fragments):
     def assemble_regexp(self):
         begin = 0
         result = []
-        for p, regexp in sorted(self.regexp_by_position.iteritems()):
+        for p, regexp in sorted(self.regexp_by_position.items()):
             offset, string  = p, self.fragments[p]
 
             hole_length = (offset-begin)
