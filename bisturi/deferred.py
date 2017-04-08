@@ -17,7 +17,7 @@ BinaryOperationsByCategory = {
         'integer': [
             # arith ------------------------------------
             operator.add,         operator.sub,
-            operator.mul,         operator.div,
+            operator.mul,         
             operator.truediv,     operator.floordiv,
             operator.mod,         operator.pow,
 
@@ -47,7 +47,7 @@ BinaryReverseOperationsByCategory = {
         'integer': [
             # arith ------------------------------------
             operator.add,         operator.sub,
-            operator.mul,         operator.div,
+            operator.mul,         
             operator.truediv,     operator.floordiv,
             operator.mod,         operator.pow,
 
