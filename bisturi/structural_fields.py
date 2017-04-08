@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 from bisturi.field import Field, exec_once
 from bisturi.deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
 
+from bisturi.six import integer_types
+
 def normalize_raw_condition_into_a_callable(raw_condition):
     if callable(raw_condition):
         return raw_condition
@@ -45,7 +47,7 @@ def normalize_count_condition_into_a_callable(count_raw_condition):
     if callable(count_raw_condition):
         return count_raw_condition
 
-    if isinstance(count_raw_condition, (int, long)):
+    if isinstance(count_raw_condition, integer_types):
         return lambda **k: count_raw_condition
 
     if isinstance(count_raw_condition, Field):
@@ -253,7 +255,7 @@ class Sequence(Field):
                           "Instead you need to use the 'when' parameter of 'repeated': Int(1).repeated(..., when=...).")
 
 
-@defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an interger as well as a sequence 
+@defer_operations(allowed_categories='all') # we need all because the underlying object (value) can be an integer as well as a sequence 
 class Optional(Field):
     ''' An optional field (aka the field or None).
         See the documentation of the method Field.when.
@@ -387,7 +389,7 @@ class Move(Field):
         if isinstance(self.move_arg, Field):
             move_value = getattr(pkt, self.move_arg.field_name)
 
-        elif isinstance(self.move_arg, (int, long)):
+        elif isinstance(self.move_arg, integer_types):
             move_value = self.move_arg
       
         else:
@@ -422,7 +424,7 @@ class Move(Field):
         if isinstance(self.move_arg, Field):
             move_value = getattr(pkt, self.move_arg.field_name)
  
-        elif isinstance(self.move_arg, (int, long)):
+        elif isinstance(self.move_arg, integer_types):
             move_value = self.move_arg
       
         else:

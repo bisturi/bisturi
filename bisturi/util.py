@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
+from bisturi.six import integer_types
+
 FROM_BEGIN = 0
 FROM_END   = 2
 
@@ -21,7 +23,7 @@ class SeekableFile(bytes):
         return self._slice(slice(i, j))
 
     def __getitem__(self, index):
-        if isinstance(index, (int, long)):
+        if isinstance(index, integer_types):
             self._seek(index)
             return self._file.read(1)
 
@@ -69,6 +71,7 @@ from bisturi.packet import Packet
 import string
 import binascii
 import functools
+
 
 _non_printable = "".join(map(chr, filter(lambda i: chr(i) not in string.digits + string.letters + string.punctuation + " ", range(256))))
 _translate = string.maketrans(_non_printable, len(_non_printable) * ".")

@@ -11,6 +11,8 @@ from bisturi.pattern_matching import Any
 from bisturi.fragments import FragmentsOfRegexps
 from bisturi.util import to_bytes
 
+from bisturi.six import integer_types
+
 def exec_once(m):
     ''' Force to execute the method m only once and save its result.
         The next calls will always return the same result, ignoring the parameters. '''
@@ -390,7 +392,7 @@ class Data(Field):
             raise ValueError("The default must be 'bytes' not '%s'." % type(default))
         
         self.default = default
-        if not default and isinstance(byte_count, (int, long)):
+        if not default and isinstance(byte_count, integer_types):
             self.default = b"\x00" * byte_count
       
         self.byte_count = byte_count 
@@ -401,14 +403,14 @@ class Data(Field):
 
         assert not (consume_delimiter == False and include_delimiter == True)
         self.consume_delimiter = consume_delimiter #XXX document this!
-        self.is_fixed = isinstance(byte_count, (int, long))
+        self.is_fixed = isinstance(byte_count, integer_types)
 
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         if self.byte_count is not None:
-            if isinstance(self.byte_count, (int, long)):
+            if isinstance(self.byte_count, integer_types):
                 self.struct_code = b"%is" % self.byte_count
                 self.unpack = self._unpack_fixed_size
          
@@ -553,7 +555,7 @@ class Data(Field):
         else:
             custom_regexp = value.regexp.pattern if value.regexp is not None else b".*"
             if self.byte_count is not None:
-                if isinstance(self.byte_count, (int, long)):
+                if isinstance(self.byte_count, integer_types):
                     byte_count = self.byte_count
              
                 elif isinstance(self.byte_count, Field):
