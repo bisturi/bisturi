@@ -26,7 +26,7 @@ That's all what you need. The principal objective of bisturi is to allow you to 
 After the packet definition you can parse any byte string in one call:
 
 ```python
->>> raw = '\t\x00\x04ABCD'
+>>> raw = b'\t\x00\x04ABCD'
 >>> tlv = TypeLengthValue.unpack(raw)
 
 >>> tlv.type
@@ -41,7 +41,7 @@ After the packet definition you can parse any byte string in one call:
 As well you can parse (unpack) a byte string you can do the reverse, pack a packet into a byte string:
 
 ```python
->>> str(tlv.pack())
+>>> tlv.pack()
 '\t\x00\x04ABCD'
 
 ```
@@ -58,7 +58,7 @@ Here is an example of how to describe a bit mask
 ...     fragment_offset = Bits(9)
 ...     data = Data(length)
 
->>> raw = '\x0c\x05abc'
+>>> raw = b'\x0c\x05abc'
 >>> fc = FrameControl.unpack(raw)
 
 >>> fc.length
@@ -80,9 +80,9 @@ And here is how to describe a sequence of values (aka list) and an optional fiel
 ...     count_numbers = Bits(7)
 ...
 ...     numbers = Int(1).repeated(count_numbers)
-...     optional_name = Data(until_marker='\x00').when(has_name)
+...     optional_name = Data(until_marker=b'\x00').when(has_name)
 
->>> raw_without_name = '\x03ABC'
+>>> raw_without_name = b'\x03ABC'
 >>> image1d = Image1D.unpack(raw_without_name)
 
 >>> image1d.has_name
@@ -94,7 +94,7 @@ And here is how to describe a sequence of values (aka list) and an optional fiel
 >>> image1d.optional_name is None
 True
 
->>> raw_with_name = '\x83ABCsome null terminated name\x00garbage-garbage'
+>>> raw_with_name = b'\x83ABCsome null terminated name\x00garbage-garbage'
 >>> image1d = Image1D.unpack(raw_with_name)
 
 >>> image1d.has_name
@@ -119,8 +119,8 @@ Here is what I mean:
 
 >>> class Address(Packet):
 ...     ip_address  = Int(1).repeated(4)
-...     domain_name = Data(until_marker='\x00').when((ip_address[:3] == [0, 0, 0]) &
-...                                                  (ip_address[3]  != 0)) # subscript and comparisions
+...     domain_name = Data(until_marker=b'\x00').when((ip_address[:3] == [0, 0, 0]) &
+...                                                   (ip_address[3]  != 0)) # subscript and comparisions
 
 >>> class Token(Packet):
 ...     size = Int(1)
@@ -128,7 +128,7 @@ Here is what I mean:
 ...                              # ^-- an arbitrary callable is allowed too
 
 
->>> raw_matrix = '\x02\x03ABCDEF'
+>>> raw_matrix = b'\x02\x03ABCDEF'
 >>> matrix_2x3 = Matrix.unpack(raw_matrix)
 
 >>> cols = matrix_2x3.columns
@@ -137,7 +137,7 @@ Here is what I mean:
 >>> matrix_2x3.values[cols : cols*2] # second row
 [68, 69, 70]
 
->>> raw_resolved_address = '\xc0\xa8\x00\x01'
+>>> raw_resolved_address = b'\xc0\xa8\x00\x01'
 >>> resolved_address = Address.unpack(raw_resolved_address)
 
 >>> resolved_address.ip_address
@@ -145,7 +145,7 @@ Here is what I mean:
 >>> resolved_address.domain_name is None
 True
 
->>> raw_unresolved_address = '\x00\x00\x00\x01example.com\x00'
+>>> raw_unresolved_address = b'\x00\x00\x00\x01example.com\x00'
 >>> unresolved_address = Address.unpack(raw_unresolved_address)
 
 >>> unresolved_address.ip_address
@@ -153,13 +153,13 @@ True
 >>> unresolved_address.domain_name
 'example.com'
 
->>> raw_small_token = '\x01A'
+>>> raw_small_token = b'\x01A'
 >>> small_token = Token.unpack(raw_small_token)
 
 >>> small_token.data
 'A'
 
->>> raw_too_long_token = '\xffABCD1234EFGH5678'
+>>> raw_too_long_token = b'\xffABCD1234EFGH5678'
 >>> truncated_token = Token.unpack(raw_too_long_token)
 
 >>> truncated_token.data
