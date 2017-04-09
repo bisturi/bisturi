@@ -309,7 +309,6 @@ class Int(Field):
         else:
             self.struct_code = None
             self.base = 2**(self.byte_count*8)
-            self.xcode = "%%0%(count)ix" % {'count': self.byte_count*2}
 
             self.pack, self.unpack = self._pack_fixed_size, self._unpack_fixed_size
 
@@ -341,23 +340,37 @@ class Int(Field):
     def _unpack_fixed_size(self, pkt, raw, offset=0, **k):
         next_offset = offset + self.byte_count
         raw_data = raw[offset:next_offset]
-        if not self.is_bigendian:
-            raw_data = raw_data[::-1]
       
-        num = int(raw_data.encode('hex'), 16)
-        if self.is_signed and ord(raw_data[0]) > 127:
-            num = -(self.base - num)
+        try:
+            num = int.from_bytes(raw_data, byteorder='big' if self.is_bigendian else 'little', signed=self.is_signed)
+
+        except AttributeError:
+            if not self.is_bigendian:
+                raw_data = raw_data[::-1]
+
+            hexbytes = raw_data.encode('hex')
+            num = int(hexbytes, 16)
+
+            if self.is_signed and ord(raw_data[0]) > 127:
+                num = -(self.base - num)
 
         setattr(pkt, self.field_name, num)
         return next_offset
 
     def _pack_fixed_size(self, pkt, fragments, **k):
         integer = getattr(pkt, self.field_name)
-        num = (self.base + integer) if integer < 0 else integer
 
-        data = (self.xcode % num).decode('hex')
-        if not self.is_bigendian:
-            data = data[::-1]
+        try:
+            data = integer.to_bytes(self.byte_count, byteorder='big' if self.is_bigendian else 'little', signed=self.is_signed)
+
+        except AttributeError:
+            num = (self.base + integer) if integer < 0 else integer
+
+            xcode = "%%0%(count)ix" % {'count': self.byte_count*2}
+            data = (xcode % num).decode('hex')
+
+            if not self.is_bigendian:
+                data = data[::-1]
 
         fragments.append(data)
         return fragments
