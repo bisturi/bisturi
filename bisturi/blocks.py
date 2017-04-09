@@ -89,7 +89,6 @@ def unpack_impl(pkt, raw, offset, **k):
 
     module_name = "_%s_pkt" % pkt_class.__name__
     module_filename = module_name + ".py"
-    module_compiled_filename = module_name + ".pyc"
 
     module = None
     if os.path.exists(module_filename):
@@ -98,6 +97,10 @@ def unpack_impl(pkt, raw, offset, **k):
         except ImportError:
             pass
 
+    if module and hasattr(module, '__cached__'):
+        module_compiled_filename = module.__cached__
+    else:
+        module_compiled_filename = module_name + ".pyc"
 
     if not module or getattr(module, 'BISTURI_PACKET_COOKIE', None) != cookie:
         if os.path.exists(module_compiled_filename):
@@ -110,8 +113,17 @@ def unpack_impl(pkt, raw, offset, **k):
             module_file.write(unpack_code)
 
         module = imp.load_source(module_name, module_filename)
+    
+        if module and hasattr(module, '__cached__'):
+            module_compiled_filename = module.__cached__
+        else:
+            module_compiled_filename = module_name + ".pyc"
+
         if not write_py_module:
-            os.remove(module_compiled_filename)
+            try:
+                os.remove(module_compiled_filename)
+            except:
+                pass
             os.remove(module_filename)
  
     from bisturi.packet import Packet
