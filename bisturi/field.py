@@ -382,7 +382,7 @@ class Int(Field):
         if is_literal:
             self.pack(pkt, fragments, **k)
         else:
-            fragments.append(b".{%i}" % self.byte_count, is_literal=False)
+            fragments.append((".{%i}" % self.byte_count).encode('ascii'), is_literal=False)
 
         return fragments
 
@@ -581,7 +581,7 @@ class Data(Field):
                         byte_count = None
 
                 if byte_count is not None:
-                    fragments.append(b".{%i}" % byte_count, is_literal=False) # TODO ignoring the custom regexp!!
+                    fragments.append((".{%i}" % byte_count).encode('ascii'), is_literal=False) # TODO ignoring the custom regexp!!
                 else:
                     fragments.append(custom_regexp, is_literal=False)
 
@@ -933,7 +933,7 @@ class Bits(Field):
 
                         lower_literal = re.escape(lower_char)
                         higher_literal = re.escape(higher_char)
-                        fragments.append(b"[%s-%s]" % (lower_literal, higher_literal), is_literal=False)
+                        fragments.append(("[%s-%s]" % (lower_literal, higher_literal)).encode('ascii'), is_literal=False)
                   
                     else:                                             # 00xx x0x0 pattern (mixed pattern)
                         all_patterns   = range(256)
@@ -943,7 +943,7 @@ class Bits(Field):
                         mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
                      
                         literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
-                        fragments.append(b"[%s]" % b"".join(literal_patterns), is_literal=False)
+                        fragments.append(("[%s]" % "".join(literal_patterns)).encode('ascii'), is_literal=False)
 
         return fragments
 

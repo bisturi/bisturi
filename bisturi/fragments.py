@@ -83,13 +83,16 @@ class FragmentsOfRegexps(Fragments):
         self.regexp_by_position = {}
 
     def append(self, string, is_literal=True):
+        assert isinstance(string, bytes)
         self.insert(self.current_offset, string, is_literal)
 
     def extend(self, iterable, is_literal=True):
         for string in iterable:
+            assert isinstance(string, bytes)
             self.insert(self.current_offset, string, is_literal)
 
     def insert(self, position, string, is_literal=True):
+        assert isinstance(string, bytes)
         if is_literal:
             regexp = re.escape(string)
 
@@ -109,7 +112,7 @@ class FragmentsOfRegexps(Fragments):
 
             hole_length = (offset-begin)
             if hole_length > 0:
-                result.append(b"(?:.{%i})" % hole_length)
+                result.append(("(?:.{%i})" % hole_length).encode('ascii'))
 
             result.append(regexp)
             begin = offset + len(string)
