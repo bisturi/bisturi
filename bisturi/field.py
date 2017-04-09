@@ -933,7 +933,8 @@ class Bits(Field):
 
                         lower_literal = re.escape(lower_char)
                         higher_literal = re.escape(higher_char)
-                        fragments.append(("[%s-%s]" % (lower_literal, higher_literal)).encode('ascii'), is_literal=False)
+                        # [lower-higher]
+                        fragments.append(b'[' + lower_literal + b'-' + higher_literal + b']', is_literal=False)
                   
                     else:                                             # 00xx x0x0 pattern (mixed pattern)
                         all_patterns   = range(256)
@@ -942,8 +943,9 @@ class Bits(Field):
 
                         mixed_patterns = sorted(set((p & dont_care_mask) | fixed_pattern for p in all_patterns))
                      
+                        # [ABCD....]
                         literal_patterns = (re.escape(chr(p)) for p in mixed_patterns)
-                        fragments.append(("[%s]" % "".join(literal_patterns)).encode('ascii'), is_literal=False)
+                        fragments.append(b'[' + b''.join(literal_patterns) + b']', is_literal=False)
 
         return fragments
 

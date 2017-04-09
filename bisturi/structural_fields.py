@@ -188,12 +188,13 @@ class Sequence(Field):
                 subregexp = b".*"
     
             # TODO, fix this (fix the self.get_how_many_elements stuff)
-            fragments.append(("(%s)*" % subregexp).encode('ascii'), is_literal=False)
+            # (A)*
+            fragments.append(b'(' + subregexp + b')*', is_literal=False)
             raise NotImplementedError() 
             if self.get_how_many_elements is None:
-                fragments.append(("(%s)*" % subregexp).encode('ascii'), is_literal=False)
+                fragments.append(b'(' + subregexp + b')*', is_literal=False)
             else:
-                fragments.append(("(%s){%i}" % (subregexp, self.get_how_many_elements)).encode('ascii'), is_literal=False)
+                fragments.append(b'(' + subregexp + ("){%i}" % self.get_how_many_elements).encode('ascii'), is_literal=False)
 
         return fragments
     
@@ -326,7 +327,8 @@ class Optional(Field):
             except:
                 subregexp = b".*"
           
-            fragments.append(("(%s)?" % subregexp).encode('ascii'), is_literal=False)
+            # (A)?
+            fragments.append(b'(' + subregexp + b')?', is_literal=False)
 
         return fragments
 
