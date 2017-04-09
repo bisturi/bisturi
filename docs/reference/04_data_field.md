@@ -15,8 +15,8 @@ For now, take the following example
 ...    length = Int(1)
 ...    a = Data(2)
 ...    b = Data(length)
-...    c = Data(until_marker='\0')
-...    d = Data(until_marker='eof')
+...    c = Data(until_marker=b'\0')
+...    d = Data(until_marker=b'eof')
 ...    e = Data(until_marker=re.compile(b'X+|$'))
 ...    f = Data(until_marker=re.compile(b'X+|$'))
 
