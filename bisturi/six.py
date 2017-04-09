@@ -1,7 +1,14 @@
+import sys
+
 try:
     integer_types = (int, long)
 except NameError:
     integer_types = (int, )
+
+if sys.version_info[0] == 2:
+    text_types = (unicode,)
+else:
+    text_types = (str,)
 
 
 def with_metaclass(meta, *bases):

@@ -3,6 +3,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 
+from bisturi.six import text_types 
+
 import collections, functools, operator
 
 def if_true_then_else(condition, possible_values):
@@ -171,6 +173,7 @@ def compile_expr_into_callable(root_expr):
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
    
 
+
 def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_arguments=False):
     if is_binary:
         if swap_binary_arguments:
@@ -183,17 +186,33 @@ def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_
                 assert B or C
                 assert not (B and C)
 
+                is_keyword_call = bool(C)
+
                 if not C and len(B) == 1:
-                    if isinstance(B[0], dict):
+                    if isinstance(B[0], dict):  # nary({k1: v1, k2: v2})
                         C = B[0]
                         B = []
-                    elif isinstance(B[0], (list, tuple)):
+                    elif isinstance(B[0], (list, tuple)):   # nary([v1, v2])
                         B = B[0]
                         C = {}
 
                     else:
-                        raise Exception("Invalid argument for nary expression '%s'. Valid arguments can be a single list or dict (like nary([a, b]) or nary({k1: a, k2: b})), a list of arguments (like nary(a, b)) or a keyword arguments call (like nary(k1=a, k2=b)).")
+                        raise Exception("Invalid argument for nary expression '%s'. Valid arguments can be a single list or dict (like nary([a, b]) or nary({k1: a, k2: b})), a list of arguments (like nary(a, b)) or a keyword arguments call (like nary(k1=a, k2=b))." % methodname)
 
+                elif C:                                 # nary(k1=v1, k2=v2)
+                    def _encode_to_ascii_or_fail(obj):
+                        if not isinstance(obj, text_types):
+                            return obj # as is
+
+                        try:
+                            return obj.encode('ascii')
+                        except:
+                            raise Exception("Invalid argument for nary expression '%s'. Your are using a keyword arguments call (like nary(k1=a, k2=b)) where the keywords aren't valid ascii names (chars between 0 and 128)." % methodname)
+            
+                    C = {_encode_to_ascii_or_fail(k): v for k, v in C.items()}
+
+                # else  --> nary(v1, v2)
+                    
                 return NaryExpr(A, B, C, op)
 
             setattr(target, methodname, nary)
