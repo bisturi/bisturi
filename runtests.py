@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-import sys, glob, os
+import sys, glob, os, doctest, re
 from collections import OrderedDict
 
 def execute_test(filename):
@@ -17,8 +17,19 @@ def run_unit_test(filename):
     finally:
         os.chdir(pwd)
 
+old_check_output = doctest.OutputChecker.check_output
+def check_output(self, want, got, optionflags):
+    if repr(b'') == repr(''):
+        want = re.sub(r"""(\s|^)[bB]([rR]?['"])""", r"\1\2", want)
+    
+    if repr(u'') == repr(''):
+        want = re.sub(r"""(\s|^)[uU]([rR]?['"])""", r"\1\2", want)
+
+    return old_check_output(self, want, got, optionflags)
+doctest.OutputChecker.check_output = check_output
+
 def run_doc_test(filename):
-    os.system('python -m doctest "%s"' % filename)
+    doctest.testfile(filename)
 
 targets = sys.argv[1:]
 test_sources = OrderedDict([
