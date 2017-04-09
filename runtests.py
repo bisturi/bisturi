@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 import sys, glob, os, doctest, re
 from collections import OrderedDict
@@ -20,10 +20,10 @@ def run_unit_test(filename):
 old_check_output = doctest.OutputChecker.check_output
 def check_output(self, want, got, optionflags):
     if repr(b'') == repr(''):
-        want = re.sub(r"""(\s|^)[bB]([rR]?['"])""", r"\1\2", want)
+        want = re.sub(r"""(\(|\s|^)[bB]([rR]?['"])""", r"\1\2", want)
     
     if repr(u'') == repr(''):
-        want = re.sub(r"""(\s|^)[uU]([rR]?['"])""", r"\1\2", want)
+        want = re.sub(r"""(\(|\s|^)[uU]([rR]?['"])""", r"\1\2", want)
 
     return old_check_output(self, want, got, optionflags)
 doctest.OutputChecker.check_output = check_output
