@@ -77,9 +77,9 @@ class TestSequence(unittest.TestCase):
 
 
       except Exception as _e:
-         import pprint, sys
-         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
-         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+         import pprint, sys, traceback
+         _message = str(_e) + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e)(_message + '\n' + traceback.format_exc())
 
    def _test_sequences_packet(self, obj_one, obj_two,
                                     one_default_raw,     obj_one_defaults, 
@@ -99,8 +99,8 @@ class TestSequence(unittest.TestCase):
          two = obj_two
 
          # check defaults
-         one_first, one_second = map(getval, one.first), map(getval, one.second)
-         two_first, two_second = map(getval, two.first), map(getval, two.second)
+         one_first, one_second = list(map(getval, one.first)), list(map(getval, one.second))
+         two_first, two_second = list(map(getval, two.first)), list(map(getval, two.second))
          assert (one_first, one_second) == obj_one_defaults
          assert (two_first, two_second) == obj_two_defaults
          
@@ -113,8 +113,8 @@ class TestSequence(unittest.TestCase):
          one = one.__class__.unpack(raw)
          
          # check parsing (each instance must have its own set of fields and values)
-         one_first, one_second = map(getval, one.first), map(getval, one.second)
-         two_first, two_second = map(getval, two.first), map(getval, two.second)
+         one_first, one_second = list(map(getval, one.first)), list(map(getval, one.second))
+         two_first, two_second = list(map(getval, two.first)), list(map(getval, two.second))
          assert (one_first, one_second) == obj_one_first_values
          assert (two_first, two_second) == obj_two_defaults
          
@@ -129,8 +129,8 @@ class TestSequence(unittest.TestCase):
          two = two.__class__.unpack(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
-         one_first, one_second = map(getval, one.first), map(getval, one.second)
-         two_first, two_second = map(getval, two.first), map(getval, two.second)
+         one_first, one_second = list(map(getval, one.first)), list(map(getval, one.second))
+         two_first, two_second = list(map(getval, two.first)), list(map(getval, two.second))
          assert (one_first, one_second) == obj_one_second_values
          assert (two_first, two_second) == obj_two_second_values
          
@@ -141,9 +141,9 @@ class TestSequence(unittest.TestCase):
 
 
       except Exception as _e:
-         import pprint, sys
-         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
-         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+         import pprint, sys, traceback
+         _message = str(_e) + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e)(_message + '\n' + traceback.format_exc())
 
 
    def _test_sequences_packet_nested(self, obj_one, obj_two,
@@ -154,15 +154,15 @@ class TestSequence(unittest.TestCase):
                                            second_raw_for_two,  obj_two_second_values):
    
       getval = operator.attrgetter('value')
-      getvals = lambda obj: map(getval, obj.value)
+      getvals = lambda obj: list(map(getval, obj.value))
       try:
          #import pdb; pdb.set_trace()
          one = obj_one
          two = obj_two
 
          # check defaults
-         one_first, one_second = map(getvals, one.first), map(getvals, one.second)
-         two_first, two_second = map(getvals, two.first), map(getvals, two.second)
+         one_first, one_second = list(map(getvals, one.first)), list(map(getvals, one.second))
+         two_first, two_second = list(map(getvals, two.first)), list(map(getvals, two.second))
          assert (one_first, one_second) == obj_one_defaults
          assert (two_first, two_second) == obj_two_defaults
          
@@ -175,8 +175,8 @@ class TestSequence(unittest.TestCase):
          one = one.__class__.unpack(raw)
          
          # check parsing (each instance must have its own set of fields and values)
-         one_first, one_second = map(getvals, one.first), map(getvals, one.second)
-         two_first, two_second = map(getvals, two.first), map(getvals, two.second)
+         one_first, one_second = list(map(getvals, one.first)), list(map(getvals, one.second))
+         two_first, two_second = list(map(getvals, two.first)), list(map(getvals, two.second))
          assert (one_first, one_second) == obj_one_first_values
          assert (two_first, two_second) == obj_two_defaults
          
@@ -191,8 +191,8 @@ class TestSequence(unittest.TestCase):
          two = two.__class__.unpack(raw2)
 
          # check parsing (each instance must have its own set of fields and values)
-         one_first, one_second = map(getvals, one.first), map(getvals, one.second)
-         two_first, two_second = map(getvals, two.first), map(getvals, two.second)
+         one_first, one_second = list(map(getvals, one.first)), list(map(getvals, one.second))
+         two_first, two_second = list(map(getvals, two.first)), list(map(getvals, two.second))
          assert (one_first, one_second) == obj_one_second_values
          assert (two_first, two_second) == obj_two_second_values
          
@@ -203,9 +203,9 @@ class TestSequence(unittest.TestCase):
 
 
       except Exception as _e:
-         import pprint, sys
-         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
-         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+         import pprint, sys, traceback
+         _message = str(_e) + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e)(_message + '\n' + traceback.format_exc())
 
    
    def test_field_repeated_fixed_times(self):

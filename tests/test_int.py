@@ -67,9 +67,9 @@ class TestInt(unittest.TestCase):
 
 
       except Exception as _e:
-         import pprint, sys
-         _message = _e.message + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
-         raise type(_e), type(_e)(_message), sys.exc_info()[2]
+         import pprint, sys, traceback
+         _message = str(_e) + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
+         raise type(_e)(_message + '\n' + traceback.format_exc())
 
 
    def test_double_int(self):
