@@ -6,7 +6,7 @@ return fragments of strings.
 This is the only responsability of each Field like Int, Data and Ref.
 But what it is this 'python object'? This depends of the Field.
 
-For example, Int can use as its 'python object' an 'int' or a 'long'.
+For example, Int can use as its 'python object' an 'int' (and a 'long' for Python 2.x).
 The difference between Int and 'int' is that you are almost always interacting with 'int',
 the 'python object' of Int and not with the Int itself.
 
@@ -23,7 +23,7 @@ the 'python object' of Int and not with the Int itself.
 False
 >>> isinstance(p.size, Field)
 False
->>> isinstance(p.size, (int, long))
+>>> isinstance(p.size, int)
 True
 
 ```
@@ -41,7 +41,10 @@ For example the 'ip' object from python (IPv4Address and IPv6Address) can be use
 
 ```python
 >>> from bisturi.field import Field
->>> from bisturi.ipaddress import IPv4Address, IPv6Address
+>>> try:
+...     from ipaddress import IPv4Address, IPv6Address, IPv4Network
+... except ImportError:
+...     from bisturi.ipaddress import IPv4Address, IPv6Address, IPv4Network
 >>> import struct
 
 >>> class IP(Field):
@@ -123,7 +126,6 @@ Take a look of the interface of IPv4Address/IPv6Address for free!
 False
 >>> p.source.is_private
 True
->>> from bisturi.ipaddress import IPv4Network
 >>> p.source in IPv4Network("192.168.0.0/16")
 True
 
