@@ -130,8 +130,12 @@ work like a string:
 >>> from bisturi.util import SeekableFile
 >>>
 >>> def _string_as_seekable_file(s):  # used for testing purposes, to fake a real file
-...   from StringIO import StringIO
-...   return SeekableFile(StringIO(s))
+...   try:
+...       from io import BytesIO
+...   except ImportError:
+...       from StringIO import StringIO as BytesIO
+...
+...   return SeekableFile(BytesIO(s))
 >>>
 >>> seekable_file = _string_as_seekable_file(b'\x00\x00\x00\x00\x03abc')
 

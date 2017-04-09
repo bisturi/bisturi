@@ -379,7 +379,7 @@ class Data(Field):
         Field.__init__(self)
         assert (byte_count is None and until_marker is not None) or (until_marker is None and byte_count is not None)
 
-        if until_marker:
+        if until_marker is not None:
             if hasattr(until_marker, 'search'): # aka regex
                 pattern = until_marker.pattern
                 if not isinstance(pattern, bytes):
@@ -388,7 +388,7 @@ class Data(Field):
                 if not isinstance(until_marker, bytes): 
                     raise ValueError("The until marker must be 'bytes' or a regular expression, not '%s'." % type(until_marker))
 
-        if default and not isinstance(default, bytes):
+        if not isinstance(default, bytes):
             raise ValueError("The default must be 'bytes' not '%s'." % type(default))
         
         self.default = default

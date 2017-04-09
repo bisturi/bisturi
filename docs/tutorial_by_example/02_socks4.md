@@ -25,8 +25,8 @@ Let's see how to express all this into a bisturi packet class:
 ...     dst_port = Int(2)
 ...     dst_ip   = Data(4)
 ... 
-...     user_id = Data(until_marker='\x00')
-...     domain_name = Data(until_marker='\x00').when((dst_ip[:3] == '\x00\x00\x00') & (dst_ip[3] != '\x00'))
+...     user_id = Data(until_marker=b'\x00')
+...     domain_name = Data(until_marker=b'\x00').when((dst_ip[:3] == b'\x00\x00\x00') & (dst_ip[3] != b'\x00'))
 
 ```
 
@@ -49,8 +49,8 @@ See 10_callables.md for more information.
 This condition can accept a field as an argument or an expression of fields. In order to work this require a little of 
 python magic. See 15_defered_expressions.md for more examples and look for the code in deferred.py to see how it works.
 
-But in resume, ```(dst_ip[:3] == '\x00\x00\x00')``` will compare the first three bytes against three nulls and
-```(dst_ip[3] != '\x00')``` will compare to see if it is distinct of a null byte. Both conditions must be met and
+But in resume, ```(dst_ip[:3] == b'\x00\x00\x00')``` will compare the first three bytes against three nulls and
+```(dst_ip[3] != b'\x00')``` will compare to see if it is distinct of a null byte. Both conditions must be met and
 for that reason we use the 'and' operator ```&```
 
 So only when the first three bytes of the IP address are zero and the last byte is different than zero we must
@@ -63,7 +63,7 @@ Now let's try to see this in action.
 Imagine that you are the server and you received the following byte string:
 
 ```python
->>> raw_request = '\x04\x01\x00\x50\x00\x00\x00\x01gehn\x00github.com\x00'
+>>> raw_request = b'\x04\x01\x00\x50\x00\x00\x00\x01gehn\x00github.com\x00'
 
 ```
 
@@ -73,13 +73,13 @@ Then you just unpack it:
 >>> request = ClientRequest.unpack(raw_request)
 
 >>> request.user_id  # who is?
-'gehn'
+b'gehn'
 
 >>> request.command # what's he want?
 1
 
 >>> request.domain_name # but connect to where?
-'github.com'
+b'github.com'
 
 >>> request.dst_port
 80
@@ -89,7 +89,7 @@ Then you just unpack it:
 Now imagine that you receive another request
 
 ```python
->>> raw_request = '\x04\x01\x00\x50\xc0\x1e\xfdpgehn\x00'
+>>> raw_request = b'\x04\x01\x00\x50\xc0\x1e\xfdpgehn\x00'
 
 ```
 
@@ -99,7 +99,7 @@ Then you just unpack it:
 >>> request = ClientRequest.unpack(raw_request)
 
 >>> request.user_id  # who is?
-'gehn'
+b'gehn'
 
 >>> request.command # what's he want?
 1
@@ -108,7 +108,7 @@ Then you just unpack it:
 True
 
 >>> request.dst_ip  # let's see the ip then
-'\xc0\x1e\xfdp'
+b'\xc0\x1e\xfdp'
 
 >>> '%i.%i.%i.%i' % tuple(ord(b) for b in request.dst_ip)
 '192.30.253.112'
@@ -131,12 +131,12 @@ Ready? Fight!
 ...     version, command, dst_port, dst_ip = struct.unpack('>BBH4s', raw_request[:1+1+2+4])
 ...
 ...     consumed += 1 + 1 + 2 + 4
-...     user_id_end = raw_request.find('\x00', consumed)
+...     user_id_end = raw_request.find(b'\x00', consumed)
 ...     user_id = raw_request[consumed:user_id_end]
 ...
 ...     consumed += len(user_id) + 1
-...     if (dst_ip[:3] == '\x00\x00\x00') and (dst_ip[3] != '\x00'):
-...         domain_name_end = raw_request.find('\x00', consumed)
+...     if (dst_ip[:3] == b'\x00\x00\x00') and (dst_ip[3] != b'\x00'):
+...         domain_name_end = raw_request.find(b'\x00', consumed)
 ...         domain_name = raw_request[consumed:domain_name_end]
 ...
 ...     else:
@@ -144,18 +144,18 @@ Ready? Fight!
 ...
 ...     return version, command, dst_port, dst_ip, user_id, domain_name
 
->>> raw_request = '\x04\x01\x00\x50\x00\x00\x00\x01gehn\x00github.com\x00'
+>>> raw_request = b'\x04\x01\x00\x50\x00\x00\x00\x01gehn\x00github.com\x00'
 
 >>> request = parse_client_request(raw_request)
 
 >>> request[4] # who is?
-'gehn'
+b'gehn'
 
 >>> request[1] # what's he want?
 1
 
 >>> request[5] # but connect to where?
-'github.com'
+b'github.com'
 
 >>> request[2]
 80

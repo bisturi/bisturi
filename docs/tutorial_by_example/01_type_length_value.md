@@ -28,7 +28,7 @@ The following is the same packet definition but with all the default arguments m
 >>> class TypeLengthValue(Packet):
 ...     type   = Int(byte_count=1, signed=False, endianness='big', default=0)
 ...     length = Int(byte_count=2, signed=False, endianness='big', default=0)
-...     value  = Data(byte_count=length, default='')
+...     value  = Data(byte_count=length, default=b'')
 
 ```
 
@@ -37,7 +37,7 @@ See the reference of Int and Data for more information about those two fields (0
 As said before, bisturi is a library to parse binary data. So what are we waiting for?
 
 ```python
->>> raw = '\x09\x00\x04ABCD'
+>>> raw = b'\x09\x00\x04ABCD'
 >>> tlv = TypeLengthValue.unpack(raw)
 
 >>> tlv.type
@@ -75,10 +75,10 @@ and even you can create your own packet instances from the scrach, bisturi will 
 Just as you can unpack a byte string into a packet object you can go from a packet object to byte string packing it.
 
 ```python
->>> str(tlv.pack())
+>>> tlv.pack()
 '\x02\x00\x04ABCD'
 
->>> str(crafted_tlv.pack())
+>>> crafted_tlv.pack()
 '\x01\x00\x00'
 
 ```
