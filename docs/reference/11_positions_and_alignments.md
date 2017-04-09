@@ -21,7 +21,7 @@ This is fine, but in some cases it is desired to control where a field begins.
 4
 
 >>> p.file_data
-'ABCD'
+b'ABCD'
 
 ```
 
@@ -32,13 +32,13 @@ This is fine, but in some cases it is desired to control where a field begins.
 1
 
 >>> p.file_data
-'\x00\x00\x00\x00'
+b'\x00\x00\x00\x00'
 >>> p.pack()
-'\x01\x00\x00\x00\x00'
+b'\x01\x00\x00\x00\x00'
 
 >>> p = Folder(offset_of_file=4, file_data=b'ABCD')
 >>> p.pack()
-'\x04...ABCD'
+b'\x04...ABCD'
 
 ```
 
@@ -64,10 +64,10 @@ We can't know how to put two diferent set of data at the same position!
 4
 
 >>> p.payload
-'XXXABCDX'
+b'XXXABCDX'
 
 >>> p.file_data
-'ABCD'
+b'ABCD'
 
 ```
 
@@ -79,10 +79,10 @@ So good so far, but if we try to pack this...
 ### p.offset_of_file
 4
 ### p.payload
-'\x00\x00\x00\x00\x00\x00\x00\x00'
+b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
 ### p.file_data
-'ABCD'
+b'ABCD'
 
 >>> p.pack()                                # doctest: +ELLIPSIS
 Traceback (most recent call last):
@@ -121,9 +121,9 @@ field count_options
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
-'A'
+b'A'
 >>> p.options[1].data
-'ABCD'
+b'ABCD'
 >>> p.checksum == 0x41424344
 True
 
@@ -149,9 +149,9 @@ If we want that the options field be alinged to 4 byte we do:
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
-'A'
+b'A'
 >>> p.options[1].data
-'ABCD'
+b'ABCD'
 >>> p.checksum == 0x41424344
 True
 
@@ -173,9 +173,9 @@ To align each option in the sequence we do:
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
-'A'
+b'A'
 >>> p.options[1].data
-'ABCD'
+b'ABCD'
 >>> p.checksum == 0x41424344
 True
 
@@ -198,9 +198,9 @@ resolve this easly:
 >>> p = Datagram.unpack(s)
 
 >>> p.options[0].data
-'A'
+b'A'
 >>> p.options[1].data
-'ABCD'
+b'ABCD'
 >>> p.checksum == 0x41424344
 True
 
@@ -270,7 +270,7 @@ True
 >>> np = NamedPoint.unpack(s)
 
 >>> np.name
-'f'
+b'f'
 
 >>> np.point.x, np.point.y
 (1, 2)
@@ -304,7 +304,7 @@ will introduce any byte during the packing.
 3
 
 >>> p.data
-'ABC'
+b'ABC'
 
 >>> p.pack() == s
 True
@@ -317,10 +317,12 @@ True
 4
 
 >>> p.data
-'ABCD'
+b'ABCD'
 
 >>> p.pack() == s
 True
 
 
 ```
+
+

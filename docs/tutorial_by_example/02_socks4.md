@@ -110,9 +110,6 @@ True
 >>> request.dst_ip  # let's see the ip then
 b'\xc0\x1e\xfdp'
 
->>> '%i.%i.%i.%i' % tuple(ord(b) for b in request.dst_ip)
-'192.30.253.112'
-
 >>> request.dst_port
 80
 

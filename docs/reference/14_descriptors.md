@@ -31,13 +31,13 @@ __get__ method will return the length of the field tracked ("a" in this case)
 >>> p.length
 2
 >>> p.a
-'ab'
+b'ab'
 
 >>> p.a = b"abc"     # change only this field
 >>> p.length        # and this other gets updated automatically
 3
 >>> p.a
-'abc'
+b'abc'
 
 ```
 
@@ -58,7 +58,7 @@ The AutoLength descriptor implement sync_before_pack so th pack method works as 
 
 ```python
 >>> p.pack()
-'\x03abc'
+b'\x03abc'
 
 ```
 
@@ -69,7 +69,7 @@ AutoLength support to force a value disabling the auto-functionality
 >>> q.length
 3
 >>> q.a
-'ab'
+b'ab'
 
 ```
 
@@ -80,7 +80,7 @@ You can reenable 'deleting' the value set before:
 >>> q.length
 2
 >>> q.a
-'ab'
+b'ab'
 
 ```
 
@@ -108,13 +108,13 @@ An this descriptor will works in the same way that AutoLength:
 >>> p.length_in_bits
 16
 >>> p.a
-'ab'
+b'ab'
 
 >>> p.a = b"abc" 
 >>> p.length_in_bits
 24
 >>> p.a
-'abc'
+b'abc'
 
 ```
 
