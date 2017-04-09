@@ -57,7 +57,7 @@ you need to set a default value (this is mandatory)
 >>> p.type
 1
 >>> p.address
-'\x01\x02\x03\x04'
+b'\x01\x02\x03\x04'
 >>> p.pack() == s
 True
 
@@ -66,7 +66,7 @@ True
 >>> p.type
 4
 >>> p.address
-'\x01\x02\x03\x04\x05\x06\x07\x08'
+b'\x01\x02\x03\x04\x05\x06\x07\x08'
 >>> p.pack() == s
 True
 
@@ -75,10 +75,11 @@ True
 >>> p.type
 3
 >>> p.address.data
-'example.com'
+b'example.com'
 >>> p.address.length
 11
 >>> p.pack() == s
 True
 
 ```
+

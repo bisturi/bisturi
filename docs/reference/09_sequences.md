@@ -31,9 +31,9 @@ So,
 >>> len(p.attributes)
 2
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
-(4, 3, 'abc')
+(4, 3, b'abc')
 
 >>> p.pack() == s
 True
@@ -50,7 +50,7 @@ The field is always represented as a list. One and Zero counts are valid too.
 >>> len(p.attributes)
 1
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 
 >>> p.pack() == s
 True
@@ -84,18 +84,18 @@ For example, the field 'attributes' can be a list that ends with a special
 >>> len(p.attributes)
 3
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
-(4, 3, 'abc')
+(4, 3, b'abc')
 >>> p.attributes[2].type, p.attributes[2].length, p.attributes[2].value
-(0, 0, '')
+(0, 0, b'')
 
 >>> len(q.attributes)
 2
 >>> q.attributes[0].type, q.attributes[0].length, q.attributes[0].value
-(2, 1, 'a')
+(2, 1, b'a')
 >>> q.attributes[1].type, q.attributes[1].length, q.attributes[1].value
-(0, 0, '')
+(0, 0, b'')
 
 >>> p.pack() == s
 True
@@ -107,7 +107,7 @@ True
 >>> len(p.attributes)
 1
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(0, 0, '')
+(0, 0, b'')
 
 >>> p.pack() == s
 True
@@ -134,11 +134,11 @@ To support 'zero-or-more' constructions we need the 'when' condition:
 >>> len(p.attributes)
 3
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
-(4, 3, 'abc')
+(4, 3, b'abc')
 >>> p.attributes[2].type, p.attributes[2].length, p.attributes[2].value
-(0, 0, '')
+(0, 0, b'')
 
 >>> p.pack() == s
 True
@@ -169,9 +169,9 @@ The 'when' condition can be combinated with a fixed count, like:
 >>> len(p.attributes)
 2
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
-(4, 3, 'abc')
+(4, 3, b'abc')
 
 >>> p.pack() == s
 True
@@ -206,9 +206,9 @@ of the stream but leaving 4 byte at the end.
 >>> len(p.attributes)
 2
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
-(1, 2, 'ab')
+(1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
-(4, 3, 'abc')
+(4, 3, b'abc')
 
 >>> p.pack() == s
 True
@@ -244,3 +244,4 @@ True
 True
 
 ```
+

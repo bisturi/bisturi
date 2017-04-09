@@ -32,7 +32,7 @@ I hope!. If not, let the packet dissect the string for you using the classmethod
 >>> p.length
 3
 >>> p.payload
-'abc'
+b'abc'
 
 ```
 
@@ -49,7 +49,7 @@ example
 >>> q.length
 1
 >>> q.payload
-'d'
+b'd'
 
 ```
 
@@ -143,7 +143,7 @@ work like a string:
 >>> p.length
 3
 >>> p.payload
-'abc'
+b'abc'
 
 ```
 
