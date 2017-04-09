@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import sys
-sys.path.append("../")
+sys.path.append(".")
 
 from bisturi.packet import Packet
 from bisturi.field  import Bits, Int, Data, Ref, Em, Bkpt

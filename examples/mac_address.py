@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import sys
 sys.exit(0)
-sys.path.append("../")
+sys.path.append(".")
 
 from bisturi.field import Field, Data
 from netaddr import EUI
