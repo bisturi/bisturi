@@ -160,7 +160,7 @@ class Field(object):
             >>> [(bag.num, bag.objects) for bag in pkt.bags]
             [(1, [2]), (0, [])]
 
-            >>> str(pkt.pack()) == b'\x01\x02\x00'
+            >>> pkt.pack() == b'\x01\x02\x00'
             True
 
             >>> raw = b'\x02\x01\x02\x01\x04\x00'
@@ -171,7 +171,7 @@ class Field(object):
             >>> [(bag.num, bag.objects) for bag in pkt.bags]
             [(2, [1, 2]), (1, [4]), (0, [])]
 
-            >>> str(pkt.pack()) == raw
+            >>> pkt.pack() == raw
             True
 
             The 'aligned' parameter control how the elements of the sequence are packed (aligned) one
@@ -187,7 +187,7 @@ class Field(object):
             >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.no_so_tight]
             [[], []]
 
-            >>> str(pkt.pack()) == b'\x00\x00....\x00.....\x00'
+            >>> pkt.pack() == b'\x00\x00....\x00.....\x00'
             True
 
             >>> raw = b'\x01A\x00\x02BC\x00.....\x01A\x00...\x02BC\x00'
@@ -198,7 +198,7 @@ class Field(object):
             >>> [sum((bag.objects for bag in box.bags), []) for box in pkt.no_so_tight]
             [[65], [66, 67]]
 
-            >>> str(pkt.pack()) == raw
+            >>> pkt.pack() == raw
             True
 
             '''
@@ -228,7 +228,7 @@ class Field(object):
 
              >>> pkt.nonzero_msg = b'AB'
              >>> pkt.typeone_msg = b'CD'
-             >>> str(pkt.pack()) == b'\x00ABCD' # the when is ignored here too
+             >>> pkt.pack() == b'\x00ABCD' # the when is ignored here too
              True
 
              >>> raw = b'\x00AB'
@@ -236,7 +236,7 @@ class Field(object):
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # aren't parsed)
              (0, None, None)
 
-             >>> str(pkt.pack()) == b'\x00'
+             >>> pkt.pack() == b'\x00'
              True
 
              >>> raw = b'\x02AB'
@@ -249,7 +249,7 @@ class Field(object):
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
              (1, b'AB', b'CD')
              
-             >>> str(pkt.pack()) == raw
+             >>> pkt.pack() == raw
              True
 
              '''
@@ -617,7 +617,7 @@ class Ref(Field):
         >>> (pkt.extra.x, pkt.extra.y)
         (0, 7)
 
-        >>> str(pkt.pack()) == b'\x01\x02\x00\x00\x00\x07'
+        >>> pkt.pack() == b'\x01\x02\x00\x00\x00\x07'
         True
 
         >>> raw = b'\x01\x02\x03\x04\x05\x06'
@@ -630,7 +630,7 @@ class Ref(Field):
         >>> (pkt.extra.x, pkt.extra.y)
         (5, 6)
 
-        >>> str(pkt.pack()) == raw
+        >>> pkt.pack() == raw
         True
 
 
@@ -648,7 +648,7 @@ class Ref(Field):
 
         >>> pkt.x = 8
         >>> pkt.point_2d.y = 9
-        >>> str(pkt.pack()) == b'\x08\x00\x00' # XXX but it should be 08 09 00
+        >>> pkt.pack() == b'\x08\x00\x00' # XXX but it should be 08 09 00
         True
 
         >>> raw = b'\x01\x02\x03'
@@ -656,7 +656,7 @@ class Ref(Field):
         >>> (pkt.x, pkt.y, pkt.z)
         (1, 2, 3)
 
-        >>> str(pkt.pack()) == b'\x01\x02\x03'
+        >>> pkt.pack() == b'\x01\x02\x03'
         True
 
         '''

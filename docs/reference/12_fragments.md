@@ -4,44 +4,44 @@
 >>> f = Fragments()
 >>> f
 []
->>> str(f)
+>>> f.tobytes()
 ''
 
 >>> f.append(b'AAA')
 >>> f
 [(0, 'AAA')]
->>> str(f)
+>>> f.tobytes()
 'AAA'
 
 >>> f.append(b'BBB')
 >>> f
 [(0, 'AAA'), (3, 'BBB')]
->>> str(f)
+>>> f.tobytes()
 'AAABBB'
 
 >>> f.extend([b'CCC', b'DDD'])
 >>> f
 [(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD')]
->>> str(f)
+>>> f.tobytes()
 'AAABBBCCCDDD'
 
 >>> f.insert(16, b'EEE')
 >>> f
 [(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD'), (16, 'EEE')]
->>> str(f)
+>>> f.tobytes()
 'AAABBBCCCDDD....EEE'
 
 
 >>> f.insert(12, b'XXX')
 >>> f
 [(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD'), (12, 'XXX'), (16, 'EEE')]
->>> str(f)
+>>> f.tobytes()
 'AAABBBCCCDDDXXX.EEE'
 
 >>> f.append(b'F')
 >>> f
 [(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD'), (12, 'XXX'), (15, 'F'), (16, 'EEE')]
->>> str(f)
+>>> f.tobytes()
 'AAABBBCCCDDDXXXFEEE'
 
 >>> f == b'AAABBBCCCDDDXXXFEEE'

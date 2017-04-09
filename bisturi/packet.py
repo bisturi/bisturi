@@ -115,7 +115,8 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
     def pack(self):
         fragments = Fragments()
         try:
-            return self.pack_impl(fragments, root=self)
+            fragments = self.pack_impl(fragments, root=self)
+            return fragments.tobytes()
         except PacketError as e:
             e.packet = self
             raise e

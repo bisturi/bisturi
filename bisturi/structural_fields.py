@@ -223,7 +223,7 @@ class Sequence(Field):
              >>> [l_ints.i for l_ints in pkt.i]
              [[65, 66], [67, 68], [69, 70], [71, 72]]
 
-             >>> str(pkt.pack()) == raw
+             >>> pkt.pack() == raw
              True
 
              '''

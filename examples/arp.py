@@ -55,3 +55,6 @@ if __name__ == '__main__':
    assert arp_query.target_hw_addr == b16decode(b'000000000000', True)
    assert arp_response.sender_hw_addr == b16decode(b'002f6f5fdfdf', True)
    assert arp_query.target_prot_addr == arp_response.sender_prot_addr == b16decode(b'c0a8010c', True)
+
+   assert arp_query.pack() == raw_query
+   assert arp_response.pack() == raw_response

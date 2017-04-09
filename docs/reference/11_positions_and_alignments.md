@@ -33,11 +33,11 @@ This is fine, but in some cases it is desired to control where a field begins.
 
 >>> p.file_data
 '\x00\x00\x00\x00'
->>> str(p.pack())
+>>> p.pack()
 '\x01\x00\x00\x00\x00'
 
 >>> p = Folder(offset_of_file=4, file_data=b'ABCD')
->>> str(p.pack())
+>>> p.pack()
 '\x04...ABCD'
 
 ```

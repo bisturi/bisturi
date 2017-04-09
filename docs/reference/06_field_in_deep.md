@@ -99,7 +99,7 @@ True
 '127.0.0.1'
 >>> str(p.source)
 '0.0.0.0'
->>> str(p.pack())
+>>> p.pack()
 '\x7f\x00\x00\x01\x00\x00\x00\x00'
 
 >>> s = b'\xc0\xa8\x01\x01\xc0\xa8\x01\x02'

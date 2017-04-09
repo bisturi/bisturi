@@ -103,4 +103,4 @@ if __name__ == '__main__':
                               0,    0,    0, # black
                         ]
 
-    assert str(img.pack()).replace(b'.', b'\0') == raw_img
+    assert img.pack().replace(b'.', b'\0') == raw_img

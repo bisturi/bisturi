@@ -56,7 +56,7 @@ class TestSequence(unittest.TestCase):
          
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert str(one_packed) + remain_of_first_raw_for_one == raw
+         assert one_packed + remain_of_first_raw_for_one == raw
          assert two_packed == two_default_raw
 
          raw  = second_raw_for_one
@@ -72,8 +72,8 @@ class TestSequence(unittest.TestCase):
          
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert str(one_packed) + remain_of_second_raw_for_one == raw  
-         assert str(two_packed) + remain_of_second_raw_for_two == raw2
+         assert one_packed + remain_of_second_raw_for_one == raw  
+         assert two_packed + remain_of_second_raw_for_two == raw2
 
 
       except Exception as _e:
@@ -120,7 +120,7 @@ class TestSequence(unittest.TestCase):
          
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert str(one_packed) + remain_of_first_raw_for_one == raw 
+         assert one_packed + remain_of_first_raw_for_one == raw 
          assert two_packed == two_default_raw
 
          raw  = second_raw_for_one
@@ -136,8 +136,8 @@ class TestSequence(unittest.TestCase):
          
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert str(one_packed) + remain_of_second_raw_for_one == raw
-         assert str(two_packed) + remain_of_second_raw_for_two == raw2
+         assert one_packed + remain_of_second_raw_for_one == raw
+         assert two_packed + remain_of_second_raw_for_two == raw2
 
 
       except Exception as _e:

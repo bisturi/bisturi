@@ -39,9 +39,9 @@ True
 >>> pkt0.author is None
 True
 
->>> str(pkt3.pack()) == raw3
+>>> pkt3.pack() == raw3
 True
->>> str(pkt0.pack()) == b'\x00'
+>>> pkt0.pack() == b'\x00'
 True
 
 ```
@@ -92,12 +92,12 @@ True
 >>> hidden_msg.hidden_data
 'beef'
 
->>> str(matrix.pack()) == raw_matrix
+>>> matrix.pack() == raw_matrix
 True
 
->>> str(extra_msg.pack()) == raw_extra_msg
+>>> extra_msg.pack() == raw_extra_msg
 True
->>> str(hidden_msg.pack()) == raw_hidden_msg
+>>> hidden_msg.pack() == raw_hidden_msg
 True
 
 ```
@@ -145,9 +145,9 @@ True
 >>> pkt_trunc.truncated
 'BBBB'
 
->>> str(pkt_min.pack()) == raw_min
+>>> pkt_min.pack() == raw_min
 True
->>> str(pkt_trunc.pack()) == raw_trunc[:8]
+>>> pkt_trunc.pack() == raw_trunc[:8]
 True
 
 ```
@@ -175,9 +175,9 @@ If the pool of names from where you want to choose one is a pool of valid python
 >>> pkt_large.data
 'ABCD'
 
->>> str(pkt_small.pack()) == raw_small
+>>> pkt_small.pack() == raw_small
 True
->>> str(pkt_large.pack()) == raw_large
+>>> pkt_large.pack() == raw_large
 True
 
 ```

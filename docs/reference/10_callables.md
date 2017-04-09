@@ -31,7 +31,7 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 >>> pkt.num, pkt.data, pkt.bits
 (1, '\x02', 3)
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x02\x03'
 
 ```
@@ -47,7 +47,7 @@ For sequence of objects you can set the amount of objects to be extracted, not t
 >>> pkt.seq
 [1, 2, 3]
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x02\x03'
 
 ```
@@ -69,7 +69,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> pkt.data, pkt.seq
 ('\x01', [2])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x01\x02'
 
 >>> raw = b"\x02AA\x01\x02"
@@ -77,7 +77,7 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> pkt.data, pkt.seq
 ('AA', [1, 2])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x02AA\x01\x02'
 
 ```
@@ -99,7 +99,7 @@ For example
 >>> pkt.data, pkt.seq
 ('ABC', [1, 2, 3])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01ABC\x01\x02\x03'
 
 >>> raw = b"\x02ABCDEF\x01\x02\x03\x04\x05\x06"
@@ -107,7 +107,7 @@ For example
 >>> pkt.data, pkt.seq
 ('ABCDEF', [1, 2, 3, 4, 5, 6])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x02ABCDEF\x01\x02\x03\x04\x05\x06'
 
 ```
@@ -126,7 +126,7 @@ Don't be shy, lets do more complex expressions
 >>> pkt.matrix
 [1, 2]
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x02\x01\x02'
 
 >>> raw = b"\x02\x03\x01\x02\x03\x04\x05\x06"
@@ -134,7 +134,7 @@ Don't be shy, lets do more complex expressions
 >>> pkt.matrix
 [1, 2, 3, 4, 5, 6]
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x02\x03\x01\x02\x03\x04\x05\x06'
 
 ```
@@ -153,7 +153,7 @@ Don't be shy, lets do more complex expressions
 >>> pkt.hidden_field is None
 True
 
->>> str(pkt.pack())
+>>> pkt.pack()
 'v002AB'
 
 >>> raw = b"xyz1beef"
@@ -163,7 +163,7 @@ True
 >>> pkt.hidden_field
 'beef'
 
->>> str(pkt.pack()) 
+>>> pkt.pack() 
 'xyz1beef'
 
 ```
@@ -181,7 +181,7 @@ We can go further to use expressions in the until and when conditions:
 >>> pkt.opt
 2
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x02'
 
 >>> raw = b"\x00XXX"
@@ -189,7 +189,7 @@ We can go further to use expressions in the until and when conditions:
 >>> pkt.opt is None
 True
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x00'
 
 ```
@@ -210,7 +210,7 @@ You can use any kind of callable: functions, methods or lambdas.
 >>> pkt.data, pkt.seq, pkt.seq2
 ('\x00\x01', [2, 3], [0])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x01\x00\x01\x02\x03\x00'
 
 >>> raw = b"\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
@@ -218,7 +218,7 @@ You can use any kind of callable: functions, methods or lambdas.
 >>> pkt.data, pkt.seq, pkt.seq2
 ('AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
 
 ```
@@ -246,7 +246,7 @@ available arguments:
 >>> pkt.amount, pkt.lower.data
 (2, 'AA')
 
->>> str(pkt.pack())
+>>> pkt.pack()
 '\x02AA'
 
 ```

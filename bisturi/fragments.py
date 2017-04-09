@@ -49,7 +49,7 @@ class Fragments(object):
         self.fragments[position] = string
         self.current_offset = position + L
 
-    def __str__(self):
+    def tobytes(self):
         begin = 0
         result = []
         for offset, s in sorted(self.fragments.items()):
@@ -64,9 +64,9 @@ class Fragments(object):
 
     def __eq__(self, other):
         if isinstance(other, bytes):
-            return str(self) == other
+            return self.tobytes() == other
         else:
-            return str(self) == str(other)
+            return self.tobytes() == other.tobytes()
 
 
 class FragmentRegEx(object):

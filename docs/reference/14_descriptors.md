@@ -57,7 +57,7 @@ For that purpose, the descriptor can implement the methods sync_before_pack and 
 The AutoLength descriptor implement sync_before_pack so th pack method works as expected:
 
 ```python
->>> str(p.pack())
+>>> p.pack()
 '\x03abc'
 
 ```
