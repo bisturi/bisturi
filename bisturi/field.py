@@ -115,7 +115,7 @@ class Field(object):
         except KeyError:
             obj = copy.deepcopy(self.default)
 
-        setattr(packet, self.field_name, obj) # if isinstance(self.default, (int, long, basestring)) else (copy.deepcopy(self.default))))
+        setattr(packet, self.field_name, obj) # if isinstance(self.default, integer_types + (bytes, )) else (copy.deepcopy(self.default))))
 
     def unpack(self, pkt, raw, offset, **k):
         raise NotImplementedError()
@@ -573,7 +573,7 @@ class Data(Field):
                     fragments.append(custom_regexp, is_literal=False)
 
             else:
-                endswith = re.escape(self.until_marker) if isinstance(self.until_marker, basestring) else self.until_marker.pattern
+                endswith = re.escape(self.until_marker) if isinstance(self.until_marker, bytes) else self.until_marker.pattern
                 fragments.append(custom_regexp + endswith, is_literal=False)
              
         return fragments

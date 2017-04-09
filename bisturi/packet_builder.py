@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import bisturi.blocks
 import copy
 
+from bisturi.six import integer_types
 
 class PacketClassBuilder(object):
     def __init__(self, metacls, name, bases, attrs):
@@ -292,7 +293,7 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
             if isinstance(attrvalue, Field) and attrname not in original_fields_in_superclass:
                 raise Exception("You cannot add new fields like '%s'." % attrname)
 
-            if isinstance(attrvalue, (int, long, basestring)) and attrname in original_fields_in_superclass:
+            if isinstance(attrvalue, integer_types + (bytes, )) and attrname in original_fields_in_superclass:
                 specialized_fields[attrname].default = attrvalue  # TODO the default or a constant??
 
             if isinstance(attrvalue, Field) and attrname in original_fields_in_superclass:

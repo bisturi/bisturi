@@ -63,7 +63,7 @@ class Fragments(object):
         return repr(sorted(self.fragments.items()))
 
     def __eq__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, bytes):
             return str(self) == other
         else:
             return str(self) == str(other)
