@@ -23,7 +23,7 @@ def normalize_raw_condition_into_a_callable(raw_condition):
         return raw_condition
 
     else:
-        raise ValueError("The 'when' or 'until' condition must be a callable, a field or an expression of fields but is '%s'" % (repr(raw_condition)))
+        raise ValueError("The argument condition must be a callable, a field or an expression of fields but is '%s'" % (repr(raw_condition)))
 
 
 

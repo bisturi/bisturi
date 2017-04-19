@@ -25,8 +25,11 @@ class ResponseCode(object):
 # RFC 1034, 1035
 class Label(Packet):
     length = Int(1)
-    name   = Ref(lambda pkt, **k: Int(1) if pkt.is_compressed() else Data(pkt.length),
-                    default=b'')
+    #name   = Ref(lambda pkt, **k: Int(1) if pkt.is_compressed() else Data(pkt.length),
+    #                default=b'')
+    #name = Ref( (length & 0xc0 == 0xc0).choose({True: Int(1), False: Data(length)}), default=b'')
+    name  = Data(length).when(length & 0xc0 != 0xc0)
+    shift = Int(1).when(length & 0xc0 == 0xc0)
 
     def is_root(self):
         return self.length == 0
@@ -38,7 +41,7 @@ class Label(Packet):
         if not self.is_compressed():
             raise Exception()
 
-        return (self.length & (~0xc0) << 8) + self.name
+        return (self.length & (~0xc0) << 8) + self.shift
 
     def uncompressed_name(self, raw, offset=0):
         if not self.is_compressed():
@@ -49,7 +52,12 @@ class Label(Packet):
             
 class _Builder(Packet):
     name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
-         
+
+'''
+class Name(Packet):
+    labels = Ref(Label).repeated(until=lambda pkt, **k: pkt.labels[-1].is_root() or pkt.labels[-1].is_compressed())
+    suffix = Ref(Name).at((labels[-1].length & (~0xc0) << 8) + labels[-1].shift).when(labels[-1].is_compressed())
+    '''
 
 # from https://www.ietf.org/rfc/rfc1035.txt
 class ResourceRecord(Packet):

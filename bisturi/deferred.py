@@ -108,7 +108,7 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
         ops = Operations()
 
     if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
-        ops.append(0, lambda pkt, *vargs, **kargs: root_expr, level, 'value ' + repr(root_expr))
+        ops.append(0, lambda pkt, *vargs, **kargs: root_expr, level, 'literal-value ' + repr(root_expr))
     
     elif isinstance(root_expr, NaryExpr):
         r, l, m, op = root_expr
@@ -146,9 +146,15 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
         compile_expr(r, ops, level=next_level)
         ops.append(1, op, level)
 
+    elif isinstance(root_expr, Field):
+        if hasattr(root_expr, 'field_name'):
+            field_name = root_expr.field_name
+            ops.append(0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name), level, 'field-lookup ' + repr(root_expr))
+        else:
+            ops.append(0, lambda pkt, *vargs, **kargs: root_expr, level, 'literal-field-value ' + repr(root_expr))
     else:
-        field_name = root_expr.field_name
-        ops.append(0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name), level, 'field-lookup ' + repr(root_expr))
+        raise Exception("Invalid argument of type %s" % repr(type(root_expr)))
+
 
     return ops
 

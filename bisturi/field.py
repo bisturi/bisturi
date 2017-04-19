@@ -685,8 +685,8 @@ class Ref(Field):
         if isinstance(prototype, type):
             prototype = prototype() # get an object, this allows write  Ref(PacketClass) instead of Ref(PacketClass())
       
-        if not isinstance(prototype, Packet) and not callable(prototype):
-            raise ValueError("The prototype of a Ref field must be a packet (class or instance) or a callable that should return a Field or a Packet.")
+        if not isinstance(prototype, Packet) and not callable(prototype) and not isinstance(prototype, (UnaryExpr, BinaryExpr, NaryExpr)):
+            raise ValueError("The prototype of a Ref field must be a packet (class or instance), an expression of fields or a callable that should return a Field or a Packet.")
 
             
         self._lets_find_a_nice_default(prototype, default)
@@ -698,9 +698,9 @@ class Ref(Field):
         self.embeb = embeb 
 
     def _lets_find_a_nice_default(self, prototype, default):
-        if callable(prototype):
+        if callable(prototype) or isinstance(prototype, (UnaryExpr, BinaryExpr, NaryExpr)):
             if default is None:
-                raise ValueError("If your are using a callable as the prototype of Ref I need a default object.")
+                raise ValueError("If your are using an expression of fields or a callable as the prototype of Ref I need a default object.")
 
             self.default = default
 
@@ -735,7 +735,11 @@ class Ref(Field):
             self.proto_class = prototype.__class__
 
         else:
-            assert callable(prototype)
+            assert callable(prototype) or isinstance(prototype, (UnaryExpr, BinaryExpr, NaryExpr))
+            from bisturi.structural_fields import normalize_raw_condition_into_a_callable
+            self.prototype = normalize_raw_condition_into_a_callable(prototype)
+            prototype = self.prototype
+
             if isinstance(self.default, Prototype):
                 self.default = self.default.as_prototype()
 
