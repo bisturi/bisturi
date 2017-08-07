@@ -48,7 +48,7 @@ For example the 'ip' object from python (IPv4Address and IPv6Address) can be use
 >>> import struct
 
 >>> class IP(Field):
-...    def __init__(self, version=4, default='0.0.0.0'):
+...    def __init__(self, version=4, default=u'0.0.0.0'):
 ...       Field.__init__(self)
 ...       if version not in (4, 6):
 ...          raise ValueError('Invalid IP protocol version "%s"' % version)
@@ -95,7 +95,7 @@ Ok, lets see.
 ...    destination = IP(4)
 ...    source = IP()
 
->>> p = IP_Example(destination='127.0.0.1')
+>>> p = IP_Example(destination=u'127.0.0.1')
 >>> isinstance(p.destination, IPv4Address)
 True
 >>> str(p.destination)
@@ -126,7 +126,7 @@ Take a look of the interface of IPv4Address/IPv6Address for free!
 False
 >>> p.source.is_private
 True
->>> p.source in IPv4Network("192.168.0.0/16")
+>>> p.source in IPv4Network(u"192.168.0.0/16")
 True
 
 ```
