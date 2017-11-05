@@ -9,7 +9,10 @@ sys.path.append(".")
 from bisturi.packet import Packet
 from bisturi.field  import Bits, Int, Data, Field, Ref, Bkpt
 
-from bisturi.ipaddress import IPv4Address, IPv6Address
+# the ipaddress module is available from Python 3.3
+# otherwise you will need to install it:
+# pip install ipaddress
+from ipaddress import IPv4Address, IPv6Address
 
 import struct
 import base64
@@ -49,7 +52,7 @@ class IPAddr(Field):
       raw_data = raw[offset:offset+self.byte_count]
       
       chunks = [base64.b16encode(raw_data[i:i+2]) for i in range(0, len(raw_data), 2)]
-      ip_address = self.cls_address(b":".join(chunks)) # work around for Python 2.7
+      ip_address = self.cls_address(u":".join(chunks)) # work around for Python 2.7
 
       setattr(pkt, self.field_name, ip_address)
       return self.byte_count + offset
@@ -96,8 +99,8 @@ if __name__ == '__main__':
    assert ip.length == 0
    assert ip.next_header == 59
    assert ip.hop_limit == 0
-   assert ip.src_addr == IPv6Address(b"0102:0304::")
-   assert ip.dst_addr == IPv6Address(b"0a0b::0c0d")
+   assert ip.src_addr == IPv6Address(u"0102:0304::")
+   assert ip.dst_addr == IPv6Address(u"0a0b::0c0d")
 
    assert len(ip.extentions) == 0
    assert ip.payload == b""
