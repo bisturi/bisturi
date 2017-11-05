@@ -28,7 +28,7 @@ Let's create our custom field to handle gzip streams.
 ...        self.byte_count = byte_count
 ...
 ...    def unpack(self, pkt, raw, offset=0, **k):
-...        # how many byte we need? I will support only two flavours:
+...        # how many bytes do we need? I will support only two flavours:
 ...        # the byte_count parameter can be a simple int or it can be
 ...        # another field. You can extend this to support a callable
 ...        # or anything else
@@ -46,7 +46,7 @@ Let's create our custom field to handle gzip streams.
 ...
 ...        # now we save that as the value of our field into the packet
 ...        # remember, the objective of a Field is to set
-...        # set this attribute during the unpack
+...        # this attribute during the unpack
 ...        setattr(pkt, self.field_name, decompressed_data)
 ...
 ...        # return the new offset: previous offset
@@ -55,7 +55,7 @@ Let's create our custom field to handle gzip streams.
 ... 
 ...    def pack(self, pkt, fragments, **k):
 ...        # during the pack we need to apply the inverse of unpack
-...        # let's retrieve our decompressed data from the packet instance
+...        # let's retreive our decompressed data from the packet instance
 ...        decompressed_data = getattr(pkt, self.field_name)
 ...
 ...        # get the compress level, self.compress_level it can be
