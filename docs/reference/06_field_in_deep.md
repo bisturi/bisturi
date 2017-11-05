@@ -10,73 +10,109 @@ For example, Int can use as its 'python object' an 'int' (and a 'long' for Pytho
 The difference between Int and 'int' is that you are almost always interacting with 'int',
 the 'python object' of Int and not with the Int itself.
 
+Let's create our custom field to handle gzip streams.
+
+```python
+>>> from bisturi.field import Field, Data
+>>> import zlib
+
+>>> class GZip(Field):
+...    def __init__(self, byte_count, compress_level=0, default='', **k):
+...        Field.__init__(self)
+...        self.default = default
+...
+...        # you can save any parameter as a field's parameter
+...        # but remember, this is a Field instance, a single instance
+...        # for a Packet class, not per Packet instance
+...        self.compress_level = compress_level
+...        self.byte_count = byte_count
+...
+...    def unpack(self, pkt, raw, offset=0, **k):
+...        # how many byte we need? I will support only two flavours:
+...        # the byte_count parameter can be a simple int or it can be
+...        # another field. You can extend this to support a callable
+...        # or anything else
+...        if isinstance(self.byte_count, int):
+...            byte_count = self.byte_count
+...        else:
+...            other_field = self.byte_count
+...            byte_count = getattr(pkt, other_field.field_name)
+...
+...        # get the compressed data from the raw string of bytes
+...        compressed_data = raw[offset:offset+byte_count]
+...
+...        # let's unpack this
+...        decompressed_data = zlib.decompress(compressed_data)
+...
+...        # now we save that as the value of our field into the packet
+...        # remember, the objective of a Field is to set
+...        # set this attribute during the unpack
+...        setattr(pkt, self.field_name, decompressed_data)
+...
+...        # return the new offset: previous offset
+...        # plust how many bytes we consumed
+...        return offset + byte_count
+... 
+...    def pack(self, pkt, fragments, **k):
+...        # during the pack we need to apply the inverse of unpack
+...        # let's retrieve our decompressed data from the packet instance
+...        decompressed_data = getattr(pkt, self.field_name)
+...
+...        # get the compress level, self.compress_level it can be
+...        # an integer or a field. If it is a field we need to use it
+...        # to get the real compress level. If you want you could support a
+...        # callable or anything else. I will support only those two options
+...        if isinstance(self.compress_level, int):
+...            compress_level = self.compress_level
+...        else:
+...            other_field = self.compress_level
+...            compress_level = getattr(pkt, other_field.field_name)
+...
+...        # now we compress it
+...        compressed_data = zlib.compress(decompressed_data, compress_level)
+...
+...        # append the raw string of bytes in the fragments list
+...        fragments.append(compressed_data)
+...
+...        # finally, we return the fragment list
+...        return fragments
+
+```
+
+Let's see a packet definition with this new field
+
 ```python
 >>> from bisturi.field import Int, Field
 >>> from bisturi.packet import Packet
->>> class Ethernet(Packet):
-...    size = Int(1)
+>>> class Compressed(Packet):
+...    length = Int(1)
+...    level  = Int(1)
+...    data   = GZip(byte_count=length, compress_level=level)
 
+```
+
+We can corroborate first that a packet instance's attribute is just a
+python object
+
+```python
 >>> from bisturi.field import Field
 
->>> p = Ethernet()
->>> isinstance(p.size, Int)
+>>> p = Compressed()
+>>> isinstance(p.length, Int)
 False
->>> isinstance(p.size, Field)
+>>> isinstance(p.length, Field)
 False
->>> isinstance(p.size, int)
+>>> isinstance(p.length, int)
 True
 
 ```
 
-So, when you do something like p.size + 1 you are working with native python objects (int).
-No more.
-The same happens with Data and Ref.
-
-But Ref is a little more special. He uses a Field or a Packet as his python object.
-
-But what happens if we want another type of Field?
-
-For example the 'ip' object from python (IPv4Address and IPv6Address) can be used as that
-'python object' so we can build a custom Field class to map the ip object from/to a string of bytes.
+Let's see the field in action
 
 ```python
->>> from bisturi.field import Field
->>> try:
-...     from ipaddress import IPv4Address, IPv6Address, IPv4Network
-... except ImportError:
-...     from bisturi.ipaddress import IPv4Address, IPv6Address, IPv4Network
->>> import struct
-
->>> class IP(Field):
-...    def __init__(self, version=4, default=u'0.0.0.0'):
-...       Field.__init__(self)
-...       if version not in (4, 6):
-...          raise ValueError('Invalid IP protocol version "%s"' % version)
-...      
-...       self.byte_count = 4 if version == 4 else 16
-...       self.cls_address = IPv4Address if version == 4 else IPv6Address
-...       self.default = default
-...    
-...    def init(self, packet, defaults):
-...       setattr(packet, self.field_name, self.cls_address(defaults.get(self.field_name, self.default)))
-...    
-...    def unpack(self, pkt, raw, offset=0, **k):
-...       raw_data = raw[offset:offset+self.byte_count]
-...       ip_address = self.cls_address(0) # work around for Python 2.7
-...       ip_address._ip = struct.unpack(">I", raw_data)[0]
-...       setattr(pkt, self.field_name, ip_address)
-... 
-...       return self.byte_count + offset
-... 
-...    def pack(self, pkt, fragments, **k):
-...       ip_address = getattr(pkt, self.field_name)
-...       raw = ip_address.packed
-...       fragments.append(raw)
-...       return fragments
-
 ```
 
-Ok, lets see. 
+TODO REVIEW THIS Ok, lets see. 
  - First we inherent from Field. 
  - The constructor __init__ has the expected 'default' keyword and the convenient 'version'.
    With the version as parameter we can handle both version of the IP address schema.
@@ -91,42 +127,21 @@ Ok, lets see.
    its binary representation which it is added to the fragments and returned
 
 ```python
->>> class IP_Example(Packet):
-...    destination = IP(4)
-...    source = IP()
-
->>> p = IP_Example(destination=u'127.0.0.1')
->>> isinstance(p.destination, IPv4Address)
-True
->>> str(p.destination)
-'127.0.0.1'
->>> str(p.source)
-'0.0.0.0'
+>>> p = Compressed(data='foo')
+>>> p.data
+'foo'
 >>> p.pack()
-b'\x7f\x00\x00\x01\x00\x00\x00\x00'
+'\x00\x00x\x01\x01\x03\x00\xfc\xfffoo\x02\x82\x01E'
 
->>> s = b'\xc0\xa8\x01\x01\xc0\xa8\x01\x02'
->>> p = IP_Example.unpack(s)
->>> str(p.destination)
-'192.168.1.1'
->>> str(p.source)
-'192.168.1.2'
+>>> s = b'\x0b\x09x\xdaKJ,\x02\x00\x02]\x016'
+>>> p = Compressed.unpack(s)
+
+>>> p.level
+9
+>>> p.data
+'bar'
+
 >>> p.pack() == s
-True
-
-```
-
-This is really useful because you can use almost any python object and transform it
-into a field. The benefice of that is that you can reuse a lot of code already implemented
-instead of creation you own objects.
-Take a look of the interface of IPv4Address/IPv6Address for free!
-
-```python
->>> p.source.is_loopback
-False
->>> p.source.is_private
-True
->>> p.source in IPv4Network(u"192.168.0.0/16")
 True
 
 ```
