@@ -224,7 +224,7 @@ class Field(object):
 
              >>> pkt = Example(nonzero_msg=b'X') # notice how all the fields are set...
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg) # the when is ignored
-             (0, b'X', None)
+             (0, 'X', None)
 
              >>> pkt.nonzero_msg = b'AB'
              >>> pkt.typeone_msg = b'CD'
@@ -242,12 +242,12 @@ class Field(object):
              >>> raw = b'\x02AB'
              >>> pkt = Example.unpack(raw) 
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-             (2, b'AB', None)
+             (2, 'AB', None)
 
              >>> raw = b'\x01ABCD'
              >>> pkt = Example.unpack(raw) 
              >>> (pkt.type, pkt.nonzero_msg, pkt.typeone_msg)
-             (1, b'AB', b'CD')
+             (1, 'AB', 'CD')
              
              >>> pkt.pack() == raw
              True

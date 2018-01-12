@@ -30,17 +30,17 @@ Let see what happen when the packet is built from this string
 >>> p.length
 1
 >>> p.a
-b'ab'
+'ab'
 >>> p.b
-b'C'
+'C'
 >>> p.c
-b'ddd'
+'ddd'
 >>> p.d
-b'eee'
+'eee'
 >>> p.e
-b'fghi'
+'fghi'
 >>> p.f
-b'jk'
+'jk'
 
 >>> p.pack() == s
 True
@@ -55,17 +55,17 @@ is used when the size is fixed:
 >>> q.length
 0
 >>> q.a
-b'\x00\x00'
+'\x00\x00'
 >>> q.b
-b''
+''
 >>> q.c
-b''
+''
 >>> q.d
-b''
+''
 >>> q.e
-b''
+''
 >>> q.f
-b''
+''
 
 ```
 
@@ -86,17 +86,17 @@ If you need that the token be part of the result, you can use the keyword 'inclu
 >>> p.length
 1
 >>> p.a
-b'ab'
+'ab'
 >>> p.b
-b'C'
+'C'
 >>> p.c
-b'ddd\x00'
+'ddd\x00'
 >>> p.d
-b'eeeeof'
+'eeeeof'
 >>> p.e
-b'fghiX'
+'fghiX'
 >>> p.f
-b'jk'
+'jk'
 
 >>> p.pack() == s
 True
@@ -124,7 +124,7 @@ Let see an example:
 >>> s = b'ab\x00eeee'
 >>> p = DataWithSearchLengthLimit.unpack(s)
 >>> p.a
-b'ab'
+'ab'
 
 ```
 
@@ -158,7 +158,7 @@ ignoring the search buffer length:
 >>> s = b'abeeee'
 >>> p = DataWithSearchLengthLimitTooShortButIgnored.unpack(s) 
 >>> p.a
-b'abeeee'
+'abeeee'
 
 ```
 
@@ -198,15 +198,15 @@ end of the packet.
 >>> s5 = b'\xffabc'
 
 >>> DataExample.unpack(s1).payload
-b'a'
+'a'
 >>> DataExample.unpack(s2).payload
-b'ab'
+'ab'
 >>> DataExample.unpack(s3).payload
-b'a'
+'a'
 >>> DataExample.unpack(s4).payload
-b'a'
+'a'
 >>> DataExample.unpack(s5).payload
-b'abc'
+'abc'
 
 >>> DataExample.unpack(s1).pack() == s1
 True
@@ -229,11 +229,11 @@ writing the expression directly:
 >>> s3 = b'\x01aabb'
 
 >>> DataWithExpr.unpack(s1).payload
-b'aa'
+'aa'
 >>> DataWithExpr.unpack(s2).payload
-b'abcd'
+'abcd'
 >>> DataWithExpr.unpack(s3).payload
-b'aa'
+'aa'
 
 >>> DataWithExpr.unpack(s1).pack() == s1[:-4]
 True

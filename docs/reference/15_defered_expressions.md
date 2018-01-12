@@ -17,21 +17,21 @@ Several fields accept others fields as parameter to define how many bytes to con
 >>> pkt3.number
 3
 >>> pkt3.paylaod
-b'ABC'
+'ABC'
 >>> pkt3.elemens
 [1, 2, 3]
 >>> pkt3.msg
-b'OK'
+'OK'
 >>> pkt3.author
-b'joe'
+'joe'
 
->>> raw0 = b'\x00ignored\x00'
+>>> raw0 = '\x00ignored\x00'
 >>> pkt0 = DeferredValue.unpack(raw0)
 
 >>> pkt0.number
 0
 >>> pkt0.paylaod
-b''
+''
 >>> pkt0.elemens
 []
 >>> pkt0.msg is None
@@ -70,7 +70,7 @@ But using only a field as parameter is just the begin. You can use simple expres
 >>> matrix.values
 [65, 66, 67, 68, 69, 70]
 >>> matrix.padding
-b'\xff\xff'
+'\xff\xff'
 
 >>> raw_extra_msg = b'\xffABCHELO'
 >>> extra_msg = SequenceExpressions.unpack(raw_extra_msg)
@@ -78,7 +78,7 @@ b'\xff\xff'
 >>> extra_msg.items
 [255, 65, 66, 67]
 >>> extra_msg.extra_data
-b'HELO'
+'HELO'
 >>> extra_msg.hidden_data is None
 True
 
@@ -90,7 +90,7 @@ True
 >>> hidden_msg.extra_data is None
 True
 >>> hidden_msg.hidden_data
-b'beef'
+'beef'
 
 >>> matrix.pack() == raw_matrix
 True
@@ -128,11 +128,11 @@ Here are some examples of using 'choose' by position and by name:
 >>> pkt_min = ChooseExpressions.unpack(raw_min)
 
 >>> pkt_min.extra
-b':'
+':'
 >>> pkt_min.mindata
-b'A'
+'A'
 >>> pkt_min.truncated
-b'B'
+'B'
 
 
 >>> raw_trunc = b'\x06\x02AABBBBBBBBBBBBBBBB'
@@ -141,9 +141,9 @@ b'B'
 >>> pkt_trunc.extra is None
 True
 >>> pkt_trunc.mindata
-b'AA'
+'AA'
 >>> pkt_trunc.truncated
-b'BBBB'
+'BBBB'
 
 >>> pkt_min.pack() == raw_min
 True
@@ -163,17 +163,17 @@ If the pool of names from where you want to choose one is a pool of valid python
 >>> pkt_small = ChooseExpressions.unpack(raw_small)
 
 >>> pkt_small.size_type
-b'small'
+'small'
 >>> pkt_small.data
-b'AB'
+'AB'
 
 >>> raw_large = b'large\x00ABCD'
 >>> pkt_large = ChooseExpressions.unpack(raw_large)
 
 >>> pkt_large.size_type
-b'large'
+'large'
 >>> pkt_large.data
-b'ABCD'
+'ABCD'
 
 >>> pkt_small.pack() == raw_small
 True
@@ -181,5 +181,4 @@ True
 True
 
 ```
-
 

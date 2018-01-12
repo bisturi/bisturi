@@ -29,10 +29,10 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 >>> raw = b"\x01\x02\x03"
 >>> pkt = AllFixed.unpack(raw)
 >>> pkt.num, pkt.data, pkt.bits
-(1, b'\x02', 3)
+(1, '\x02', 3)
 
 >>> pkt.pack()
-b'\x01\x02\x03'
+'\x01\x02\x03'
 
 ```
 
@@ -48,7 +48,7 @@ For sequence of objects you can set the amount of objects to be extracted, not t
 [1, 2, 3]
 
 >>> pkt.pack()
-b'\x01\x02\x03'
+'\x01\x02\x03'
 
 ```
 
@@ -67,18 +67,18 @@ Note how you can use this for Data and Sequence fields but not for Int, Bits or 
 >>> raw = b"\x01\x01\x02"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
-(b'\x01', [2])
+('\x01', [2])
 
 >>> pkt.pack()
-b'\x01\x01\x02'
+'\x01\x01\x02'
 
 >>> raw = b"\x02AA\x01\x02"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
-(b'AA', [1, 2])
+('AA', [1, 2])
 
 >>> pkt.pack()
-b'\x02AA\x01\x02'
+'\x02AA\x01\x02'
 
 ```
 
@@ -97,18 +97,18 @@ For example
 >>> raw = b"\x01ABC\x01\x02\x03"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
-(b'ABC', [1, 2, 3])
+('ABC', [1, 2, 3])
 
 >>> pkt.pack()
-b'\x01ABC\x01\x02\x03'
+'\x01ABC\x01\x02\x03'
 
 >>> raw = b"\x02ABCDEF\x01\x02\x03\x04\x05\x06"
 >>> pkt = AllVariable.unpack(raw)
 >>> pkt.data, pkt.seq
-(b'ABCDEF', [1, 2, 3, 4, 5, 6])
+('ABCDEF', [1, 2, 3, 4, 5, 6])
 
 >>> pkt.pack()
-b'\x02ABCDEF\x01\x02\x03\x04\x05\x06'
+'\x02ABCDEF\x01\x02\x03\x04\x05\x06'
 
 ```
 
@@ -127,7 +127,7 @@ Don't be shy, lets do more complex expressions
 [1, 2]
 
 >>> pkt.pack()
-b'\x01\x02\x01\x02'
+'\x01\x02\x01\x02'
 
 >>> raw = b"\x02\x03\x01\x02\x03\x04\x05\x06"
 >>> pkt = AllVariable.unpack(raw)
@@ -135,7 +135,7 @@ b'\x01\x02\x01\x02'
 [1, 2, 3, 4, 5, 6]
 
 >>> pkt.pack()
-b'\x02\x03\x01\x02\x03\x04\x05\x06'
+'\x02\x03\x01\x02\x03\x04\x05\x06'
 
 ```
 
@@ -149,22 +149,22 @@ b'\x02\x03\x01\x02\x03\x04\x05\x06'
 >>> raw = b"v002AB"
 >>> pkt = Magic.unpack(raw)
 >>> pkt.v2_only_field
-b'AB'
+'AB'
 >>> pkt.hidden_field is None
 True
 
 >>> pkt.pack()
-b'v002AB'
+'v002AB'
 
 >>> raw = b"xyz1beef"
 >>> pkt = Magic.unpack(raw)
 >>> pkt.v2_only_field is None
 True
 >>> pkt.hidden_field
-b'beef'
+'beef'
 
->>> pkt.pack() 
-b'xyz1beef'
+>>> pkt.pack()
+'xyz1beef'
 
 ```
 
@@ -182,7 +182,7 @@ We can go further to use expressions in the until and when conditions:
 2
 
 >>> pkt.pack()
-b'\x01\x02'
+'\x01\x02'
 
 >>> raw = b"\x00XXX"
 >>> pkt = AllVariable.unpack(raw)
@@ -190,7 +190,7 @@ b'\x01\x02'
 True
 
 >>> pkt.pack()
-b'\x00'
+'\x00'
 
 ```
 
@@ -208,18 +208,18 @@ You can use any kind of callable: functions, methods or lambdas.
 >>> raw = b"\x01\x00\x01\x02\x03\x00"
 >>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
-(b'\x00\x01', [2, 3], [0])
+('\x00\x01', [2, 3], [0])
 
 >>> pkt.pack()
-b'\x01\x00\x01\x02\x03\x00'
+'\x01\x00\x01\x02\x03\x00'
 
 >>> raw = b"\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00"
 >>> pkt = VariableUsingCallable.unpack(raw)
 >>> pkt.data, pkt.seq, pkt.seq2
-(b'AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
+('AABB', [1, 2, 3, 4], [1, 1, 1, 1, 0])
 
 >>> pkt.pack()
-b'\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
+'\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
 
 ```
 
@@ -244,10 +244,10 @@ available arguments:
 >>> raw = b"\x02AA"
 >>> pkt = Higher.unpack(raw)
 >>> pkt.amount, pkt.lower.data
-(2, b'AA')
+(2, 'AA')
 
 >>> pkt.pack()
-b'\x02AA'
+'\x02AA'
 
 ```
 

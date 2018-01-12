@@ -42,22 +42,22 @@ So, we can do this
 >>> q = Ethernet.unpack(s2)
 >>>
 >>> p.destination.nic
-b'\x00\x00\x01'
+'\x00\x00\x01'
 >>> p.source.nic
-b'\x00\x00\x02'
+'\x00\x00\x02'
 >>> p.size
 5
 >>> p.payload
-b'hello'
+'hello'
 >>>
 >>> q.destination.nic
-b'\x00\x00\x02'
+'\x00\x00\x02'
 >>> q.source.nic
-b'\x00\x00\x01'
+'\x00\x00\x01'
 >>> q.size
 5
 >>> q.payload
-b'world'
+'world'
 
 >>> p.pack() == s1
 True
@@ -80,9 +80,9 @@ to set defaults parameters to the referenced object, you need to pass it instead
 >>> p = Ethernet()
 >>>
 >>> p.destination.nic
-b'\xff\xff\x01'
+'\xff\xff\x01'
 >>> p.source.nic
-b'\xff\xff\x02'
+'\xff\xff\x02'
 
 ```
 
@@ -121,7 +121,7 @@ Ref. This is an example:
 >>> p.length
 4
 >>> p.name
-b'john'
+'john'
 >>> p.age
 22
 >>> p.birth_date.day
@@ -146,9 +146,9 @@ into the packet container:
 >>> p = Frame()
 >>>
 >>> p.destination.nic  # direct access, no p.address.destination
-b'\xff\xff\x01'
+'\xff\xff\x01'
 >>> p.source.nic
-b'\xff\xff\x02'
+'\xff\xff\x02'
 
 ```
 

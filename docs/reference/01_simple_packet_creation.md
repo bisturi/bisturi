@@ -45,7 +45,7 @@ Ok, now lets intantiate a TLP packet and see its values by default
 >>> p.length
 0
 >>> p.payload
-b''
+''
 
 ```
 
@@ -59,7 +59,7 @@ Of course, 'my defaults' may be aren't yours, so you can change them per packet 
 >>> p.length
 0
 >>> p.payload
-b''
+''
 
 ```
 
@@ -78,7 +78,7 @@ default in the field itself:
 >>> p.length
 0
 >>> p.payload
-b''
+''
 
 ```
 
