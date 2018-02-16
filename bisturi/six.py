@@ -11,6 +11,13 @@ else:
     text_types = (str,)
 
 
+if sys.version_info[0] == 2:
+    from_int_to_byte = chr
+else:
+    def from_int_to_byte(i):
+        return bytes([i])
+
+
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     # This requires a bit of explanation: the basic idea is to make a dummy
