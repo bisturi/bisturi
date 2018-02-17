@@ -52,7 +52,7 @@ Let's create our custom field to handle gzip streams.
 ...        # return the new offset: previous offset
 ...        # plust how many bytes we consumed
 ...        return offset + byte_count
-... 
+...
 ...    def pack(self, pkt, fragments, **k):
 ...        # during the pack we need to apply the inverse of unpack
 ...        # let's retreive our decompressed data from the packet instance
@@ -127,7 +127,7 @@ TODO REVIEW THIS Ok, lets see.
    its binary representation which it is added to the fragments and returned
 
 ```python
->>> p = Compressed(data='foo')
+>>> p = Compressed(data=b'foo')
 >>> p.data
 'foo'
 >>> p.pack()

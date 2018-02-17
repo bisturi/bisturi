@@ -25,7 +25,7 @@ Several fields accept others fields as parameter to define how many bytes to con
 >>> pkt3.author
 'joe'
 
->>> raw0 = '\x00ignored\x00'
+>>> raw0 = b'\x00ignored\x00'
 >>> pkt0 = DeferredValue.unpack(raw0)
 
 >>> pkt0.number

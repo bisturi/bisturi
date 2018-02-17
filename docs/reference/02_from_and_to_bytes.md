@@ -112,7 +112,7 @@ The same is true if the packet cannot be packed into a string:
 >>> p.pack()                                    #doctest: +ELLIPSIS
 Traceback (most recent call last):
 ...
-PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: cannot convert argument to integer
+PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: ... argument ... integer
 Packet stack details: 
     00000000 TLP                            .between 'type' and 'length'
 Field's exception:
