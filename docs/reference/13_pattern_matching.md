@@ -174,7 +174,7 @@ Let load the data first.
 ```python
 >>> packet_size  = 84
 >>> packet_count = 1210
->>> data = open("pingpattern.data").read()
+>>> data = open("pingpattern.data", 'rb').read()
 >>> raw_packets = [data[i*packet_size: (i+1)*packet_size] for i in range(packet_count)]
 >>> del data
 
