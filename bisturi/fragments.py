@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from bisect import insort, bisect_left, bisect_right
-import re
+import re, pprint
 
 class Fragments(object):
     def __init__(self, fill=b'.'):
@@ -32,13 +32,13 @@ class Fragments(object):
         if self.fragments:
             b1 = self.begin_of_fragments[i]
             e1 = b1 + len(self.fragments[b1])
- 
+
             if b1 <= position < e1:
                 raise Exception("Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x" % (b1, e1, position, position+L))
 
             if i+1 < len(self.begin_of_fragments):
                 b2 = self.begin_of_fragments[i+1]
-            
+
                 if b2 < position + L:
                     e2 = b2 + len(self.fragments[b2])
                     raise Exception("Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x" % (b2, e2, position, position+L))
@@ -60,7 +60,7 @@ class Fragments(object):
         return b''.join(result)
 
     def __repr__(self):
-        return repr(sorted(self.fragments.items()))
+        return pprint.pformat(sorted(self.fragments.items()))
 
     def __eq__(self, other):
         if isinstance(other, bytes):

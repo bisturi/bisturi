@@ -40,7 +40,13 @@
 
 >>> f.append(b'F')
 >>> f
-[(0, 'AAA'), (3, 'BBB'), (6, 'CCC'), (9, 'DDD'), (12, 'XXX'), (15, 'F'), (16, 'EEE')]
+[(0, 'AAA'),
+ (3, 'BBB'),
+ (6, 'CCC'),
+ (9, 'DDD'),
+ (12, 'XXX'),
+ (15, 'F'),
+ (16, 'EEE')]
 >>> f.tobytes()
 'AAABBBCCCDDDXXXFEEE'
 
