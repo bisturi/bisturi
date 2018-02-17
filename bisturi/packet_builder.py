@@ -3,9 +3,57 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 import bisturi.blocks
-import copy
+import copy, pprint
 
 from bisturi.six import integer_types
+
+__trace_enabled = False
+__trace_indent = 0
+def _trace(pargs=[], pattrs=[], presult=False):
+    def decorator(method):
+        def wrapper(self, *args, **kargs):
+            global __trace_indent
+
+            who = getattr(self, '__name__', self.__class__.__name__)
+            indent = " " * __trace_indent
+            print("{i}{who} {method}".format(i=indent, who=who,
+                                             method=method.__name__))
+
+            if pargs:
+                print("{i}Args:".format(i=indent))
+                for p in pargs:
+                    try:
+                        val = args[p]
+                    except:
+                        val = kargs[p]
+
+                    print("{i}{arg}: {val}".format(i=indent, arg=p,
+                                                    val=pprint.pformat(val)))
+
+            __trace_indent += 1
+            try:
+                result = method(self, *args, **kargs)
+            finally:
+                __trace_indent -= 1
+
+            if pattrs:
+                print("{i}Attrs post-call:".format(i=indent))
+                for p in pattrs:
+                    val = getattr(self, p)
+                    print("{i}{arg}: {val}".format(i=indent, arg=p,
+                                                    val=pprint.pformat(val)))
+
+            if presult:
+                print("{i}Result: {val}".format(i=indent,
+                                                    val=pprint.pformat(val)))
+
+            return result
+
+        if __trace_enabled:
+            return wrapper
+        else:
+            return method
+    return decorator
 
 class PacketClassBuilder(object):
     def __init__(self, metacls, name, bases, attrs):
@@ -17,6 +65,7 @@ class PacketClassBuilder(object):
     def bisturi_configuration_default(self):
         return {}
 
+    @_trace(pattrs=['bisturi_conf'])
     def make_configuration(self):
         self.bisturi_conf = self.attrs.get('__bisturi__', self.bisturi_configuration_default())
 
@@ -25,6 +74,7 @@ class PacketClassBuilder(object):
         name = subpacket_name[0].lower() + subpacket_name[1:]
         return "".join((c if c.islower() else "_"+c.lower()) for c in name)
 
+    @_trace(pattrs=['attrs'])
     def create_fields_for_embebed_subclasses_and_replace_them(self):
         ''' Create Ref fields to refer to 'embebed' subclasses.
             Something like this:
@@ -56,6 +106,7 @@ class PacketClassBuilder(object):
 
         self.attrs.update(dict(subpackets_as_refs))
 
+    @_trace(pattrs=['fields_in_class', 'original_fields_in_class'])
     def collect_the_fields_from_class_definition(self):
         ''' Collect the fields of the packet and sort them by creation time.
             Take something like this:
@@ -82,6 +133,7 @@ class PacketClassBuilder(object):
 
         self.original_fields_in_class = list(self.fields_in_class)
 
+    @_trace(pattrs=['fields'])
     def ask_to_each_field_to_describe_itself(self):
         ''' Ask to each field to describe itself. This should return for each field 
             a list of names and fields which represent that original field.
@@ -101,6 +153,7 @@ class PacketClassBuilder(object):
         '''
         self.fields = sum([field._describe_yourself(name, self.bisturi_conf) for name, field in self.fields_in_class], [])
 
+    @_trace(pattrs=['slots'])
     def compile_fields_and_create_slots(self):
         ''' Compile each field, allowing them to optimize their pack/unpack methods.
             Also collect them and create the necessary slots to optimize the memory usage,
@@ -114,6 +167,7 @@ class PacketClassBuilder(object):
         additional_slots = self.bisturi_conf.get('additional_slots', [])
         self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
     
+    @_trace(pattrs=['slots'])
     def compile_descriptors_and_extend_slots(self):
         ''' Compile each field's descriptor if any and add their slots to the slot list. '''
         def has_descriptor(field):
@@ -123,6 +177,7 @@ class PacketClassBuilder(object):
                if has_descriptor(field)), [])
 
 
+    @_trace()
     def lookup_pack_unpack_methods(self):
         ''' The list of fields is transformed in a list of tuples with the pack/unpack methods
             of each field ready to be called avoiding a further lookup.
@@ -133,7 +188,8 @@ class PacketClassBuilder(object):
                  ]
         '''
         self.fields = [(name, field, field.pack, field.unpack) for name, field in self.fields]
-      
+
+    @_trace(pattrs=['attrs'])
     def remove_fields_from_class_definition(self):
         ''' Remove from the class definition any field.
             Take this:
@@ -147,7 +203,8 @@ class PacketClassBuilder(object):
         '''
         for name, _ in self.original_fields_in_class:
             del self.attrs[name]
-    
+
+    @_trace(pattrs=['attrs', 'slots'])
     def add_descriptors_to_class_definition(self):
         ''' Add to the class definition any field's descriptor.
             It will replace a field by its descriptor.
@@ -164,7 +221,9 @@ class PacketClassBuilder(object):
         for name, field in self.fields:
             if field.descriptor:
                 self.attrs[field.descriptor_name] = field.descriptor
-    
+                self.slots.remove(field.descriptor_name)
+
+    @_trace()
     def collect_sync_methods_from_field_descriptors(self):
         self.sync_before_pack_methods = [] 
         self.sync_after_unpack_methods = []
@@ -180,6 +239,7 @@ class PacketClassBuilder(object):
                 except AttributeError:
                     pass
 
+    @_trace(pattrs=['metacls', 'name', 'bases', 'attrs', 'cls'])
     def create_class(self):
         ''' Create the class with the correct attributes and slots.
             If it is necessary, the original attributes (fields) can be access
@@ -189,9 +249,10 @@ class PacketClassBuilder(object):
 
         self.attrs['__slots__'] = self.slots
         self.attrs['__bisturi__'] = self.bisturi_conf
-      
+
         self.cls = type.__new__(self.metacls, self.name, self.bases, self.attrs)
 
+    @_trace()
     def add_get_fields_class_method(self):
         @classmethod
         def get_fields(cls):
@@ -199,11 +260,12 @@ class PacketClassBuilder(object):
 
         self.cls.get_fields = get_fields
 
+    @_trace()
     def add_sync_descriptor_class_methods(self):
         @classmethod
         def get_sync_before_pack_methods(cls):
             return self.sync_before_pack_methods
-      
+
         @classmethod
         def get_sync_after_unpack_methods(cls):
             return self.sync_after_unpack_methods
@@ -211,6 +273,7 @@ class PacketClassBuilder(object):
         self.cls.get_sync_before_pack_methods = get_sync_before_pack_methods
         self.cls.get_sync_after_unpack_methods = get_sync_after_unpack_methods
 
+    @_trace(pattrs=['am_in_debug_mode'])
     def check_if_we_are_in_debug_mode(self):
         ''' A class creation is in debug mode if one of its fields is 
             a breakpoint (Bkpt).
@@ -218,6 +281,7 @@ class PacketClassBuilder(object):
         from bisturi.field import Bkpt
         self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field in self.fields))
 
+    @_trace()
     def create_optimized_code(self):
         ''' Generate the optimized code for the pack and unpack methods and
             replace the original version for the optimized ones.
@@ -239,9 +303,11 @@ class PacketClassBuilder(object):
 
         bisturi.blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
 
+    @_trace()
     def get_packet_class(self):
         return self.cls
 
+    @_trace()
     def create_collect_and_describe_the_field_list(self):
         ''' Given a class definition create any extra field necessary,
             then collect all of them and at last ask to each field to
@@ -251,6 +317,7 @@ class PacketClassBuilder(object):
         self.collect_the_fields_from_class_definition()
         self.ask_to_each_field_to_describe_itself()
 
+    @_trace()
     def compile_fields_and_descriptors_and_create_slots(self):
         ''' Each field and each descriptor is compiled, optimized and
             added to the list of slots.
@@ -258,15 +325,18 @@ class PacketClassBuilder(object):
         self.compile_fields_and_create_slots()
         self.compile_descriptors_and_extend_slots()
 
+    @_trace()
     def create_packet_class_and_add_its_special_methods(self):
         self.create_class()
         self.add_get_fields_class_method()
         self.add_sync_descriptor_class_methods()
 
+    @_trace()
     def remove_fields_from_and_add_descriptors_to_class_definition(self):
         self.remove_fields_from_class_definition()
         self.add_descriptors_to_class_definition()
-        
+
+    @_trace()
     def optimize_methods(self):
         self.check_if_we_are_in_debug_mode()
         self.lookup_pack_unpack_methods()
@@ -314,19 +384,19 @@ class MetaPacket(type):
 
         else:
             builder = PacketClassBuilder(metacls, name, bases, attrs)
-    
+
         builder.make_configuration()
 
         builder.create_collect_and_describe_the_field_list()
         builder.compile_fields_and_descriptors_and_create_slots()
-        
+
         builder.collect_sync_methods_from_field_descriptors()
 
         builder.remove_fields_from_and_add_descriptors_to_class_definition()
         builder.create_packet_class_and_add_its_special_methods()
 
         builder.optimize_methods()
-      
+
         cls = builder.get_packet_class()
         return cls
 
