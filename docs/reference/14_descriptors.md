@@ -39,6 +39,9 @@ __get__ method will return the length of the field tracked ("a" in this case)
 >>> p.a
 'abc'
 
+>>> hasattr(p, '__dict__') # double check that we didn't introduce an extra dict
+False
+
 ```
 
 To ensure that we are talking with a descriptor, we can do the following test:
