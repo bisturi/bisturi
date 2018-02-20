@@ -14,11 +14,10 @@ def normalize_raw_condition_into_a_callable(raw_condition):
 
     if isinstance(raw_condition, Field):
         raw_condition = convert_a_field_raw_condition_into_a_boolean_unary_expression(raw_condition)
-  
+
     if isinstance(raw_condition, (UnaryExpr, BinaryExpr, NaryExpr)):
         raw_condition = compile_expr_into_callable(raw_condition)
 
-    
     if callable(raw_condition):
         return raw_condition
 
@@ -30,12 +29,14 @@ def normalize_raw_condition_into_a_callable(raw_condition):
 def convert_a_field_raw_condition_into_a_boolean_unary_expression(a_field):
     assert isinstance(a_field, Field)
 
-    truth_methods = ('__nonzero__', '__len__') # the order is important here, ask first for nonzero only then for len.
-                                               # otherwise if 'a_field' is an Optional field and the Optional field's value
-                                               # resolves to None, None doesn't have a __len__ method.
-                                               # Of course, None doesn't have a __nonzero__ methods neither but 
-                                               # we use 'operator.truth' as the implementation of __nonzero__
-                                               # and operator.truth(None) is well defined.
+    # the order is important here, ask first for nonzero only then for len.
+    # otherwise if 'a_field' is an Optional field and the Optional field's value
+    # resolves to None, None doesn't have a __len__ method.
+    # Of course, None doesn't have a __nonzero__ methods neither but
+    # we use 'operator.truth' as the implementation of __nonzero__
+    # and operator.truth(None) is well defined.
+    truth_methods = ('__nonzero__', '__len__')
+
     for method in truth_methods:
         if hasattr(a_field, method):
             return getattr(a_field, method)()
@@ -52,12 +53,13 @@ def normalize_count_condition_into_a_callable(count_raw_condition):
 
     if isinstance(count_raw_condition, Field):
         field_name = count_raw_condition.field_name
-        count_raw_condition = lambda pkt, **k: getattr(pkt, field_name)     # aka int(count_raw_condition)
-  
+
+        # aka int(count_raw_condition)
+        count_raw_condition = lambda pkt, **k: getattr(pkt, field_name)
+
     if isinstance(count_raw_condition, (UnaryExpr, BinaryExpr, NaryExpr)):
         count_raw_condition = compile_expr_into_callable(count_raw_condition)
 
-    
     if callable(count_raw_condition):
         return count_raw_condition
 
@@ -78,7 +80,7 @@ class Sequence(Field):
             raise ValueError("A sequence of fields (see the Field.repeated method) must have a count "
                              "of how many a field is repeated or a until condition to repeat "
                              "the field as long as the condition is false. "
-                             "You must set one and only one of them.") 
+                             "You must set one and only one of them.")
 
         self.ctime = prototype.ctime
         self.default = default if default is not None else []
@@ -88,7 +90,6 @@ class Sequence(Field):
 
         self.tmp = (count, until, when)
 
-      
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
         from bisturi.structural_fields import normalize_raw_condition_into_a_callable, \
@@ -106,7 +107,7 @@ class Sequence(Field):
         self.prototype_field._compile(position=-1, fields=[], bisturi_conf=bisturi_conf)
 
         count, until, when = self.tmp
-      
+
         self.when = None if when is None else normalize_raw_condition_into_a_callable(when)
 
         if count is None:
@@ -121,9 +122,9 @@ class Sequence(Field):
     def init(self, packet, defaults):
         Field.init(self, packet, defaults)
         self.prototype_field.init(packet, {})
-    
+
     def unpack(self, pkt, raw, offset=0, **k):
-        sequence = [] 
+        sequence = []
         setattr(pkt, self.field_name, sequence) # clean up the previous sequence (if any), 
                                                 # so it can be used by the 'when' or 'until' callbacks
 
@@ -186,21 +187,21 @@ class Sequence(Field):
                 subregexp = f.assemble_regexp()
             except:
                 subregexp = b".*"
-    
+
             # TODO, fix this (fix the self.get_how_many_elements stuff)
             # (A)*
             fragments.append(b'(' + subregexp + b')*', is_literal=False)
-            raise NotImplementedError() 
+            raise NotImplementedError("Not supported yet")
             if self.get_how_many_elements is None:
                 fragments.append(b'(' + subregexp + b')*', is_literal=False)
             else:
                 fragments.append(b'(' + subregexp + ("){%i}" % self.get_how_many_elements).encode('ascii'), is_literal=False)
 
         return fragments
-    
+
     def repeated(self, *args, **kargs):
         r''' Nop, you cannot repeat a sequence (repeat twice):
-            
+
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
@@ -232,9 +233,9 @@ class Sequence(Field):
                           "See the documentation of Sequence.repeated for more info.")
 
     def when(self, *args, **kargs):
-        r''' You cannot call 'when' of Sequence. Instead you can use the 'when' 
+        r''' You cannot call 'when' of Sequence. Instead you can use the 'when'
              parameter of the Field.repeated method:
-            
+
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
@@ -246,7 +247,7 @@ class Sequence(Field):
              SyntaxError: You cannot call 'when' of Sequence...
 
              Instead you should do something like:
-             
+
              >>> class NonBuggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).repeated(2, when=t)
@@ -271,7 +272,6 @@ class Optional(Field):
         self.prototype_field = prototype
         self.tmp = when
 
-      
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
@@ -288,7 +288,7 @@ class Optional(Field):
     def init(self, packet, defaults):
         Field.init(self, packet, defaults)
         self.prototype_field.init(packet, {})
-      
+
     def unpack(self, pkt, raw, offset=0, **k):
         proceed = self.when(pkt=pkt, raw=raw, offset=offset, **k)
 
@@ -312,7 +312,7 @@ class Optional(Field):
 
         else:
             return fragments
-   
+
     def pack_regexp(self, pkt, fragments, **k):
         value = getattr(pkt, self.field_name)
         is_literal = not isinstance(value, Any)
@@ -326,16 +326,15 @@ class Optional(Field):
                 subregexp = f.assemble_regexp()
             except:
                 subregexp = b".*"
-          
+
             # (A)?
             fragments.append(b'(' + subregexp + b')?', is_literal=False)
 
         return fragments
 
-
     def repeated(self, *args, **kargs):
         r''' Nop, you cannot repeat an optional argument:
-            
+
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
@@ -347,7 +346,7 @@ class Optional(Field):
              SyntaxError: You cannot repeat an optional argument...
 
              Instead you should do something like:
-             
+
              >>> class NonBuggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).repeated(4, when = t == 0 )
@@ -359,7 +358,7 @@ class Optional(Field):
 
     def when(self, *args, **kargs):
         r''' This is an optional field already, you cannot chain 'when' conditions:
-            
+
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
@@ -371,7 +370,7 @@ class Optional(Field):
              SyntaxError: You cannot make optional an already optional field...
 
              Instead you should do something like:
-             
+
              >>> class NonBuggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).when((t > 0) & (t < 10))
@@ -383,7 +382,7 @@ class Optional(Field):
 class Move(Field):
     def __init__(self, move_arg, movement_type):
         Field.__init__(self)
-        self.move_arg = move_arg 
+        self.move_arg = move_arg
         self.movement_type = movement_type
         self.default = b''
 
@@ -393,7 +392,7 @@ class Move(Field):
 
         elif isinstance(self.move_arg, integer_types):
             move_value = self.move_arg
-      
+
         else:
             assert callable(self.move_arg) # TODO the callable must have the same interface. currently recieve (pkt, raw, offset, **k) for unpack and (pkt, fragments, **k) for pack
             move_value = self.move_arg(pkt=pkt, raw=raw, offset=offset, **k)
@@ -414,9 +413,9 @@ class Move(Field):
                 raise Exception()
 
             return offset + ((move_value - ((offset-start) % move_value)) % move_value)
-        else:     
+        else:
             raise Exception()
-   
+
     def init(self, packet, defaults):
         pass
 
@@ -425,14 +424,14 @@ class Move(Field):
 
         if isinstance(self.move_arg, Field):
             move_value = getattr(pkt, self.move_arg.field_name)
- 
+
         elif isinstance(self.move_arg, integer_types):
             move_value = self.move_arg
-      
+
         else:
             assert callable(self.move_arg)
             move_value = self.move_arg(pkt=pkt, fragments=fragments, **k)
-     
+
         # TODO because the "garbage" could be readed by another field in the future,
         # this may not be garbage and if  we try to put here, the other field will
         # try to put the same data in the same place and we get a collission.

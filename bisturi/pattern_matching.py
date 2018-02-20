@@ -42,7 +42,7 @@ class Any(object):
             return self.eq_for_any(other)
         else:
             return self.eq_for_regexp(other)
-    
+
     def __ne__(self, other):
         if self.regexp is None:
             return self.ne_for_any(other)
@@ -51,13 +51,13 @@ class Any(object):
 
     def eq_for_any(self, other):
         return True
-    
+
     def ne_for_any(self, other):
-        return False 
+        return False
 
     def eq_for_regexp(self, other):
         return bool(self.regexp.search(other))
-    
+
     def ne_for_regexp(self, other):
         return not bool(self.regexp.search(other))
 

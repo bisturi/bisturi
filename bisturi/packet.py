@@ -32,8 +32,8 @@ class PacketError(Exception):
 
     def __str__(self):
         phase = "unpacking" if self.was_error_found_in_unpacking_phase else "packing"
-        
-        stack_details = []       
+
+        stack_details = []
         for offset, field_name, packet_class_name in reversed(self.fields_stack):
             offset_and_pkt_class = "    %08x %s" % (offset, packet_class_name)
             first_part_len = len(offset_and_pkt_class)
@@ -47,7 +47,7 @@ class PacketError(Exception):
 
         closer_field_offset, closer_field_name, closer_packet_class_name = self.fields_stack[0]
         msg = "Error when %s the field '%s' of packet %s at %08x: %s\nPacket stack details: \n%s\nField's exception:\n%s" % (
-                                 phase, 
+                                 phase,
                                  closer_field_name, closer_packet_class_name,
                                  closer_field_offset,
                                  self.original_error_message,
@@ -108,7 +108,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             raise
         except Exception as e:
             raise PacketError(True, name, self.__class__.__name__, offset, str(e))
-      
+
         [sync(self) for sync in self.get_sync_after_unpack_methods()]
         return offset
 
@@ -120,7 +120,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
         except PacketError as e:
             e.packet = self
             raise e
-         
+
 
     def pack_impl(self, fragments, **k):
         [sync(self) for sync in self.get_sync_before_pack_methods()]
@@ -134,7 +134,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             raise
         except Exception as e:
             raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
-      
+
         return fragments
 
     def as_regular_expression(self, debug=False):

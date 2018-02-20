@@ -9,7 +9,8 @@ import hashlib
 import os.path
 import imp
 
-def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack, write_py_module):
+def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack,
+                                                            write_py_module):
     if not generate_for_pack and not generate_for_unpack:
         return
 
@@ -48,7 +49,8 @@ def pack_impl(pkt, fragments, **k):
    return fragments
 ''' % {
       'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
-      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=True),
+      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(
+                                                pkt_class, sync_for_pack=True),
     }
     else:
         pack_code = ""
@@ -69,7 +71,7 @@ def unpack_impl(pkt, raw, offset, **k):
       raise e
    except Exception as e:
       raise PacketError(True, name, pkt.__class__.__name__, offset, str(e))
-   
+
 %(sync_descriptors_code)s
    return offset
 ''' % {
@@ -113,7 +115,7 @@ def unpack_impl(pkt, raw, offset, **k):
             module_file.write(unpack_code)
 
         module = imp.load_source(module_name, module_filename)
-    
+
         if module and hasattr(module, '__cached__'):
             module_compiled_filename = module.__cached__
         else:
@@ -125,14 +127,14 @@ def unpack_impl(pkt, raw, offset, **k):
             except:
                 pass
             os.remove(module_filename)
- 
+
     from bisturi.packet import Packet
     if generate_for_pack and (pkt_class.pack_impl == Packet.pack_impl):
         pkt_class.pack_impl = module.pack_impl
 
     if generate_for_unpack and (pkt_class.unpack_impl == Packet.unpack_impl):
         pkt_class.unpack_impl = module.unpack_impl
- 
+
 def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     if sync_for_pack:
         sync_methods = pkt_class.get_sync_before_pack_methods()
@@ -140,34 +142,43 @@ def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     else:
         sync_methods = pkt_class.get_sync_after_unpack_methods()
         setup_code = "   sync_methods = pkt.get_sync_after_unpack_methods()\n"
-   
+
     if not sync_methods:
         return "   "
 
-    sync_calls = '\n'.join('   sync_methods[%i](pkt)' % i for i in range(len(sync_methods)))
+    sync_calls = '\n'.join('   sync_methods[%i](pkt)' % i \
+                                        for i in range(len(sync_methods)))
     return setup_code + sync_calls
 
 
 def generate_code_for_fixed_fields(fields):
-    grouped_by_struct_code =  [(k, list(g)) for k, g in itertools.groupby(fields, lambda i_n_f: i_n_f[2].struct_code is not None)]
+    grouped_by_struct_code =  [(k, list(g)) for k, g in \
+                                itertools.groupby(fields,
+                                                  lambda i_n_f: i_n_f[2].struct_code is not None)]
     codes = []
     for has_struct_code, group in grouped_by_struct_code:
         if has_struct_code:
-            grouped_by_endianness = [(k, list(g)) for k, g in itertools.groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)]
-            codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) for k, g in grouped_by_endianness])
+            grouped_by_endianness = [(k, list(g)) for k, g in \
+                                        itertools.groupby(group,
+                                                        lambda i_n_f: i_n_f[2].is_bigendian)]
+
+            codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) \
+                                for k, g in grouped_by_endianness])
         else:
             codes.append(generate_code_for_fixed_fields_without_struct_code(group))
 
     return codes
 
-# TODO if is_bigendian  is  None means "don't care", no necessary means 'big endian (>)', so it should be joined with any other endianness
+# TODO if is_bigendian  is  None means "don't care",
+# no necessary means 'big endian (>)', so it should be joined
+# with any other endianness
 def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
     fmt = ">" if is_bigendian else "<"
     fmt += "".join([f.struct_code for _, _, f in group])
 
     lookup_fields = " ".join([('pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
     unpack_code = '''
-name = "%(name)s" 
+name = "%(name)s"
 next_offset = offset + %(advance)s
 %(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
 offset = next_offset
@@ -175,18 +186,20 @@ offset = next_offset
          'lookup_fields': lookup_fields,
          'fmt': fmt,
          'advance': struct.calcsize(fmt),
-         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
+         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) \
+                    if len(group) > 1 else group[0][1],
       }
 
     pack_code = '''
-name = "%(name)s" 
+name = "%(name)s"
 fragments.append(StructPack("%(fmt)s", %(lookup_fields)s))
 ''' % {
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
-         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) if len(group) > 1 else group[0][1],
+         'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) \
+                    if len(group) > 1 else group[0][1],
       }
-   
+
     return pack_code, unpack_code
 
 def generate_code_for_variable_fields(group):

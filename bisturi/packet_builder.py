@@ -61,13 +61,14 @@ class PacketClassBuilder(object):
         self.name = name
         self.bases = bases
         self.attrs = attrs
-        
+
     def bisturi_configuration_default(self):
         return {}
 
     @_trace(pattrs=['bisturi_conf'])
     def make_configuration(self):
-        self.bisturi_conf = self.attrs.get('__bisturi__', self.bisturi_configuration_default())
+        defaults = self.bisturi_configuration_default()
+        self.bisturi_conf = self.attrs.get('__bisturi__', defaults)
 
     def create_field_name_from_subpacket_name(self, subpacket_name):
         '''Helper method to transform names like CamelCase into camel_case'''
@@ -78,20 +79,20 @@ class PacketClassBuilder(object):
     def create_fields_for_embebed_subclasses_and_replace_them(self):
         ''' Create Ref fields to refer to 'embebed' subclasses.
             Something like this:
-           
+
             class A(Packet):
                 class B(Packet):
                     pass
 
             is transformed into
-           
+
             class A(Packet):
                 b = Ref(B)
 
             See the method create_field_name_from_subpacket_name to know how
             the name 'B' was transformed into 'b'.
         '''
-            
+
         from bisturi.packet import Packet
         from bisturi.field import Ref
         import inspect
@@ -101,8 +102,9 @@ class PacketClassBuilder(object):
             return inspect.isclass(field) and issubclass(field, Packet)
 
         names_and_subpackets = filter(is_a_packet_instance, self.attrs.items())
-        subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name), 
-                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) for name, subpacket in names_and_subpackets]
+        subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name),
+                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) \
+                                    for name, subpacket in names_and_subpackets]
 
         self.attrs.update(dict(subpackets_as_refs))
 
@@ -129,14 +131,15 @@ class PacketClassBuilder(object):
             return field.ctime
 
         self.fields_in_class = filter(is_a_field_instance, self.attrs.items())
-        self.fields_in_class = sorted(self.fields_in_class, key=creation_time_of_field)
+        self.fields_in_class = sorted(self.fields_in_class,
+                                        key=creation_time_of_field)
 
         self.original_fields_in_class = list(self.fields_in_class)
 
     @_trace(pattrs=['fields'])
     def ask_to_each_field_to_describe_itself(self):
-        ''' Ask to each field to describe itself. This should return for each field 
-            a list of names and fields which represent that original field.
+        ''' Ask to each field to describe itself. This should return for each
+            field a list of names and fields which represent that original field.
             In most cases one field is described by only one field (itself) but
             there are cases where multiple field are needed.
 
@@ -151,13 +154,16 @@ class PacketClassBuilder(object):
             How each field is describe will depend of each field instance.
             See the method _describe_yourself of each Field subclass.
         '''
-        self.fields = sum([field._describe_yourself(name, self.bisturi_conf) for name, field in self.fields_in_class], [])
+        self.fields = sum([field._describe_yourself(name, self.bisturi_conf) \
+                            for name, field in self.fields_in_class], [])
 
     @_trace(pattrs=['slots'])
     def compile_fields_and_create_slots(self):
-        ''' Compile each field, allowing them to optimize their pack/unpack methods.
-            Also collect them and create the necessary slots to optimize the memory usage,
-            then extend the slot list with the slots given by the user.
+        ''' Compile each field, allowing them to optimize their pack/unpack
+            methods.
+            Also collect them and create the necessary slots to optimize the
+            memory usage, then extend the slot list with the slots given by
+            the user.
         '''
 
         def compile_field(position, name_and_field):
@@ -166,10 +172,12 @@ class PacketClassBuilder(object):
 
         additional_slots = self.bisturi_conf.get('additional_slots', [])
         self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
-    
+
     @_trace(pattrs=['slots'])
     def compile_descriptors_and_extend_slots(self):
-        ''' Compile each field's descriptor if any and add their slots to the slot list. '''
+        ''' Compile each field's descriptor if any and add their slots to the
+            slot list.
+        '''
         def has_descriptor(field):
             return field.descriptor is not None and hasattr(field.descriptor, '_compile')
 
@@ -179,8 +187,9 @@ class PacketClassBuilder(object):
 
     @_trace()
     def lookup_pack_unpack_methods(self):
-        ''' The list of fields is transformed in a list of tuples with the pack/unpack methods
-            of each field ready to be called avoiding a further lookup.
+        ''' The list of fields is transformed in a list of tuples with the
+            pack/unpack methods of each field ready to be called avoiding a
+            further lookup.
 
             Take this [a->Int(1), b->Int(2)] into
                 [(a, Int(1), a.pack, a.unpack),
@@ -225,7 +234,7 @@ class PacketClassBuilder(object):
 
     @_trace()
     def collect_sync_methods_from_field_descriptors(self):
-        self.sync_before_pack_methods = [] 
+        self.sync_before_pack_methods = []
         self.sync_after_unpack_methods = []
         for name, field in self.fields:
             if field.descriptor:
@@ -275,7 +284,7 @@ class PacketClassBuilder(object):
 
     @_trace(pattrs=['am_in_debug_mode'])
     def check_if_we_are_in_debug_mode(self):
-        ''' A class creation is in debug mode if one of its fields is 
+        ''' A class creation is in debug mode if one of its fields is
             a breakpoint (Bkpt).
         '''
         from bisturi.field import Bkpt
@@ -288,7 +297,7 @@ class PacketClassBuilder(object):
 
             The generation can be disabled is partially with the configuration
             flagos generate_for_pack/generate_for_unpack.
-            And it is totally disabled if the class is in debug mode 
+            And it is totally disabled if the class is in debug mode
             (see check_if_we_are_in_debug_mode)
 
             Optinally the generated code can be kept to manual inspection
@@ -399,22 +408,4 @@ class MetaPacket(type):
 
         cls = builder.get_packet_class()
         return cls
-
-
-    '''def __getattribute__(self, name):
-      """ Let be
-          class P(Packet):
-            f = Field()
-
-          f is a Field, but P.f is a member_descriptor. This happen because
-          Packet implements the __slots__ attribute and hides the fields.
-          To restore this we need to do this ugly and inefficient lookup."""
-      obj = type.__getattribute__(self, name)
-      try:
-         # try to find the Field if any
-         return [f for n, f, _, _ in obj.__objclass__.get_fields() if n == name][0]
-      except:
-         pass
-      return obj'''
-
 

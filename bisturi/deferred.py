@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 
-from bisturi.six import text_types 
+from bisturi.six import text_types
 
 import collections, functools, operator
 
@@ -19,7 +19,7 @@ BinaryOperationsByCategory = {
         'integer': [
             # arith ------------------------------------
             operator.add,         operator.sub,
-            operator.mul,         
+            operator.mul,
             operator.truediv,     operator.floordiv,
             operator.mod,         operator.pow,
 
@@ -32,7 +32,7 @@ BinaryOperationsByCategory = {
 
             # logical ----------------------------------
             operator.and_,        operator.or_,
-            operator.xor,              
+            operator.xor,
             operator.rshift,      operator.lshift,
             ],
 
@@ -49,13 +49,13 @@ BinaryReverseOperationsByCategory = {
         'integer': [
             # arith ------------------------------------
             operator.add,         operator.sub,
-            operator.mul,         
+            operator.mul,
             operator.truediv,     operator.floordiv,
             operator.mod,         operator.pow,
 
             # logical ----------------------------------
             operator.and_,        operator.or_,
-            operator.xor,              
+            operator.xor,
             operator.rshift,      operator.lshift,
             ],
 
@@ -109,7 +109,7 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
 
     if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
         ops.append(0, lambda pkt, *vargs, **kargs: root_expr, level, 'literal-value ' + repr(root_expr))
-    
+
     elif isinstance(root_expr, NaryExpr):
         r, l, m, op = root_expr
 
@@ -122,7 +122,7 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
             n = len(l)
             for value in l:
                 compile_expr(value, ops, level=next_level)
-            
+
             ops.append(n, lambda *vargs: vargs, level, 'arg-list')
 
         else:
@@ -134,7 +134,7 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
             ops.append(n, lambda *vargs: dict(zip(keys, vargs)), level, 'arg-mapping')
 
         ops.append(2, op, level)
-   
+
     elif isinstance(root_expr, BinaryExpr):
         l, r, op = root_expr
         compile_expr(l, ops, level=next_level)
@@ -167,7 +167,7 @@ def exec_compiled_expr(pkt, args, ops, *vargs, **kargs):
         else:
             result = op(*reversed(args[:arg_count]))
             del args[:arg_count]
-      
+
         args.insert(0, result)
 
     assert len(args) == 1
@@ -177,7 +177,6 @@ def compile_expr_into_callable(root_expr):
     ops = compile_expr(root_expr).as_list()
     args = []
     return lambda pkt, *vargs, **kargs: exec_compiled_expr(pkt, args, ops, *vargs, **kargs)
-   
 
 
 def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_arguments=False):
@@ -214,17 +213,17 @@ def _defer_method(target, methodname, op, is_binary, is_nary=False, swap_binary_
                             return obj.encode('ascii')
                         except:
                             raise Exception("Invalid argument for nary expression '%s'. Your are using a keyword arguments call (like nary(k1=a, k2=b)) where the keywords aren't valid ascii names (chars between 0 and 128)." % methodname)
-            
+
                     C = {_encode_to_ascii_or_fail(k): v for k, v in C.items()}
 
                 # else  --> nary(v1, v2)
-                    
+
                 return NaryExpr(A, B, C, op)
 
             setattr(target, methodname, nary)
         else:
             setattr(target, methodname, lambda A: UnaryExpr(A, op))
-   
+
 
 def _defer_operations_of(cls, allowed_categories='all'):
     if allowed_categories == 'all':
@@ -245,7 +244,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
         methodname = "__%s__" % op_name
         _defer_method(cls, methodname, binary_op, is_binary=True)
-    
+
     for binary_op in allowed_binary_reverse_operations:
         op_name = binary_op.__name__
         if op_name.endswith("_"):
@@ -253,7 +252,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
         methodname = "__r%s__" % op_name
         _defer_method(cls, methodname, binary_op, is_binary=True, swap_binary_arguments=True)
-   
+
     for unary_op in allowed_unary_operations:
         op_name = unary_op.__name__
         if op_name.endswith("_"):
@@ -269,7 +268,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
     _defer_method(cls, 'if_true_then_else', if_true_then_else, is_binary=False, is_nary=True)
     _defer_method(cls, 'choose', choose, is_binary=False, is_nary=True)
-   
+
     return cls
 
 def defer_operations(allowed_categories='all'):

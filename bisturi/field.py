@@ -128,7 +128,7 @@ class Field(object):
         except KeyError:
             obj = copy.deepcopy(self.default)
 
-        setattr(packet, self.field_name, obj) # if isinstance(self.default, integer_types + (bytes, )) else (copy.deepcopy(self.default))))
+        setattr(packet, self.field_name, obj)
 
     def unpack(self, pkt, raw, offset, **k):
         raise NotImplementedError()

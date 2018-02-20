@@ -14,12 +14,12 @@ class Auto(object):
     def __get__(self, instance, owner):
         if instance is None:
             return self
- 
+
         iam_enabled = getattr(instance, self.iam_enabled_attr_name, True)
         if iam_enabled:
             return self.func(instance)
         else:
-            real_value = getattr(instance, self.real_field_name) 
+            real_value = getattr(instance, self.real_field_name)
             return real_value
 
     def __set__(self, instance, val):
@@ -30,8 +30,11 @@ class Auto(object):
         setattr(instance, self.iam_enabled_attr_name, True)
 
     def sync_before_pack(self, instance):
-        val = self.__get__(instance, type(instance)) # this can be calculated or not, we don't care
-        setattr(instance, self.real_field_name, val) # we only care that the real field has the same value
+        # this can be calculated or not, we don't care
+        val = self.__get__(instance, type(instance))
+
+        # we only care that the real field has the same value
+        setattr(instance, self.real_field_name, val)
 
 
 class AutoLength(Auto):
