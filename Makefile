@@ -2,6 +2,8 @@ RUNDOCTEST=python -m doctest
 RUNUNITTEST=python -m unittest -q
 RUNPYTHON=python
 
+.PHONY: test test-docs test-src test-examples test-tests dist upload
+
 test: test-src test-docs test-tests test-examples
 
 test-docs:
@@ -16,3 +18,10 @@ test-examples:
 test-tests:
 	@cd tests; for t in `find . -name "*.py"`; do echo $$t; ${RUNUNITTEST} `basename -s .py $$t`; done; cd ..
 
+dist:
+	rm -Rf dist/ build/ *.egg-info
+	python setup.py sdist bdist_wheel --universal
+	rm -Rf build/ *.egg-info
+
+upload: dist
+	twine upload dist/*.tar.gz dist/*.whl
