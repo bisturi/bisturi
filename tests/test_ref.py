@@ -15,12 +15,30 @@ class SubPacket(Packet):
    value = Int(1)
 
 class TestRef(unittest.TestCase):
-   def _test_refs_field(self, obj_one, obj_two,
-                        one_default_raw,     obj_one_defaults,
-                        two_default_raw,     obj_two_defaults,
-                        first_raw_for_one,   obj_one_first_values,
-                        second_raw_for_one,  obj_one_second_values,
-                        second_raw_for_two,  obj_two_second_values):
+   def _test_refs_field(self,
+                                # the objects under test
+                                obj_one, obj_two,
+
+                                # the expected default values
+                                #  - the raw (packed) value
+                                #  - the python object values (int, strings...)
+                                one_default_raw,     obj_one_defaults,
+                                two_default_raw,     obj_two_defaults,
+
+                                # unpack the given raw item "xx_raw_for_xx"
+                                # for the given object (one or two)
+                                # and compare the unpacked values with the
+                                # expected ones
+                                first_raw_for_one,   obj_one_first_values,
+                                second_raw_for_one,  obj_one_second_values,
+                                second_raw_for_two,  obj_two_second_values,
+
+                                # pack the objects and check that the raw
+                                # string are equal to the raw before plus
+                                # these remains
+                                remain_of_first_raw_for_one = b'',
+                                remain_of_second_raw_for_one = b'',
+                                remain_of_second_raw_for_two = b''):
 
       try:
          #import pdb; pdb.set_trace()
@@ -49,7 +67,7 @@ class TestRef(unittest.TestCase):
 
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert one_packed == raw
+         assert one_packed + remain_of_first_raw_for_one == raw
          assert two_packed == two_default_raw
 
          raw  = second_raw_for_one
@@ -65,20 +83,38 @@ class TestRef(unittest.TestCase):
 
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert one_packed == raw
-         assert two_packed == raw2
+         assert one_packed + remain_of_second_raw_for_one == raw
+         assert two_packed + remain_of_second_raw_for_two == raw2
 
       except Exception as _e:
          import pprint, sys, traceback
          _message = str(_e) + '\n' + pprint.pformat(dict(filter(lambda k_v: not k_v[0].startswith("__"), locals().items())))
          raise type(_e)(_message + '\n' + traceback.format_exc())
 
-   def _test_refs_packet(self, obj_one, obj_two,
-                               one_default_raw,     obj_one_defaults,
-                               two_default_raw,     obj_two_defaults,
-                               first_raw_for_one,   obj_one_first_values,
-                               second_raw_for_one,  obj_one_second_values,
-                               second_raw_for_two,  obj_two_second_values):
+   def _test_refs_packet(self,
+                                # the objects under test
+                                obj_one, obj_two,
+
+                                # the expected default values
+                                #  - the raw (packed) value
+                                #  - the python object values (int, strings...)
+                                one_default_raw,     obj_one_defaults,
+                                two_default_raw,     obj_two_defaults,
+
+                                # unpack the given raw item "xx_raw_for_xx"
+                                # for the given object (one or two)
+                                # and compare the unpacked values with the
+                                # expected ones
+                                first_raw_for_one,   obj_one_first_values,
+                                second_raw_for_one,  obj_one_second_values,
+                                second_raw_for_two,  obj_two_second_values,
+
+                                # pack the objects and check that the raw
+                                # string are equal to the raw before plus
+                                # these remains
+                                remain_of_first_raw_for_one = b'',
+                                remain_of_second_raw_for_one = b'',
+                                remain_of_second_raw_for_two = b''):
 
       try:
          #import pdb; pdb.set_trace()
@@ -107,7 +143,7 @@ class TestRef(unittest.TestCase):
 
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert one_packed == raw
+         assert one_packed + remain_of_first_raw_for_one == raw
          assert two_packed == two_default_raw
 
          raw  = second_raw_for_one
@@ -123,8 +159,8 @@ class TestRef(unittest.TestCase):
 
          # check packing the parsed data
          one_packed, two_packed = one.pack(), two.pack()
-         assert one_packed == raw
-         assert two_packed == raw2
+         assert one_packed + remain_of_second_raw_for_one == raw
+         assert two_packed + remain_of_second_raw_for_two == raw2
 
       except Exception as _e:
          import pprint, sys, traceback
