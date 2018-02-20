@@ -8,6 +8,7 @@ sys.path.append(".")
 
 from bisturi.packet import Packet
 from bisturi.field  import Int, Data
+from bisturi.six    import from_int_to_byte
 
 # See https://www.openssh.com/txt/socks4.protocol
 # and https://www.openssh.com/txt/socks4a.protocol
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     assert client_request.command == ClientCommand.CONNECT
 
     ip = b'66.102.7.99'
-    raw_ip = b''.join(chr(int(octet)) for octet in ip.replace(b'.', b' ').split())
+    raw_ip = b''.join(from_int_to_byte(int(octet)) for octet in ip.replace(b'.', b' ').split())
     assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
     assert client_request.user_id == b'Fred'
@@ -79,7 +80,7 @@ if __name__ == '__main__':
     # server -------------------------
     assert server_response.version == 0 and server_response.status == ServerStatus.GRANTED
     assert server_response.dst_port == 80 and server_response.dst_ip == raw_ip
-    
+
     assert client_request.pack() == raw_request
     assert server_response.pack() == raw_response
 
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     assert client_request.command == ClientCommand.CONNECT
 
     ip = b'0.0.0.1'
-    raw_ip = b''.join(chr(int(octet)) for octet in ip.replace(b'.', b' ').split())
+    raw_ip = b''.join(from_int_to_byte(int(octet)) for octet in ip.replace(b'.', b' ').split())
     assert client_request.dst_port == 80 and client_request.dst_ip == raw_ip
 
     assert client_request.user_id == b'Fred'
