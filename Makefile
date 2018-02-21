@@ -25,3 +25,10 @@ dist:
 
 upload: dist
 	twine upload dist/*.tar.gz dist/*.whl
+
+clean:
+	find . -name "_*_pkt.py*" -delete
+	find . -name "*.pyc" -delete
+	find . -type d -name "__pycache__" -delete
+	rm -Rf dist/ build/ *.egg-info
+	rm README.rst
