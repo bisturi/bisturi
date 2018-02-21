@@ -503,19 +503,22 @@ class TestSequence(unittest.TestCase):
    def test_field_sequence_until_and_when_condition(self):
       class FieldSequenceUntilAndWhen(Packet):
          first  = Int(1).repeated(until=lambda offset, **k: offset >= 4,
-                                  when =lambda raw, offset, **k: raw[offset] != b'\xff')
+                 when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xff')
          second = Int(1).repeated(until=lambda offset, **k: offset >= 8,
-                                  when =lambda raw, offset, **k: raw[offset] != b'\xee')
+                 when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xee')
 
       self._test_sequences_fields(
          obj_one = FieldSequenceUntilAndWhen(),
          obj_two = FieldSequenceUntilAndWhen(),
+
          one_default_raw = b'',
          two_default_raw = b'',
          obj_one_defaults = ([], []),
          obj_two_defaults = ([], []),
+
          first_raw_for_one =  b'\x01\x02\x03\x04\x05\x06\x07\x08',
          obj_one_first_values = ([1, 2, 3, 4], [5, 6, 7, 8]),
+
          second_raw_for_one = b'\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10',
          second_raw_for_two = b'\x11\x12\x13\x14\x15\x16\x17\x18',
          obj_one_second_values = ([9,  10, 11, 12], [13, 14, 15, 16]),
@@ -525,12 +528,15 @@ class TestSequence(unittest.TestCase):
       self._test_sequences_fields(
          obj_one = FieldSequenceUntilAndWhen(),
          obj_two = FieldSequenceUntilAndWhen(),
+
          one_default_raw = b'',
          two_default_raw = b'',
          obj_one_defaults = ([], []),
          obj_two_defaults = ([], []),
+
          first_raw_for_one =  b'\xff\x02\x03\x04\x05\x06\x07\x08',
          obj_one_first_values = ([], [0xff, 2, 3, 4, 5, 6, 7, 8]),
+
          second_raw_for_one = b'\x09\x0a\x0b\x0c\xee',
          second_raw_for_two = b'\xff\x12\x13\x14\x15\x16\x17\x18',
          obj_one_second_values = ([9, 10, 11, 12], []),
@@ -541,9 +547,9 @@ class TestSequence(unittest.TestCase):
    def test_subpacket_sequence_until_and_when_condition(self):
       class SubpacketSequenceUntilAndWhen(Packet):
          first  = Ref(SubPacket).repeated(until=lambda offset, **k: offset >= 4,
-                                          when =lambda raw, offset, **k: raw[offset] != b'\xff')
+                                          when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xff')
          second = Ref(SubPacket).repeated(until=lambda offset, **k: offset >= 8,
-                                          when =lambda raw, offset, **k: raw[offset] != b'\xee')
+                                          when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xee')
 
       self._test_sequences_packet(
          obj_one = SubpacketSequenceUntilAndWhen(),
@@ -580,10 +586,10 @@ class TestSequence(unittest.TestCase):
       class VariableItemSequenceUntilAndWhen(Packet):
          first  = Ref(lambda **k: Int(1), default=0).repeated(
                                              until=lambda offset, **k: offset >= 4,
-                                             when =lambda raw, offset, **k: raw[offset] != b'\xff')
+                                             when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xff')
          second = Ref(lambda **k: Int(1), default=0).repeated(
                                              until=lambda offset, **k: offset >= 8,
-                                             when =lambda raw, offset, **k: raw[offset] != b'\xee')
+                                             when =lambda raw, offset, **k: raw[offset:offset+1] != b'\xee')
 
       self._test_sequences_fields(
          obj_one = VariableItemSequenceUntilAndWhen(),
