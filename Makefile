@@ -31,4 +31,4 @@ clean:
 	find . -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -delete
 	rm -Rf dist/ build/ *.egg-info
-	rm README.rst
+	rm -f README.rst
