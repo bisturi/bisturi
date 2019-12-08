@@ -17,13 +17,13 @@ Several fields accept others fields as parameter to define how many bytes to con
 >>> pkt3.number
 3
 >>> pkt3.paylaod
-'ABC'
+b'ABC'
 >>> pkt3.elemens
 [1, 2, 3]
 >>> pkt3.msg
-'OK'
+b'OK'
 >>> pkt3.author
-'joe'
+b'joe'
 
 >>> raw0 = b'\x00ignored\x00'
 >>> pkt0 = DeferredValue.unpack(raw0)
@@ -31,7 +31,7 @@ Several fields accept others fields as parameter to define how many bytes to con
 >>> pkt0.number
 0
 >>> pkt0.paylaod
-''
+b''
 >>> pkt0.elemens
 []
 >>> pkt0.msg is None
@@ -58,7 +58,7 @@ But using only a field as parameter is just the begin. You can use simple expres
 
 >>> class SequenceExpressions(Packet):
 ...     items = Int(1).repeated(4)
-...     
+...
 ...     extra_data  = Data(4).when(items[0] == 0xff)
 ...     hidden_data = Data(4).when(items[:2] == [0xbe, 0xef])
 
@@ -70,7 +70,7 @@ But using only a field as parameter is just the begin. You can use simple expres
 >>> matrix.values
 [65, 66, 67, 68, 69, 70]
 >>> matrix.padding
-'\xff\xff'
+b'\xff\xff'
 
 >>> raw_extra_msg = b'\xffABCHELO'
 >>> extra_msg = SequenceExpressions.unpack(raw_extra_msg)
@@ -78,7 +78,7 @@ But using only a field as parameter is just the begin. You can use simple expres
 >>> extra_msg.items
 [255, 65, 66, 67]
 >>> extra_msg.extra_data
-'HELO'
+b'HELO'
 >>> extra_msg.hidden_data is None
 True
 
@@ -90,7 +90,7 @@ True
 >>> hidden_msg.extra_data is None
 True
 >>> hidden_msg.hidden_data
-'beef'
+b'beef'
 
 >>> matrix.pack() == raw_matrix
 True
@@ -119,8 +119,8 @@ Here are some examples of using 'choose' by position and by name:
 ...     # by position but from a list
 ...     mindata   = Data(byte_count = (a < b).choose([b, a]))
 ...
-...     # by name/keyword from a dictionary (this is the prefered way to 
-...     # code a 'if-then-else' expression. Equivalent to: 4 if a > 4 else a 
+...     # by name/keyword from a dictionary (this is the prefered way to
+...     # code a 'if-then-else' expression. Equivalent to: 4 if a > 4 else a
 ...     truncated = Data(byte_count = (a > 4).choose({True: 4, False: a}))
 ...
 
@@ -128,11 +128,11 @@ Here are some examples of using 'choose' by position and by name:
 >>> pkt_min = ChooseExpressions.unpack(raw_min)
 
 >>> pkt_min.extra
-':'
+b':'
 >>> pkt_min.mindata
-'A'
+b'A'
 >>> pkt_min.truncated
-'B'
+b'B'
 
 
 >>> raw_trunc = b'\x06\x02AABBBBBBBBBBBBBBBB'
@@ -141,9 +141,9 @@ Here are some examples of using 'choose' by position and by name:
 >>> pkt_trunc.extra is None
 True
 >>> pkt_trunc.mindata
-'AA'
+b'AA'
 >>> pkt_trunc.truncated
-'BBBB'
+b'BBBB'
 
 >>> pkt_min.pack() == raw_min
 True
@@ -163,17 +163,17 @@ If the pool of names from where you want to choose one is a pool of valid python
 >>> pkt_small = ChooseExpressions.unpack(raw_small)
 
 >>> pkt_small.size_type
-'small'
+b'small'
 >>> pkt_small.data
-'AB'
+b'AB'
 
 >>> raw_large = b'large\x00ABCD'
 >>> pkt_large = ChooseExpressions.unpack(raw_large)
 
 >>> pkt_large.size_type
-'large'
+b'large'
 >>> pkt_large.data
-'ABCD'
+b'ABCD'
 
 >>> pkt_small.pack() == raw_small
 True

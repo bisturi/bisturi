@@ -45,7 +45,7 @@ As said before, bisturi is a library to parse binary data. So what are we waitin
 >>> tlv.length
 4
 >>> tlv.value
-'ABCD'
+b'ABCD'
 
 ```
 
@@ -68,7 +68,7 @@ and even you can create your own packet instances from the scrach, bisturi will 
 >>> crafted_tlv.length
 0
 >>> crafted_tlv.value
-''
+b''
 
 ```
 
@@ -76,10 +76,10 @@ Just as you can unpack a byte string into a packet object you can go from a pack
 
 ```python
 >>> tlv.pack()
-'\x02\x00\x04ABCD'
+b'\x02\x00\x04ABCD'
 
 >>> crafted_tlv.pack()
-'\x01\x00\x00'
+b'\x01\x00\x00'
 
 ```
 

@@ -1,4 +1,4 @@
-RUNDOCTEST=python -m doctest
+RUNDOCTEST=byexample -l python -o +py-doctest --ff
 RUNUNITTEST=python -m unittest -q
 RUNPYTHON=python
 

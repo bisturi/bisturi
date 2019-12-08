@@ -73,13 +73,13 @@ Then you just unpack it:
 >>> request = ClientRequest.unpack(raw_request)
 
 >>> request.user_id  # who is?
-'gehn'
+b'gehn'
 
 >>> request.command # what's he want?
 1
 
 >>> request.domain_name # but connect to where?
-'github.com'
+b'github.com'
 
 >>> request.dst_port
 80
@@ -99,7 +99,7 @@ Then you just unpack it:
 >>> request = ClientRequest.unpack(raw_request)
 
 >>> request.user_id  # who is?
-'gehn'
+b'gehn'
 
 >>> request.command # what's he want?
 1
@@ -108,7 +108,7 @@ Then you just unpack it:
 True
 
 >>> request.dst_ip  # let's see the ip then
-'\xc0\x1e\xfdp'
+b'\xc0\x1e\xfdp'
 
 >>> request.dst_port
 80
@@ -146,13 +146,13 @@ Ready? Fight!
 >>> request = parse_client_request(raw_request)
 
 >>> request[4] # who is?
-'gehn'
+b'gehn'
 
 >>> request[1] # what's he want?
 1
 
 >>> request[5] # but connect to where?
-'github.com'
+b'github.com'
 
 >>> request[2]
 80

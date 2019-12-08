@@ -31,13 +31,13 @@ __get__ method will return the length of the field tracked ("a" in this case)
 >>> p.length
 2
 >>> p.a
-'ab'
+b'ab'
 
 >>> p.a = b"abc"     # change only this field
 >>> p.length        # and this other gets updated automatically
 3
 >>> p.a
-'abc'
+b'abc'
 
 >>> hasattr(p, '__dict__') # double check that we didn't introduce an extra dict
 False
@@ -54,14 +54,14 @@ True
 
 Notice how the real value still has the original value of 2. This is fine until we need
 to pack. The real value will be used instead of the computed one.
-In some how, we need to synchronize both attributes. 
+In some how, we need to synchronize both attributes.
 
 For that purpose, the descriptor can implement the methods sync_before_pack and sync_after_unpack.
 The AutoLength descriptor implement sync_before_pack so th pack method works as expected:
 
 ```python
 >>> p.pack()
-'\x03abc'
+b'\x03abc'
 
 ```
 
@@ -72,7 +72,7 @@ AutoLength support to force a value disabling the auto-functionality
 >>> q.length
 3
 >>> q.a
-'ab'
+b'ab'
 
 ```
 
@@ -83,7 +83,7 @@ You can reenable 'deleting' the value set before:
 >>> q.length
 2
 >>> q.a
-'ab'
+b'ab'
 
 ```
 
@@ -111,13 +111,13 @@ An this descriptor will works in the same way that AutoLength:
 >>> p.length_in_bits
 16
 >>> p.a
-'ab'
+b'ab'
 
 >>> p.a = b"abc"
 >>> p.length_in_bits
 24
 >>> p.a
-'abc'
+b'abc'
 
 ```
 

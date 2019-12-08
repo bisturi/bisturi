@@ -34,7 +34,7 @@ After the packet definition you can parse any byte string in one call:
 >>> tlv.length
 4
 >>> tlv.value
-'ABCD'
+b'ABCD'
 
 ```
 
@@ -42,11 +42,11 @@ As well you can parse (unpack) a byte string you can do the reverse, pack a pack
 
 ```python
 >>> tlv.pack()
-'\t\x00\x04ABCD'
+b'\t\x00\x04ABCD'
 
 ```
 
-Int and Data are not the only fields available. 
+Int and Data are not the only fields available.
 Here is an example of how to describe a bit mask
 
 ```python
@@ -68,7 +68,7 @@ Here is an example of how to describe a bit mask
 >>> fc.fragment_offset
 5
 >>> fc.data
-'abc'
+b'abc'
 
 ```
 
@@ -102,7 +102,7 @@ True
 >>> image1d.numbers
 [65, 66, 67]
 >>> image1d.optional_name
-'some null terminated name'
+b'some null terminated name'
 
 ```
 
@@ -151,18 +151,18 @@ True
 >>> unresolved_address.ip_address
 [0, 0, 0, 1]
 >>> unresolved_address.domain_name
-'example.com'
+b'example.com'
 
 >>> raw_small_token = b'\x01A'
 >>> small_token = Token.unpack(raw_small_token)
 
 >>> small_token.data
-'A'
+b'A'
 
 >>> raw_too_long_token = b'\xffABCD1234EFGH5678'
 >>> truncated_token = Token.unpack(raw_too_long_token)
 
 >>> truncated_token.data
-'ABCD1234'
+b'ABCD1234'
 
 ```

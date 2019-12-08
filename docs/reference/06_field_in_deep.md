@@ -129,9 +129,9 @@ TODO REVIEW THIS Ok, lets see.
 ```python
 >>> p = Compressed(data=b'foo')
 >>> p.data
-'foo'
+b'foo'
 >>> p.pack()
-'\x00\x00x\x01\x01\x03\x00\xfc\xfffoo\x02\x82\x01E'
+b'\x00\x00x\x01\x01\x03\x00\xfc\xfffoo\x02\x82\x01E'
 
 >>> s = b'\x0b\x09x\xdaKJ,\x02\x00\x02]\x016'
 >>> p = Compressed.unpack(s)
@@ -139,7 +139,7 @@ TODO REVIEW THIS Ok, lets see.
 >>> p.level
 9
 >>> p.data
-'bar'
+b'bar'
 
 >>> p.pack() == s
 True

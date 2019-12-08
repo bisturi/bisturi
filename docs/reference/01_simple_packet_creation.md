@@ -45,7 +45,7 @@ Ok, now lets intantiate a TLP packet and see its values by default
 >>> p.length
 0
 >>> p.payload
-''
+b''
 
 ```
 
@@ -53,13 +53,13 @@ Those values come from the defined defaults of Int and Data which are 0 and '' r
 Of course, 'my defaults' may be aren't yours, so you can change them per packet instance:
 
 ```python
->>> p = TLP(type=2) 
+>>> p = TLP(type=2)
 >>> p.type
 2
 >>> p.length
 0
 >>> p.payload
-''
+b''
 
 ```
 
@@ -72,13 +72,13 @@ default in the field itself:
 ...    length = Int()
 ...    payload = Data(length)
 
->>> p = TLP() 
+>>> p = TLP()
 >>> p.type
 2
 >>> p.length
 0
 >>> p.payload
-''
+b''
 
 ```
 

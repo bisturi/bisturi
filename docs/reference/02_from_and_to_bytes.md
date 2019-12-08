@@ -22,7 +22,7 @@ Now, let be the next string of bytes (try to see the values encoded in it)
 
 ```
 
-You can see what should be the value of 'type' or 'payload'? 
+You can see what should be the value of 'type' or 'payload'?
 I hope!. If not, let the packet dissect the string for you using the classmethod 'unpack'
 
 ```python
@@ -32,7 +32,7 @@ I hope!. If not, let the packet dissect the string for you using the classmethod
 >>> p.length
 3
 >>> p.payload
-'abc'
+b'abc'
 
 ```
 
@@ -49,7 +49,7 @@ example
 >>> q.length
 1
 >>> q.payload
-'d'
+b'd'
 
 ```
 
@@ -95,7 +95,7 @@ If a field cannot be unpacked, an exception is raised with the full stack of pac
 Traceback (most recent call last):
 ...
 PacketError: Error when unpacking the field 'payload' of packet TLP at 00000005: Unpacked 1 bytes but expected 4
-Packet stack details: 
+Packet stack details:
     00000005 TLP                            .payload
 Field's exception:
 ...
@@ -113,7 +113,7 @@ The same is true if the packet cannot be packed into a string:
 Traceback (most recent call last):
 ...
 PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: ... argument ... integer
-Packet stack details: 
+Packet stack details:
     00000000 TLP                            .between 'type' and 'length'
 Field's exception:
 ...
@@ -143,7 +143,7 @@ work like a string:
 >>> p.length
 3
 >>> p.payload
-'abc'
+b'abc'
 
 ```
 

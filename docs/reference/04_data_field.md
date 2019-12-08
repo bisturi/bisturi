@@ -30,17 +30,17 @@ Let see what happen when the packet is built from this string
 >>> p.length
 1
 >>> p.a
-'ab'
+b'ab'
 >>> p.b
-'C'
+b'C'
 >>> p.c
-'ddd'
+b'ddd'
 >>> p.d
-'eee'
+b'eee'
 >>> p.e
-'fghi'
+b'fghi'
 >>> p.f
-'jk'
+b'jk'
 
 >>> p.pack() == s
 True
@@ -55,17 +55,17 @@ is used when the size is fixed:
 >>> q.length
 0
 >>> q.a
-'\x00\x00'
+b'\x00\x00'
 >>> q.b
-''
+b''
 >>> q.c
-''
+b''
 >>> q.d
-''
+b''
 >>> q.e
-''
+b''
 >>> q.f
-''
+b''
 
 ```
 
@@ -86,17 +86,17 @@ If you need that the token be part of the result, you can use the keyword 'inclu
 >>> p.length
 1
 >>> p.a
-'ab'
+b'ab'
 >>> p.b
-'C'
+b'C'
 >>> p.c
-'ddd\x00'
+b'ddd\x00'
 >>> p.d
-'eeeeof'
+b'eeeeof'
 >>> p.e
-'fghiX'
+b'fghiX'
 >>> p.f
-'jk'
+b'jk'
 
 >>> p.pack() == s
 True
@@ -124,7 +124,7 @@ Let see an example:
 >>> s = b'ab\x00eeee'
 >>> p = DataWithSearchLengthLimit.unpack(s)
 >>> p.a
-'ab'
+b'ab'
 
 ```
 
@@ -158,7 +158,7 @@ ignoring the search buffer length:
 >>> s = b'abeeee'
 >>> p = DataWithSearchLengthLimitTooShortButIgnored.unpack(s) 
 >>> p.a
-'abeeee'
+b'abeeee'
 
 ```
 
@@ -188,7 +188,7 @@ or, if you prefer
 
 In this example, the size of the 'payload' is determined by the value of 'size' only if it 
 is not equal to 255. When 'size' is 255, the payload will consume all the bytes until the
-end of the packet. 
+end of the packet.
 
 ```python
 >>> s1 = b'\x01a'
@@ -198,15 +198,15 @@ end of the packet.
 >>> s5 = b'\xffabc'
 
 >>> DataExample.unpack(s1).payload
-'a'
+b'a'
 >>> DataExample.unpack(s2).payload
-'ab'
+b'ab'
 >>> DataExample.unpack(s3).payload
-'a'
+b'a'
 >>> DataExample.unpack(s4).payload
-'a'
+b'a'
 >>> DataExample.unpack(s5).payload
-'abc'
+b'abc'
 
 >>> DataExample.unpack(s1).pack() == s1
 True
@@ -229,11 +229,11 @@ writing the expression directly:
 >>> s3 = b'\x01aabb'
 
 >>> DataWithExpr.unpack(s1).payload
-'aa'
+b'aa'
 >>> DataWithExpr.unpack(s2).payload
-'abcd'
+b'abcd'
 >>> DataWithExpr.unpack(s3).payload
-'aa'
+b'aa'
 
 >>> DataWithExpr.unpack(s1).pack() == s1[:-4]
 True
