@@ -90,7 +90,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             if silent:
                 return None
             else:
-                raise e
+                raise e from None
         except:
             if silent:
                 return None
@@ -107,7 +107,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             e.add_parent_field_and_packet(offset, name, self.__class__.__name__)
             raise
         except Exception as e:
-            raise PacketError(True, name, self.__class__.__name__, offset, str(e))
+            raise PacketError(True, name, self.__class__.__name__, offset, str(e)) from None
 
         [sync(self) for sync in self.get_sync_after_unpack_methods()]
         return offset
@@ -119,7 +119,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             return fragments.tobytes()
         except PacketError as e:
             e.packet = self
-            raise e
+            raise e from None
 
 
     def pack_impl(self, fragments, **k):
@@ -133,7 +133,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
             e.add_parent_field_and_packet(fragments.current_offset, name, self.__class__.__name__)
             raise
         except Exception as e:
-            raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e))
+            raise PacketError(False, name, self.__class__.__name__, fragments.current_offset, str(e)) from None
 
         return fragments
 

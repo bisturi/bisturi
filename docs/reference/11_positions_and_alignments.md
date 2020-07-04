@@ -42,9 +42,10 @@ b'\x04...ABCD'
 
 ```
 
-Note that moving to back is possible too, even reading the same piece of raw data 
+Note that moving back is possible too, even reading the same piece of raw data 
 already parsed by another field, but at the packing time you will receive an error.
-We can't know how to put two diferent set of data at the same position!
+
+We can't know how to put two different set of data at the same position!
 
 ```python
 
@@ -74,21 +75,20 @@ b'ABCD'
 So good so far, but if we try to pack this...
 
 ```python
-### p = Folder(offset_of_file=4, file_data='ABCD')
+>>> p = Folder(offset_of_file=4, file_data=b'ABCD')
 
-### p.offset_of_file
+>>> p.offset_of_file
 4
-### p.payload
+>>> p.payload
 b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
-### p.file_data
+>>> p.file_data
 b'ABCD'
 
->>> p.pack()                                # doctest: +ELLIPSIS
+>>> p.pack()
 Traceback (most recent call last):
-...
-PacketError: Error when packing the field 'file_data' of packet Folder at 00000004: Collision detected with previous fragment 0000...-00000009 when inserting new fragment at 00000004 that span to 00000008
-...
+<...>PacketError: Error when packing the field 'file_data' of packet Folder at 00000004: Collision detected with previous fragment 00000000-00000009 when inserting new fragment at 00000004 that span to 00000008
+<...>
 
 ```
 

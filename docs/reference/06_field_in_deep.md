@@ -1,9 +1,9 @@
 
-Now, we need to think, what are the responsabilities of one Field? Well, it has only one:
+Now, we need to think, what are the responsibilities of one Field? Well, it has only one:
 given a string of bytes create from them a 'python object' and given a 'python object'
 return fragments of strings.
 
-This is the only responsability of each Field like Int, Data and Ref.
+This is the only responsibility of each Field like Int, Data and Ref.
 But what it is this 'python object'? This depends of the Field.
 
 For example, Int can use as its 'python object' an 'int' (and a 'long' for Python 2.x).
@@ -50,7 +50,7 @@ Let's create our custom field to handle gzip streams.
 ...        setattr(pkt, self.field_name, decompressed_data)
 ...
 ...        # return the new offset: previous offset
-...        # plust how many bytes we consumed
+...        # plus how many bytes we consumed
 ...        return offset + byte_count
 ...
 ...    def pack(self, pkt, fragments, **k):

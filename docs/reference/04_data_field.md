@@ -138,10 +138,9 @@ if the marker does't exist in the whole string
 ...    a = Data(until_marker=b'\0', include_delimiter=False)
 
 >>> s = b'ab\x00eeee'
->>> p = DataWithSearchLengthLimitTooShort.unpack(s)        # doctest: +ELLIPSIS
+>>> p = DataWithSearchLengthLimitTooShort.unpack(s)
 Traceback (most recent call last):
-...
-PacketError: Error when unpacking the field 'a' of packet DataWithSearchLengthLimitTooShort at 00000000...
+<...>PacketError: Error when unpacking the field 'a' of packet DataWithSearchLengthLimitTooShort at 00000000<...>
 
 ```
 

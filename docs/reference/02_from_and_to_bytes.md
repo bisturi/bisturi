@@ -91,15 +91,14 @@ If a field cannot be unpacked, an exception is raised with the full stack of pac
 ...    q = TLP.unpack(raw)
 
 >>> s = b'\x00\x00\x00\x00\x04a'
->>> some_function(s)                                         #doctest: +ELLIPSIS
+>>> some_function(s)
 Traceback (most recent call last):
-...
-PacketError: Error when unpacking the field 'payload' of packet TLP at 00000005: Unpacked 1 bytes but expected 4
+<...>PacketError: Error when unpacking the field 'payload' of packet TLP at 00000005: Unpacked 1 bytes but expected 4
 Packet stack details:
     00000005 TLP                            .payload
 Field's exception:
-...
-Exception: Unpacked 1 bytes but expected 4...
+<...>
+Exception: Unpacked 1 bytes but expected 4<...>
 
 ```
 
@@ -109,14 +108,13 @@ The same is true if the packet cannot be packed into a string:
 >>> p = TLP()
 >>> p.length = "a non integer!"
 
->>> p.pack()                                    #doctest: +ELLIPSIS
+>>> p.pack()
 Traceback (most recent call last):
-...
-PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: ... argument ... integer
+<...>PacketError: Error when packing the field 'between 'type' and 'length'' of packet TLP at 00000000: <...> argument <...> integer
 Packet stack details:
     00000000 TLP                            .between 'type' and 'length'
 Field's exception:
-...
+<...>
 
 ```
 

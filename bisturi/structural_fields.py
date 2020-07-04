@@ -205,11 +205,11 @@ class Sequence(Field):
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
-             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             >>> class Buggy(Packet):
              ...    i = Int(1).repeated(2).repeated(4)
              Traceback (most recent call last):
-             ...
-             SyntaxError: You cannot repeat a sequence (more than one 'repeated' call is not allowed)...
+             <...>
+             SyntaxError: You cannot repeat a sequence (more than one 'repeated' call is not allowed)<...>
 
              If you need this kind of 'list of list' behaviour you can do this:
 
@@ -239,12 +239,12 @@ class Sequence(Field):
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
-             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             >>> class Buggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).repeated(2).when(t)
              Traceback (most recent call last):
-             ...
-             SyntaxError: You cannot call 'when' of Sequence...
+             <...>
+             SyntaxError: You cannot call 'when' of Sequence<...>
 
              Instead you should do something like:
 
@@ -338,12 +338,12 @@ class Optional(Field):
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
-             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             >>> class Buggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).when(t == 0).repeated(4)
              Traceback (most recent call last):
-             ...
-             SyntaxError: You cannot repeat an optional argument...
+             <...>
+             SyntaxError: You cannot repeat an optional argument<...>
 
              Instead you should do something like:
 
@@ -362,12 +362,12 @@ class Optional(Field):
              >>> from bisturi.packet import Packet
              >>> from bisturi.field  import Int, Data, Ref
 
-             >>> class Buggy(Packet):                    # doctest: +ELLIPSIS
+             >>> class Buggy(Packet):
              ...    t = Int(1)
              ...    i = Int(1).when(t > 0).when(t < 10)
              Traceback (most recent call last):
-             ...
-             SyntaxError: You cannot make optional an already optional field...
+             <...>
+             SyntaxError: You cannot make optional an already optional field<...>
 
              Instead you should do something like:
 
