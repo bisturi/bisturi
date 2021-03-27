@@ -68,7 +68,7 @@ address:
 ```python
 >>> ip.destination_address = b"\xff\xff\xff\xff" # broadcast address
 >>> ip.as_regular_expression().pattern
-b'(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}\\\xff\\\xff\\\xff\\\xff.*.*'
+b'(?s).{1}.{1}.{2}.{2}.{1}.{1}.{4}.{4}\xff\xff\xff\xff.*.*'
 
 ```
 
@@ -97,7 +97,7 @@ If the lower bits of a byte can be any and the higher are fixed, then the regexp
 ```python
 >>> ip.fragment_offset = 7
 >>> ip.as_regular_expression().pattern
-b'(?s).{1}.{1}.{2}.{2}\\000[8-\\?].{4}.{4}.{4}.*.*'
+b'(?s).{1}.{1}.{2}.{2}\x00[8-\\?].{4}.{4}.{4}.*.*'
 
 ```
 
@@ -117,7 +117,7 @@ But if the lower bits are fixed, then we need to try every single bit pattern:
 >>> ip.fragment_offset = Any()
 >>> ip.flags = 3
 >>> ip.as_regular_expression().pattern		# byexample: +geometry=10x300
-b'(?s).{1}.{1}.{2}.{2}.{1}[\\\x03\\\x0b\\\x13\\\x1b\\#\\+3\\;CKS\\[cks\\{\\\x83\\\x8b\\\x93\\\x9b\\\xa3\\\xab\\\xb3\\\xbb\\\xc3\\\xcb\\\xd3\\\xdb\\\xe3\\\xeb\\\xf3\\\xfb].{4}.{4}.{4}.*.*'
+b'(?s).{1}.{1}.{2}.{2}.{1}[\x03\\\x0b\x13\x1b\\#\\+3;CKS\\[cks\\{\x83\x8b\x93\x9b\xa3\xab\xb3\xbb\xc3\xcb\xd3\xdb\xe3\xeb\xf3\xfb].{4}.{4}.{4}.*.*'
 
 ```
 
@@ -138,7 +138,7 @@ This is more ease:
 >>> ip.fragment_offset = 7
 >>> ip.flags = 3
 >>> ip.as_regular_expression().pattern
-b'(?s).{1}.{1}.{2}.{2}\\000\\;.{4}.{4}.{4}.*.*'
+b'(?s).{1}.{1}.{2}.{2}\x00;.{4}.{4}.{4}.*.*'
 
 ```
 
@@ -163,7 +163,7 @@ Setting the total length to 30 bytes then the data must have room for only 10 by
 ```python
 >>> ip.total_length = 30
 >>> ip.as_regular_expression().pattern
-b'(?s)E.{1}\\000\\\x1e.{2}.{1}.{1}.{4}.{4}.{4}.{0}.{10}'
+b'(?s)E.{1}\x00\x1e.{2}.{1}.{1}.{4}.{4}.{4}.{0}.{10}'
 
 ```
 
@@ -256,7 +256,7 @@ For example, to search all the packets that contain the famous two byte sequence
 >>> ip.identification = Any()
 >>> ip.data = Any(contains=b"\xde\xad")
 >>> ip.as_regular_expression().pattern
-b'(?s)E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*\\\xde\\\xad.*'
+b'(?s)E.{1}.{2}.{2}.{1}.{1}.{4}.{4}.{4}.{0}.*\xde\xad.*'
 
 >>> found = list(pattern_matching.filter(ip, raw_packets))
 >>> len(found)
