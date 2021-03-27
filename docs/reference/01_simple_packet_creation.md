@@ -1,9 +1,11 @@
-In this case we want to create a simple packet TLP (Type-Length-Payload) with the next format
- - type: 1 byte
- - length: 4 bytes (big endian, unsigned)
- - payload: 'length' bytes
+We will begin with a simple packet called Type-Length-Payload or TLP.
 
-We translate this into a python's class
+It consists of three fields:
+ - `type`: 1 byte
+ - `length`: 4 bytes (big endian, unsigned)
+ - `payload`: `length` bytes
+
+We translate this into a Python's class
 
 ```python
 >>> from bisturi.packet import Packet
@@ -13,30 +15,24 @@ We translate this into a python's class
 ...    type = Int(1)
 ...    length = Int()
 ...    payload = Data(length)
-
 ```
 
-One of the primary goals of bisturi is to be simple and easy to read. In the best cases
-reading a packet class is almost the same as reading the specification of the format, protocol
-or RFC.
+One of the primary goals of `bisturi` is to be **simple and easy to read**.
 
-You can see more about Int and Data in the next sections, but for now we will keep the things
-simple: both Ints are unsigned and in big endian which it is the default in bisturi. 
+In the best cases reading a packet class is almost the same as reading
+the specification of the format, protocol or RFC.
 
-The first Int has only 1 byte. The second has 4 (its default).
 
-The field Data is a little more interesting because its size is not fixed and depends of the value
-of the field 'length'.
+We will explore more about Int and Data in the following sections, but for now
+a few notes:
+ - `Int(1)` denotes an *integer* field, a number of 1 byte length,
+unsigned and in big endian.
+ - `Int(4)` denotes also an unsigned, big endian number but this time is
+of 4 bytes.
+ - `Data(length)` denotes arbitrary data and its length is not fixed but
+variable and it depends of the value of the field `length`.
 
-To check that all the fields were correctly created, we can see them
-
-```python
->>> [name for name, field, _, _ in TLP.get_fields()]
-['type', 'length', 'payload']
-
-```
-
-Ok, now lets intantiate a TLP packet and see its values by default
+Ok, now let's instantiate a `TLP` packet:
 
 ```python
 >>> p = TLP()
@@ -46,11 +42,13 @@ Ok, now lets intantiate a TLP packet and see its values by default
 0
 >>> p.payload
 b''
-
 ```
 
-Those values come from the defined defaults of Int and Data which are 0 and '' respectively.
-Of course, 'my defaults' may be aren't yours, so you can change them per packet instance:
+Those values come from the defined defaults for `Int` and `Data`
+which are `0` and `''` respectively.
+
+Of course, *my defaults* may not be yours, so you can change
+them per packet instance:
 
 ```python
 >>> p = TLP(type=2)
@@ -60,11 +58,10 @@ Of course, 'my defaults' may be aren't yours, so you can change them per packet 
 0
 >>> p.payload
 b''
-
 ```
 
-or change the default for all the packet's instances redefining the class and setting the 
-default in the field itself:
+Or you can change the default in its definition so all the instances
+will inherit it:
 
 ```python
 >>> class TLP(Packet):
@@ -79,6 +76,15 @@ default in the field itself:
 0
 >>> p.payload
 b''
-
 ```
 
+One last comment, `get_fields` is a special class method to
+retrieve, among other things, the name of the fields.
+
+```python
+>>> [name for name, _, _, _ in TLP.get_fields()]
+['type', 'length', 'payload']
+```
+
+So, we have an idea of how to create packet definitions. What we can do
+with them?

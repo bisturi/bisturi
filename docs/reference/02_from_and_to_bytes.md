@@ -1,29 +1,28 @@
-Now it's time to see how we can create packets from a string and how we can see a packet 
-as a string of bytes
+Now it's time to see how we can create packets from a string
+and how we can see a packet as a string of bytes.
 
-First, we create a simple packet class
+First, we create a simple packet class as we did before.
 
 ```python
 >>> from bisturi.packet import Packet
 >>> from bisturi.field import Int, Data
 
 >>> class TLP(Packet):
-...    __bisturi__ = {'generate_for_unpack': False}
 ...    type = Int(1)
 ...    length = Int()
 ...    payload = Data(length)
-
 ```
 
-Now, let be the next string of bytes (try to see the values encoded in it)
+Now, let be the following string of bytes:
 
 ```python
 >>> s1 = b'\x02\x00\x00\x00\x03abc'
-
 ```
 
-You can see what should be the value of 'type' or 'payload'?
-I hope!. If not, let the packet dissect the string for you using the classmethod 'unpack'
+Can you see what should be the value of `type` or `payload`?
+
+I hope!. If not, let the packet **dissect the string** for you
+calling `unpack`:
 
 ```python
 >>> p = TLP.unpack(s1)
@@ -33,13 +32,10 @@ I hope!. If not, let the packet dissect the string for you using the classmethod
 3
 >>> p.payload
 b'abc'
-
 ```
 
-And another example
-
-If you need it, you can set the offset of the string where to start to read. Here is another
-example
+`unpack` optionally receives the offset from where to
+start reading.
 
 ```python
 >>> s2 = b'xxx\x01\x00\x00\x00\x01d'
@@ -50,43 +46,46 @@ example
 1
 >>> q.payload
 b'd'
-
 ```
 
-You can see from the class definition that 'type' and the other fields are class's attributes. However the value
-of each field is keep per instance, they aren't class's attributes:
+Now, if you follow the Python's rules you may ask: *"are the fields
+class attributes or instance attributes?"*
+
+They are instance attributes so, as you will expect, two packets
+may have different values for the same field.
 
 ```python
 >>> p.type
 2
 >>> q.type
 1
-
 ```
 
-Both are different. Under the hood, those object's attributes are optimized and saved in the object without
-using the __dict__ dictionary of a standar python object:
+Both are different. Under the hood, those object's attributes are optimized
+for use low memory and the packets don't have a `__dict__` instance.
 
-```
+```python
 >>> hasattr(p, '__dict__')
 False
-
 ```
 
-Now, lets do the reverse operation, from the packet to the string of bytes
+The reverse of `unpack()` is, obviously, `pack()`: make a packet into
+a sequence of bytes:
 
 ```python
 >>> p.pack() == s1
 True
 >>> q.pack() == s2[3:]
 True
-
 ```
 
-If a field cannot be unpacked, an exception is raised with the full stack of packets and offsets:
+
+## Error handling
+
+If a field cannot be unpacked, an exception is raised with the full
+stack of packets and offsets:
 
 ```python
-
 >>> def some_function(raw):
 ...    q = TLP.unpack(raw)
 
@@ -99,7 +98,6 @@ Packet stack details:
 Field's exception:
 <...>
 Exception: Unpacked 1 bytes but expected 4<...>
-
 ```
 
 The same is true if the packet cannot be packed into a string:
@@ -115,33 +113,28 @@ Packet stack details:
     00000000 TLP                            .between 'type' and 'length'
 Field's exception:
 <...>
-
 ```
 
-There will be more about debugging, errors and unpacking/packing invalid data but for now we are done.
+There will be more about debugging, errors and unpacking/packing invalid data
+but for now this is enough.
 
-No always you will have the full string in memory to parse but you will have a file.
-Instead of load the full file and read it, you can use the SeekableFile adapter that will
-work like a string:
+## Working with files
+
+No always you will have the full string in memory to parse
+but you will have a file instead.
+
+`SeekableFile` adapter will make the file behave as a string so
+`bisturi` can use it.
 
 ```python
 >>> from bisturi.util import SeekableFile
->>>
->>> def _string_as_seekable_file(s):  # used for testing purposes, to fake a real file
-...   try:
-...       from io import BytesIO
-...   except ImportError:
-...       from StringIO import StringIO as BytesIO
-...
-...   return SeekableFile(BytesIO(s))
->>>
->>> seekable_file = _string_as_seekable_file(b'\x00\x00\x00\x00\x03abc')
+
+>>> seekable_file = SeekableFile(open('tests/ds/tlp_abc', 'rb'))
 
 >>> p = TLP.unpack(seekable_file)
 >>> p.length
 3
 >>> p.payload
 b'abc'
-
 ```
 

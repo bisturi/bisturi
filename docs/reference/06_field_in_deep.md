@@ -25,6 +25,10 @@ Let's create our custom field to handle gzip streams.
 ...        # but remember, this is a Field instance, a single instance
 ...        # for a Packet class, not per Packet instance
 ...        self.compress_level = compress_level
+...
+...        # byte_count can be not only an integer but anything like
+...        # the name of another field or a callable.
+...        # we must use this parameter only at the moment of pack/unpack
 ...        self.byte_count = byte_count
 ...
 ...    def unpack(self, pkt, raw, offset=0, **k):
