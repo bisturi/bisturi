@@ -1,4 +1,5 @@
 Until now, all our fields in a packet are packed/unpacked sequentially.
+
 This is fine, but in some cases it is desired to control where a field begins.
 
 ```python
@@ -9,7 +10,6 @@ This is fine, but in some cases it is desired to control where a field begins.
 ...   offset_of_file = Int(1)
 ...
 ...   file_data = Data(4).at(offset_of_file) # TODO revisar el default de esto
-
 ```
 
 

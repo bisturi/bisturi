@@ -1,5 +1,4 @@
-Until now we created a fixed count of fields and packets. But if we need a list of them?
-Take this simple packet
+Until now we created a *fixed count* of fields and packets.
 
 ```python
 >>> from bisturi.packet import Packet
@@ -9,27 +8,26 @@ Take this simple packet
 ...    type = Int(1)
 ...    length = Int(1)
 ...    value = Data(length)
-
 ```
 
-Now imagine that we need a list of them
+Now imagine that we need a *list of them*:
 
 ```python
 >>> class Attributes(Packet):
 ...    count = Int(1)
 ...    attributes = Ref(TypeLenValue).repeated(count)
-
 ```
 
-So,
+`attributes` will behave as a list as you may expect:
 
 ```python
 >>> s = b'\x02\x01\x02ab\x04\x03abc'
->>> p = Attributes.unpack(s)
+>>> p = Attributes.unpack(s)    # 2 attributes: '1,2,ab' and '4,3,abc'
 >>> p.count
 2
 >>> len(p.attributes)
 2
+
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
 (1, 2, b'ab')
 >>> p.attributes[1].type, p.attributes[1].length, p.attributes[1].value
@@ -37,12 +35,12 @@ So,
 
 >>> p.pack() == s
 True
-
 ```
 
-The field is always represented as a list. One and Zero counts are valid too.
+The field is always represented as a list which may contain
+zero, one or more elements.
 
-```python 
+```python
 >>> s = b'\x01\x01\x02ab'
 >>> p = Attributes.unpack(s)
 >>> p.count
@@ -64,19 +62,31 @@ True
 
 >>> p.pack() == s
 True
-
 ```
 
-With the 'repeated' method we can repeat a fixed amount of times.
-But the method can do more and in a more dynamic way:
+With the `repeated` method we can repeat not only a fixed amount of times
+a referenced packet but the count can be dynamic as well.
 
-For example, the field 'attributes' can be a list that ends with a special
-'Attribute' type (zero in this example):
+In the previous example the count was determinate by the `count` field;
+in the following example we use a callable.
+
+Imagine that `Attributes` does not have a `count`. Instead the end of
+the attributes list is marked by the attribute which `type` is zero.
+
+We can write the following
 
 ```python
 >>> class Attributes(Packet):
 ...    attributes = Ref(TypeLenValue).repeated(until=lambda pkt, **k: pkt.attributes[-1].type == 0)
+```
 
+The callback receives, among other things, the current packet. Accessing
+to `attributes[-1]` gives us the latest attribute unpacked so far.
+
+So `pkt.attributes[-1].type == 0` means unpack the list of `attributes`
+*until* the last attribute's `type` is zero.
+
+```python
 >>> s =  b'\x01\x02ab\x04\x03abc\x00\x00'
 >>> s2 = b'\x02\x01a\x00\x00'
 >>> p = Attributes.unpack(s)
@@ -103,7 +113,7 @@ True
 True
 
 >>> s =  b'\x00\x00'
->>> p = Attributes.unpack(s)
+>>> p = Attributes.unpack(s)    # corner case with 1 single attribute
 >>> len(p.attributes)
 1
 >>> p.attributes[0].type, p.attributes[0].length, p.attributes[0].value
@@ -111,24 +121,33 @@ True
 
 >>> p.pack() == s
 True
-
 ```
 
-Note how the 'attributes' field is created at the begin of the parsing and 
-updated during the parsing. The 'until' callback is then evaluated in each cycle
-so you can ask for the last attribute created with 'attributes[-1]'.
+Note how the `attributes` field is created at the *begin* of the parsing and
+*updated* later during the parsing.
 
-The 'until' keyword assume that the subpacket TypeLenValue was extracted and put in
-the attributes list being enabled to be inspected by the 'until' callback.
-It's clear that this works like 'one-or-more' construction.
+The `until` callback is then evaluated in each cycle
+so you can ask for the last attribute created with `attributes[-1]`.
 
-To support 'zero-or-more' constructions we need the 'when' condition:
+By definition then, when you use `until` you have a *one or more*
+semantics. (The list will always have at least one element).
+
+
+To support *zero or more* constructions we need the `when` condition.
+
+Imagine that `Attributes` has a list of attributes like before but also
+a flag that says if the list is empty or not.
 
 ```python
 >>> class Attributes(Packet):
 ...    has_attributes = Int(1)
 ...    attributes = Ref(TypeLenValue).repeated(when=lambda pkt, **k: pkt.has_attributes, until=lambda pkt, **k: pkt.attributes[-1].type == 0)
+```
 
+The `until` is like the previous example. The new thing is the `when`
+condition. This one is evaluated once *before* parsing any attribute.
+
+```python
 >>> s = b'\x01\x01\x02ab\x04\x03abc\x00\x00'
 >>> p = Attributes.unpack(s)
 >>> len(p.attributes)
@@ -154,10 +173,10 @@ True
 
 >>> p.pack() == s
 True
-
 ```
 
-The 'when' condition can be combinated with a fixed count, like:
+The `when` condition can be combined with a fixed count,
+but you cannot mix a fixed count with the `until` condition.
 
 ```python
 >>> class Attributes(Packet):
@@ -187,14 +206,12 @@ True
 
 >>> p.pack() == s
 True
-
 ```
 
-But you cannot mix a fixed count with the 'until' condition.
+Here is another example with `until`: collect all the attributes *until*
+you run out of data to unpack *except* the last 4 bytes.
 
-
-We can use even more complicated conditions like 'consume' all the data until the end
-of the stream but leaving 4 byte at the end.
+This is how you would do it:
 
 ```python
 >>> class Attributes(Packet):
@@ -212,15 +229,16 @@ of the stream but leaving 4 byte at the end.
 
 >>> p.pack() == s
 True
-
 ```
 
-Here, 'raw' is the full raw string to be parsed and 'offset' is the position in the string
-where the parsing is taking effect.
+`raw` is the full raw string to be parsed and `offset` is the position
+in the string where the parsing is at the moment.
 
-As a more expecific case, one field can be optional. In this case we do not 'repeat'
-the field, instead we just mark the field to be there 'when' some condition is meet.
 
+Final case, what if we want the semantics of *zero or one*? That's it we
+want to have a field or subpacket *optional*
+
+We use the `when` method:
 
 ```python
 >>> class Option(Packet):
@@ -242,6 +260,5 @@ True
 
 >>> p.pack() == s
 True
-
 ```
 

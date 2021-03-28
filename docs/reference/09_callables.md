@@ -2,17 +2,22 @@ All the fields accept different ways to define how much they will consume.
 
 This is a summary:
 
-            | Int   | Data | Bits    | Seq count(**) | Seq until  | Seq when  | Ref when
------------ | ----- | ---- | ------- | ------------- | ---------- | --------- | ---------
-Fixed       | true  | true | true(*) | true          | no apply   | no apply  | no apply
-Other field | false | true | false   | true          | no apply   | no apply  | no apply
-Expr field  | false | true | false   | true          | no apply   | true      | true
-A callable  | false | true | false   | true          | true       | true      | true
+```
+                                     |          Sequence's            |   Ref's
+            | Int   | Data | Bits    | count(2) |  until   |   when   |   when
+----------- | ----- | ---- | ------- | -------- | -------- | -------- | ---------
+Fixed       | true  | true | true(1) | true     | no apply | no apply | no apply
+Other field | false | true | false   | true     | no apply | no apply | no apply
+Expr field  | false | true | false   | true     | no apply | true     | true
+A callable  | false | true | false   | true     | true     | true     | true
+```
+
+Notes:
+ - (1) The amount set in a Bits fields is the amount of bits, no of bytes.
+ - (2) The amount set in a Sequence, is the amount of objects, no of bytes.
 
 
-Notes: (\*) The amount set in a Bits fields is the amount of bits, no of bytes.
-      (\*\*) The amount set in a Sequence, is the amount of objects, no of bytes.
-
+## Fixed count
 
 First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 
@@ -33,10 +38,10 @@ First, the simplest one, a fixed amount of bytes (or a fixed amount of bits);
 
 >>> pkt.pack()
 b'\x01\x02\x03'
-
 ```
 
-For sequence of objects you can set the amount of objects to be extracted, not the count of bytes:
+For sequence of objects you set the amount of objects to be extracted,
+not the count of bytes:
 
 ```python
 >>> class FixedSeq(Packet):
@@ -49,13 +54,15 @@ For sequence of objects you can set the amount of objects to be extracted, not t
 
 >>> pkt.pack()
 b'\x01\x02\x03'
-
 ```
 
-But fixed amounts is just the begin. You can define a variable amount using several
-methods.
-The simplest is using another field, tipically an Int.
-Note how you can use this for Data and Sequence fields but not for Int, Bits or Ref fields.
+## Field and field expressions
+
+A variable amount of bytes can be done using another field, typically an
+`Int`.
+
+Note how you can use this for `Data` and `Sequence` fields
+but not for `Int`, `Bits` or `Ref` fields (at least for now).
 
 ```python
 >>> class AllVariable(Packet):
@@ -79,18 +86,17 @@ b'\x01\x01\x02'
 
 >>> pkt.pack()
 b'\x02AA\x01\x02'
-
 ```
 
-Nice, but it's very common to need to express some amount of bytes in terms of
-simple expressions involving one or more fields; not just one field like above.
+Nice, but a field is just a particular case of something more general:
+*field expressions*.
 
-For example
+For example:
 
 ```python
 >>> class AllVariable(Packet):
 ...    triplet = Int(byte_count=1)
-...    data    = Data(byte_count=triplet * 3)
+...    data    = Data(byte_count=triplet * 3)   # multiplication by a constant
 ...    seq     = Int(byte_count=1).repeated(count=triplet * 3)
 
 
@@ -109,10 +115,10 @@ b'\x01ABC\x01\x02\x03'
 
 >>> pkt.pack()
 b'\x02ABCDEF\x01\x02\x03\x04\x05\x06'
-
 ```
 
-Don't be shy, lets do more complex expressions
+Don't be shy, lets do more complex expressions combining multiple fields
+in a single field expression:
 
 ```python
 >>> class AllVariable(Packet):
@@ -136,8 +142,12 @@ b'\x01\x02\x01\x02'
 
 >>> pkt.pack()
 b'\x02\x03\x01\x02\x03\x04\x05\x06'
-
 ```
+
+Here are more:
+ - comparison
+ - byte substring
+ - logical operators (`&` for `and` and `|` for `or`)
 
 ```python
 >>> class Magic(Packet):
@@ -165,10 +175,9 @@ b'beef'
 
 >>> pkt.pack()
 b'xyz1beef'
-
 ```
 
-We can go further to use expressions in the until and when conditions:
+We can go further to use expressions in the `until` and `when` conditions:
 
 ```python
 >>> class AllVariable(Packet):
@@ -191,12 +200,14 @@ True
 
 >>> pkt.pack()
 b'\x00'
-
 ```
+
+## Callable
 
 The more flexible method is to use a callable which will be invoked during the
 parsing to know how much to consume.
-You can use any kind of callable: functions, methods or lambdas.
+
+You can use any kind of callable: functions, methods and lambdas.
 
 ```python
 >>> class VariableUsingCallable(Packet):
@@ -223,13 +234,14 @@ b'\x02AABB\x01\x02\x03\x04\x01\x01\x01\x01\x00'
 
 ```
 
-The callable needs to accept a variable keyword-arguments. These are the current
-available arguments:
+The callable will receive the following keyword-arguments:
 
-   pkt:     the packet, you can use this to access to others fields or methods
-   raw:     the full raw data being be parsed.
-   offset:  the current offset of the parsed. raw[offset] means the first byte that should be parsed next
-   root:    the packet which started the unpack/pack operation
+ - `pkt`: the packet, you can use this to access to other fields or methods.
+ - `raw`: the full raw data being be parsed.
+ - `offset`: the current offset of the parsed: `raw[offset]` means
+the first byte that should be parsed next.
+ - `root`: the packet which started the `unpack`/`pack` operation; it
+may not be `pkt`.
 
 ```python
 >>> from bisturi.field import Ref
@@ -248,7 +260,6 @@ available arguments:
 
 >>> pkt.pack()
 b'\x02AA'
-
 ```
 
 
