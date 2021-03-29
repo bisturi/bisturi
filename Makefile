@@ -1,4 +1,4 @@
-RUNDOCTEST=byexample -l python --ff --diff ndiff
+RUNDOCTEST=byexample -l python --ff --diff ndiff --jobs 2
 RUNUNITTEST=python -m unittest -q
 RUNPYTHON=python
 

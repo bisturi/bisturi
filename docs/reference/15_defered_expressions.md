@@ -1,4 +1,6 @@
-Several fields accept others fields as parameter to define how many bytes to consume, how many times a fields must be there or if a field should be there or not.
+Several fields accept others fields as parameter to define how many bytes
+to consume, how many times a fields must be there or if a field should be
+there or not.
 
 ```python
 >>> from bisturi.packet import Packet
@@ -43,10 +45,11 @@ True
 True
 >>> pkt0.pack() == b'\x00'
 True
-
 ```
 
-But using only a field as parameter is just the begin. You can use simple expressions as arguments that use one or more fields as operands:
+But using only a field as parameter is just the begin.
+
+You can use simple *expressions* as arguments that use one or more fields as operands:
 
 ```python
 >>> class ArithExpressions(Packet):
@@ -99,30 +102,42 @@ True
 True
 >>> hidden_msg.pack() == raw_hidden_msg
 True
-
 ```
 
-As a special case, any field or expression of fields implement the 'choose' operator. This one select an item based on the value of the field/expression who owns the operator.
-This can be use to select one item from its parameters by position in the argument list ( choose(a, b, ...) ) or by name from a keyword argument call ( choose(k1=a, k2=b, ...) ). 
-If the 'choose' operator receives only one argument, this must  be a list/tuple (to select by position like choose([a, b, ...]) ) or a dict (to select by keyword like choose({k1: a, k2: b, ...}) ).
+As a special case, any field or expression of fields implement
+the `choose` operator.
 
-Here are some examples of using 'choose' by position and by name:
+This one select an item based on the value of the field/expression
+who owns the operator.
+
+This can be use to select one item from its parameters by position
+in the argument list ( `choose(a, b, ...)` ) or by name from a
+keyword argument call ( `choose(k1=a, k2=b, ...)` ).
+
+If the `choose` operator receives only one argument,
+this must be a list/tuple (to select by position like `choose([a, b, ...])` )
+or a dictionary (to select by keyword like `choose({k1: a, k2: b, ...})` ).
+
+Here are some examples of using `choose` by position and by name:
 
 ```python
 >>> class ChooseExpressions(Packet):
 ...     a = Int(1)
 ...     b = Int(1)
 ...
-...     # by position from the argument list
+...     # by position from the argument list:
+...     # if a == 1 then the position 1 is looked up and choose will return True
+...     # if a != 1 then the position 0 is looked up and choose will return False
 ...     extra     = Data(byte_count = 1).when( (a == 1).choose(False, True) )
 ...
 ...     # by position but from a list
+...     # if a < b then the position 1 is looked up and choose will return 'a'
+...     # if a >= b then the position 0 is looked up and choose will return 'b'
 ...     mindata   = Data(byte_count = (a < b).choose([b, a]))
 ...
-...     # by name/keyword from a dictionary (this is the prefered way to
+...     # by name/keyword from a dictionary (this is the preferred way to
 ...     # code a 'if-then-else' expression. Equivalent to: 4 if a > 4 else a
 ...     truncated = Data(byte_count = (a > 4).choose({True: 4, False: a}))
-...
 
 >>> raw_min = b'\x01\x02:AB'
 >>> pkt_min = ChooseExpressions.unpack(raw_min)
@@ -149,10 +164,11 @@ b'BBBB'
 True
 >>> pkt_trunc.pack() == raw_trunc[:8]
 True
-
 ```
 
-If the pool of names from where you want to choose one is a pool of valid python names you can use keyword arguments as a shortcut instead of an explicit dictionary. 
+If the pool of names from where you want to choose one is a pool
+of valid Python names you can use keyword arguments as a shortcut
+instead of an explicit dictionary.
 
 ```python
 >>> class ChooseExpressions(Packet):
@@ -179,6 +195,5 @@ b'ABCD'
 True
 >>> pkt_large.pack() == raw_large
 True
-
 ```
 
