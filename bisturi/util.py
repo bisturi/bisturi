@@ -75,7 +75,7 @@ import functools
 
 _non_printable = set(range(256)) - set(ord(c) for c in string.printable)
 _non_printable.union(ord(c) for c in string.whitespace if c != ' ')
-_translate = ''.join('.' if i in _non_printable else chr(i) for i in range(256))
+_translate = b''.join(b'.' if i in _non_printable else bytes([i]) for i in range(256))
 del _non_printable
 
 def inspect(packet, indent="", current_level=0, aligned_to=8,
@@ -106,16 +106,17 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
         if isinstance(value, array.array):
             value = value.tostring()
 
-        if isinstance(value, basestring):
+
+        if isinstance(value, bytes):
             l = len(value)
             MAX = truncate_values_to
             truncated = l > MAX
             truncated_value = value[:MAX]
 
             _value = []
-            _value.append(' '.join(x.encode('hex') for x in truncated_value))
+            _value.append(' '.join("%02x" % x for x in truncated_value))
             _value.append(" " * ((MAX*3) - len(_value[-1])))
-            _value.append("|%s|" % truncated_value.translate(_translate))
+            _value.append("|%s|" % truncated_value.translate(_translate).decode('ascii'))
             if truncated:
                 _value.append("[truncated]")
 
@@ -156,7 +157,7 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
         else:
             try:
                 try:
-                    print("%s%s%s" % (indent_and_prefix, space, valuea))
+                    print("%s%s%s" % (indent_and_prefix, space, value))
                 except:
                     value = repr(value)
                     print("%s%s%s" % \
