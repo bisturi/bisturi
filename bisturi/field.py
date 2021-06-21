@@ -37,7 +37,7 @@ class Field(object):
         Once you call _compile, the field will define the most optimum version
         for its pack and unpack methods.
 
-        See the Packet class to get a more broad view about this.
+        See the Packet class to get a broader view about this.
 
         Any field instance will support the following public methods besides the
         pack/unpack:
@@ -110,7 +110,7 @@ class Field(object):
             which will be the __slots__ of the packet class. This is the time
             to realize all the optimizations in terms of speed and memory as
             you can. '''
-        # Dont call this from a subclass. Call _compile_impl directly.
+        # Don't call this from a subclass. Call _compile_impl directly.
         return self._compile_impl(position, fields, bisturi_conf)
 
     def _compile_impl(self, position, fields, bisturi_conf):
@@ -152,7 +152,7 @@ class Field(object):
             fields or even an arbitrary callable.
             In any case the parameter must be resolved to a positive integer.
 
-            In the other hand, the sequence can set an 'until' condition.
+            On the other hand, the sequence can set an 'until' condition.
             In this case the sequence will stop only when the until condition
             gives a true value.
 
@@ -231,7 +231,7 @@ class Field(object):
              callable that resolves to a boolean value: True if the field must
              be parsed or False otherwise.
 
-             If a field is not parsed, None is used a the value for that field.
+             If a field is not parsed, None is used as the value for that field.
 
              The 'when' condition has no effect in a default packet neither
              during the packing phase.
@@ -643,8 +643,8 @@ class Ref(Field):
         callable.
         If it is the latter, the callable must return a packet instance or a
         field instance each time that it is called.
-        Because of that, the callable must to return a new packet/field instance
-        each time, you cannot return the same object twice.
+        Because of that, the callable must return a new fresh packet/field
+        instance each time, you cannot return the same object twice.
 
         The callable will be called during the unpack stage but it can also be
         called during the pack stage to determinate how to pack a value when
@@ -653,7 +653,7 @@ class Ref(Field):
         get an Int instance to pack the 42).
         In this case the callable will be call with the parameter packing=True.
 
-        If the prototype is a packet, then the default it is not needed becasue
+        If the prototype is a packet, then the default it is not needed because
         we can use the prototype as a default value for the field.
         But if it is a callable, the default is mandatory otherwise we cannot
         know how to create a default value for the field.

@@ -147,7 +147,7 @@ class PacketClassBuilder(object):
                 a = Int(1)
                 b = Int(2).at(0)
 
-            The orignal list of fields should be [a->Int(1), b->Int(2)]
+            The original list of fields should be [a->Int(1), b->Int(2)]
             but after the description of both fields we have a new list of fields:
                 [a->Int(1), _shift_b_->Move(0), b->Int(2)]
 
@@ -295,12 +295,12 @@ class PacketClassBuilder(object):
         ''' Generate the optimized code for the pack and unpack methods and
             replace the original version for the optimized ones.
 
-            The generation can be disabled is partially with the configuration
-            flagos generate_for_pack/generate_for_unpack.
+            The generation can be disabled partially with the configuration
+            flags generate_for_pack/generate_for_unpack.
             And it is totally disabled if the class is in debug mode
             (see check_if_we_are_in_debug_mode)
 
-            Optinally the generated code can be kept to manual inspection
+            Optionally the generated code can be kept to manual inspection
             with the flag write_py_module in True.
         '''
         generate_by_default = True if not self.am_in_debug_mode else False
