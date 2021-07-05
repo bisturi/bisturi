@@ -2,6 +2,6 @@
 
 __version__ = "0.5.0"
 
-_author  = 'Gehn'
+_author = 'Gehn'
 _license = 'GNU LGPLv3'
 _url = 'https://github.com/gehnch/bisturi'

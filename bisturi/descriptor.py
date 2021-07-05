@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
 
+
 class Auto(object):
     def __init__(self, func):
         self.func = func
@@ -44,4 +45,3 @@ class AutoLength(Auto):
 
     def calculate_length(self, instance):
         return len(getattr(instance, self.length_of))
-

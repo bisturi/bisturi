@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from bisect import insort, bisect_left, bisect_right
 import re, pprint
 
+
 class Fragments(object):
     def __init__(self, fill=b'.'):
         self.fragments = {}
@@ -34,17 +35,22 @@ class Fragments(object):
             e1 = b1 + len(self.fragments[b1])
 
             if b1 <= position < e1:
-                raise Exception("Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x" % (b1, e1, position, position+L))
+                raise Exception(
+                    "Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x"
+                    % (b1, e1, position, position + L)
+                )
 
-            if i+1 < len(self.begin_of_fragments):
-                b2 = self.begin_of_fragments[i+1]
+            if i + 1 < len(self.begin_of_fragments):
+                b2 = self.begin_of_fragments[i + 1]
 
                 if b2 < position + L:
                     e2 = b2 + len(self.fragments[b2])
-                    raise Exception("Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x" % (b2, e2, position, position+L))
+                    raise Exception(
+                        "Collision detected with previous fragment %08x-%08x when inserting new fragment at %08x that span to %08x"
+                        % (b2, e2, position, position + L)
+                    )
 
-
-        self.begin_of_fragments.insert(i+1, position)
+        self.begin_of_fragments.insert(i + 1, position)
 
         self.fragments[position] = string
         self.current_offset = position + L
@@ -53,7 +59,7 @@ class Fragments(object):
         begin = 0
         result = []
         for offset, s in sorted(self.fragments.items()):
-            result.append(self.fill * (offset-begin))
+            result.append(self.fill * (offset - begin))
             result.append(s)
             begin = offset + len(s)
 
@@ -76,6 +82,7 @@ class FragmentRegEx(object):
 
     def __len__(self):
         return self.length
+
 
 class FragmentsOfRegexps(Fragments):
     def __init__(self, *args, **kargs):
@@ -108,9 +115,9 @@ class FragmentsOfRegexps(Fragments):
         begin = 0
         result = []
         for p, regexp in sorted(self.regexp_by_position.items()):
-            offset, string  = p, self.fragments[p]
+            offset, string = p, self.fragments[p]
 
-            hole_length = (offset-begin)
+            hole_length = (offset - begin)
             if hole_length > 0:
                 result.append(("(?:.{%i})" % hole_length).encode('ascii'))
 
@@ -118,4 +125,3 @@ class FragmentsOfRegexps(Fragments):
             begin = offset + len(string)
 
         return b''.join(result)
-

@@ -9,12 +9,17 @@ import hashlib
 import os.path
 import imp
 
-def generate_code(fields, pkt_class, generate_for_pack, generate_for_unpack,
-                                                            write_py_module):
+
+def generate_code(
+    fields, pkt_class, generate_for_pack, generate_for_unpack, write_py_module
+):
     if not generate_for_pack and not generate_for_unpack:
         return
 
-    grouped_by_variability = [(k, list(g)) for k, g in itertools.groupby(fields, lambda i_n_f: i_n_f[2].is_fixed)]
+    grouped_by_variability = [
+        (k, list(g))
+        for k, g in itertools.groupby(fields, lambda i_n_f: i_n_f[2].is_fixed)
+    ]
     codes = []
     for is_fixed, group in grouped_by_variability:
         if is_fixed:
@@ -48,15 +53,19 @@ def pack_impl(pkt, fragments, **k):
 
    return fragments
 ''' % {
-      'blocks_of_code': indent("\n".join([c[0] for c in codes]), level=2),
-      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(
-                                                pkt_class, sync_for_pack=True),
-    }
+            'blocks_of_code':
+            indent("\n".join([c[0] for c in codes]), level=2),
+            'sync_descriptors_code':
+            generate_unrolled_code_for_descriptor_sync(
+                pkt_class, sync_for_pack=True
+            ),
+        }
     else:
         pack_code = ""
 
     if generate_for_unpack:
-        unpack_code = ('''
+        unpack_code = (
+            '''
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
@@ -75,9 +84,14 @@ def unpack_impl(pkt, raw, offset, **k):
 %(sync_descriptors_code)s
    return offset
 ''' % {
-      'blocks_of_code': indent("\n".join([c[1] for c in codes]), level=2),
-      'sync_descriptors_code': generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack=False),
-    })
+                'blocks_of_code':
+                indent("\n".join([c[1] for c in codes]), level=2),
+                'sync_descriptors_code':
+                generate_unrolled_code_for_descriptor_sync(
+                    pkt_class, sync_for_pack=False
+                ),
+            }
+        )
     else:
         unpack_code = ""
 
@@ -86,7 +100,7 @@ def unpack_impl(pkt, raw, offset, **k):
     cookie_hash.update(unpack_code.encode('utf-8'))
     cookie = cookie_hash.hexdigest()
     cookie_code = "BISTURI_PACKET_COOKIE = '%(cookie)s'\n" % {
-      'cookie': cookie,
+        'cookie': cookie,
     }
 
     module_name = "_%s_pkt" % pkt_class.__name__
@@ -135,6 +149,7 @@ def unpack_impl(pkt, raw, offset, **k):
     if generate_for_unpack and (pkt_class.unpack_impl == Packet.unpack_impl):
         pkt_class.unpack_impl = module.unpack_impl
 
+
 def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     if sync_for_pack:
         sync_methods = pkt_class.get_sync_before_pack_methods()
@@ -165,9 +180,12 @@ def generate_code_for_fixed_fields(fields):
             codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) \
                                 for k, g in grouped_by_endianness])
         else:
-            codes.append(generate_code_for_fixed_fields_without_struct_code(group))
+            codes.append(
+                generate_code_for_fixed_fields_without_struct_code(group)
+            )
 
     return codes
+
 
 # TODO if is_bigendian  is  None means "don't care",
 # no necessary means 'big endian (>)', so it should be joined
@@ -176,7 +194,11 @@ def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
     fmt = ">" if is_bigendian else "<"
     fmt += "".join([f.struct_code for _, _, f in group])
 
-    lookup_fields = " ".join([('pkt.%(name)s,' % {'name': name}) for _, name, _ in group])
+    lookup_fields = " ".join(
+        [('pkt.%(name)s,' % {
+            'name': name
+        }) for _, name, _ in group]
+    )
     unpack_code = '''
 name = "%(name)s"
 next_offset = offset + %(advance)s
@@ -202,30 +224,47 @@ fragments.append(StructPack("%(fmt)s", %(lookup_fields)s))
 
     return pack_code, unpack_code
 
+
 def generate_code_for_variable_fields(group):
-    return (generate_code_for_loop_pack(group), generate_code_for_loop_unpack(group))
+    return (
+        generate_code_for_loop_pack(group),
+        generate_code_for_loop_unpack(group)
+    )
+
 
 def generate_code_for_fixed_fields_without_struct_code(group):
-    return (generate_code_for_loop_pack(group), generate_code_for_loop_unpack(group))
+    return (
+        generate_code_for_loop_pack(group),
+        generate_code_for_loop_unpack(group)
+    )
+
 
 def generate_code_for_loop_pack(group):
-    return ''.join(['''
+    return ''.join(
+        [
+            '''
 name, _, pack, _ = fields[%(field_index)i]
 pack(pkt=pkt, fragments=fragments, **k)
 ''' % {
-      'field_index': field_index
-   } for field_index in range(group[0][0], group[-1][0]+1)])
+                'field_index': field_index
+            } for field_index in range(group[0][0], group[-1][0] + 1)
+        ]
+    )
+
 
 def generate_code_for_loop_unpack(group):
-    return ''.join(['''
+    return ''.join(
+        [
+            '''
 name, _, _, unpack = fields[%(field_index)i]
 offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 ''' % {
-      'field_index': field_index
-   } for field_index in range(group[0][0], group[-1][0]+1)])
+                'field_index': field_index
+            } for field_index in range(group[0][0], group[-1][0] + 1)
+        ]
+    )
 
 
 def indent(code, level=1):
     i = "   " * level
     return "\n".join([i + line for line in code.split("\n")])
-

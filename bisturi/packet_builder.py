@@ -9,6 +9,8 @@ from bisturi.six import integer_types
 
 __trace_enabled = False
 __trace_indent = 0
+
+
 def _trace(pargs=[], pattrs=[], presult=False):
     def decorator(method):
         def wrapper(self, *args, **kargs):
@@ -16,8 +18,11 @@ def _trace(pargs=[], pattrs=[], presult=False):
 
             who = getattr(self, '__name__', self.__class__.__name__)
             indent = " " * __trace_indent
-            print("{i}{who} {method}".format(i=indent, who=who,
-                                             method=method.__name__))
+            print(
+                "{i}{who} {method}".format(
+                    i=indent, who=who, method=method.__name__
+                )
+            )
 
             if pargs:
                 print("{i}Args:".format(i=indent))
@@ -27,8 +32,11 @@ def _trace(pargs=[], pattrs=[], presult=False):
                     except:
                         val = kargs[p]
 
-                    print("{i}{arg}: {val}".format(i=indent, arg=p,
-                                                    val=pprint.pformat(val)))
+                    print(
+                        "{i}{arg}: {val}".format(
+                            i=indent, arg=p, val=pprint.pformat(val)
+                        )
+                    )
 
             __trace_indent += 1
             try:
@@ -40,12 +48,18 @@ def _trace(pargs=[], pattrs=[], presult=False):
                 print("{i}Attrs post-call:".format(i=indent))
                 for p in pattrs:
                     val = getattr(self, p)
-                    print("{i}{arg}: {val}".format(i=indent, arg=p,
-                                                    val=pprint.pformat(val)))
+                    print(
+                        "{i}{arg}: {val}".format(
+                            i=indent, arg=p, val=pprint.pformat(val)
+                        )
+                    )
 
             if presult:
-                print("{i}Result: {val}".format(i=indent,
-                                                    val=pprint.pformat(val)))
+                print(
+                    "{i}Result: {val}".format(
+                        i=indent, val=pprint.pformat(val)
+                    )
+                )
 
             return result
 
@@ -53,7 +67,9 @@ def _trace(pargs=[], pattrs=[], presult=False):
             return wrapper
         else:
             return method
+
     return decorator
+
 
 class PacketClassBuilder(object):
     def __init__(self, metacls, name, bases, attrs):
@@ -73,7 +89,7 @@ class PacketClassBuilder(object):
     def create_field_name_from_subpacket_name(self, subpacket_name):
         '''Helper method to transform names like CamelCase into camel_case'''
         name = subpacket_name[0].lower() + subpacket_name[1:]
-        return "".join((c if c.islower() else "_"+c.lower()) for c in name)
+        return "".join((c if c.islower() else "_" + c.lower()) for c in name)
 
     @_trace(pattrs=['attrs'])
     def create_fields_for_embebed_subclasses_and_replace_them(self):
@@ -131,8 +147,9 @@ class PacketClassBuilder(object):
             return field.ctime
 
         self.fields_in_class = filter(is_a_field_instance, self.attrs.items())
-        self.fields_in_class = sorted(self.fields_in_class,
-                                        key=creation_time_of_field)
+        self.fields_in_class = sorted(
+            self.fields_in_class, key=creation_time_of_field
+        )
 
         self.original_fields_in_class = list(self.fields_in_class)
 
@@ -165,13 +182,14 @@ class PacketClassBuilder(object):
             memory usage, then extend the slot list with the slots given by
             the user.
         '''
-
         def compile_field(position, name_and_field):
             _, field = name_and_field
             return field._compile(position, self.fields, self.bisturi_conf)
 
         additional_slots = self.bisturi_conf.get('additional_slots', [])
-        self.slots = sum(map(compile_field, *zip(*enumerate(self.fields))), additional_slots)
+        self.slots = sum(
+            map(compile_field, *zip(*enumerate(self.fields))), additional_slots
+        )
 
     @_trace(pattrs=['slots'])
     def compile_descriptors_and_extend_slots(self):
@@ -179,11 +197,17 @@ class PacketClassBuilder(object):
             slot list.
         '''
         def has_descriptor(field):
-            return field.descriptor is not None and hasattr(field.descriptor, '_compile')
+            return field.descriptor is not None and hasattr(
+                field.descriptor, '_compile'
+            )
 
-        self.slots += sum((field.descriptor._compile(name, field.descriptor_name, self.bisturi_conf) for name, field in self.fields
-               if has_descriptor(field)), [])
-
+        self.slots += sum(
+            (
+                field.descriptor._compile(
+                    name, field.descriptor_name, self.bisturi_conf
+                ) for name, field in self.fields if has_descriptor(field)
+            ), []
+        )
 
     @_trace()
     def lookup_pack_unpack_methods(self):
@@ -196,7 +220,10 @@ class PacketClassBuilder(object):
                  (b, Int(2), b.pack, b.unpack),
                  ]
         '''
-        self.fields = [(name, field, field.pack, field.unpack) for name, field in self.fields]
+        self.fields = [
+            (name, field, field.pack, field.unpack)
+            for name, field in self.fields
+        ]
 
     @_trace(pattrs=['attrs'])
     def remove_fields_from_class_definition(self):
@@ -239,12 +266,16 @@ class PacketClassBuilder(object):
         for name, field in self.fields:
             if field.descriptor:
                 try:
-                    self.sync_before_pack_methods.append(field.descriptor.sync_before_pack)
+                    self.sync_before_pack_methods.append(
+                        field.descriptor.sync_before_pack
+                    )
                 except AttributeError:
                     pass
 
                 try:
-                    self.sync_after_unpack_methods.append(field.descriptor.sync_after_unpack)
+                    self.sync_after_unpack_methods.append(
+                        field.descriptor.sync_after_unpack
+                    )
                 except AttributeError:
                     pass
 
@@ -254,12 +285,15 @@ class PacketClassBuilder(object):
             If it is necessary, the original attributes (fields) can be access
             via the dictionary __bisturi__, key original_fields_in_class.
         '''
-        self.bisturi_conf['original_fields_in_class'] = self.original_fields_in_class
+        self.bisturi_conf['original_fields_in_class'
+                          ] = self.original_fields_in_class
 
         self.attrs['__slots__'] = self.slots
         self.attrs['__bisturi__'] = self.bisturi_conf
 
-        self.cls = type.__new__(self.metacls, self.name, self.bases, self.attrs)
+        self.cls = type.__new__(
+            self.metacls, self.name, self.bases, self.attrs
+        )
 
     @_trace()
     def add_get_fields_class_method(self):
@@ -288,7 +322,9 @@ class PacketClassBuilder(object):
             a breakpoint (Bkpt).
         '''
         from bisturi.field import Bkpt
-        self.am_in_debug_mode = any((isinstance(field, Bkpt) for _, field in self.fields))
+        self.am_in_debug_mode = any(
+            (isinstance(field, Bkpt) for _, field in self.fields)
+        )
 
     @_trace()
     def create_optimized_code(self):
@@ -305,12 +341,22 @@ class PacketClassBuilder(object):
         '''
         generate_by_default = True if not self.am_in_debug_mode else False
 
-        generate_for_pack = self.cls.__bisturi__.get('generate_for_pack', generate_by_default)
-        generate_for_unpack = self.cls.__bisturi__.get('generate_for_unpack', generate_by_default)
+        generate_for_pack = self.cls.__bisturi__.get(
+            'generate_for_pack', generate_by_default
+        )
+        generate_for_unpack = self.cls.__bisturi__.get(
+            'generate_for_unpack', generate_by_default
+        )
 
         write_py_module = self.cls.__bisturi__.get('write_py_module', False)
 
-        bisturi.blocks.generate_code([(i, name_f[0], name_f[1]) for i, name_f in enumerate(self.fields)], self.cls, generate_for_pack, generate_for_unpack, write_py_module)
+        bisturi.blocks.generate_code(
+            [
+                (i, name_f[0], name_f[1])
+                for i, name_f in enumerate(self.fields)
+            ], self.cls, generate_for_pack, generate_for_unpack,
+            write_py_module
+        )
 
     @_trace()
     def get_packet_class(self):
@@ -351,6 +397,7 @@ class PacketClassBuilder(object):
         self.lookup_pack_unpack_methods()
         self.create_optimized_code()
 
+
 class PacketSpecializationClassBuilder(PacketClassBuilder):
     def __init__(self, metacls, name, bases, attrs):
         from bisturi.packet import Packet
@@ -358,38 +405,63 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
         self.super_class = attrs['__bisturi__']['specialization_of']
         assert isinstance(self.super_class, Packet)
 
-        original_fields_in_superclass = self.super_class.__bisturi__['original_fields_in_class']
-        specialized_fields = self.specialize_fields(attrs, original_fields_in_superclass)
+        original_fields_in_superclass = self.super_class.__bisturi__[
+            'original_fields_in_class']
+        specialized_fields = self.specialize_fields(
+            attrs, original_fields_in_superclass
+        )
 
-        PacketClassBuilder.__init__(self, metacls, name, bases, specialized_attrs)
+        PacketClassBuilder.__init__(
+            self, metacls, name, bases, specialized_attrs
+        )
 
     def bisturi_configuration_default(self):
         return copy.deepcopy(self.super_class.__bisturi__)
 
-    def specialize_fields(self, specialization_attrs, original_fields_in_superclass):
+    def specialize_fields(
+        self, specialization_attrs, original_fields_in_superclass
+    ):
         specialized_fields = copy.deepcopy(original_fields_in_superclass)
         for attrname, attrvalue in specialization_attrs:
-            if isinstance(attrvalue, Field) and attrname not in original_fields_in_superclass:
-                raise Exception("You cannot add new fields like '%s'." % attrname)
+            if isinstance(
+                attrvalue, Field
+            ) and attrname not in original_fields_in_superclass:
+                raise Exception(
+                    "You cannot add new fields like '%s'." % attrname
+                )
 
-            if isinstance(attrvalue, integer_types + (bytes, )) and attrname in original_fields_in_superclass:
-                specialized_fields[attrname].default = attrvalue  # TODO the default or a constant??
+            if isinstance(
+                attrvalue, integer_types + (bytes, )
+            ) and attrname in original_fields_in_superclass:
+                specialized_fields[
+                    attrname
+                ].default = attrvalue  # TODO the default or a constant??
 
-            if isinstance(attrvalue, Field) and attrname in original_fields_in_superclass:
-                attrvalue.ctime = original_fields_in_superclass[attrname].ctime # override the creation time to keep the same order
+            if isinstance(
+                attrvalue, Field
+            ) and attrname in original_fields_in_superclass:
+                attrvalue.ctime = original_fields_in_superclass[
+                    attrname
+                ].ctime  # override the creation time to keep the same order
                 specialized_fields[attrname] = attrvalue
 
         return specialized_fields
 
+
 class MetaPacket(type):
     def __new__(metacls, name, bases, attrs):
-        if name == 'Packet' and bases == (object,):
+        if name == 'Packet' and bases == (object, ):
             attrs['__slots__'] = []
-            return type.__new__(metacls, name, bases, attrs) # Packet base class
+            return type.__new__(
+                metacls, name, bases, attrs
+            )  # Packet base class
 
-        specialization_of = attrs.get('__bisturi__', {}).get('specialization_of', None)
+        specialization_of = attrs.get('__bisturi__',
+                                      {}).get('specialization_of', None)
         if specialization_of:
-            builder = PacketSpecializationClassBuilder(metacls, name, bases, attrs)
+            builder = PacketSpecializationClassBuilder(
+                metacls, name, bases, attrs
+            )
 
         else:
             builder = PacketClassBuilder(metacls, name, bases, attrs)
@@ -408,4 +480,3 @@ class MetaPacket(type):
 
         cls = builder.get_packet_class()
         return cls
-

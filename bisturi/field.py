@@ -14,6 +14,7 @@ from bisturi.util import to_bytes
 
 from bisturi.six import integer_types, from_int_to_byte
 
+
 def exec_once(m):
     ''' Force to execute the method m only once and save its result.
         The next calls will always return the same result,
@@ -27,6 +28,7 @@ def exec_once(m):
             return r
 
     return wrapper
+
 
 class Field(object):
     ''' A field represent a single parsing unit. This is the superclass from
@@ -95,7 +97,6 @@ class Field(object):
             self.descriptor.descriptor_name = self.descriptor_name
             self.descriptor.real_field_name = self.field_name
 
-
         if self.move_arg is None:
             return [(field_name, self)]
 
@@ -145,8 +146,9 @@ class Field(object):
         ''' No-operation pack function. Do nothing during the packing stage. '''
         return fragments
 
-    def repeated(self, count=None, until=None, when=None, default=None,
-                                                                aligned=None):
+    def repeated(
+        self, count=None, until=None, when=None, default=None, aligned=None
+    ):
         r''' The sequence can be set to a fixed amount of elements with the
             'count' parameter which can be a number, a field, an expression of
             fields or even an arbitrary callable.
@@ -222,8 +224,14 @@ class Field(object):
 
             '''
         from bisturi.structural_fields import Sequence
-        return Sequence(prototype=self, count=count, until=until, when=when,
-                                            default=default, aligned=aligned)
+        return Sequence(
+            prototype=self,
+            count=count,
+            until=until,
+            when=when,
+            default=default,
+            aligned=aligned
+        )
 
     def when(self, condition, default=None):
         r''' A field can be set as optional based on a 'when' condition.
@@ -290,12 +298,13 @@ class Field(object):
         return self
 
     def pack_regexp(self, pkt, fragments, **k):
-        raise NotImplementedError("The pack_regexp method is not implemented for this field.")
+        raise NotImplementedError(
+            "The pack_regexp method is not implemented for this field."
+        )
 
     def describe(self, descriptor):
         self.descriptor = descriptor
         return self
-
 
 
 @defer_operations(allowed_categories=['integer'])
@@ -321,7 +330,7 @@ class Int(Field):
                             (self.endianness == 'local' and sys.byteorder == 'big')
 
         if self.byte_count in (1, 2, 4, 8):
-            code = {1:'B', 2:'H', 4:'I', 8:'Q'}[self.byte_count]
+            code = {1: 'B', 2: 'H', 4: 'I', 8: 'Q'}[self.byte_count]
             if self.is_signed:
                 code = code.lower()
 
@@ -334,7 +343,7 @@ class Int(Field):
 
         else:
             self.struct_code = None
-            self.base = 2**(self.byte_count*8)
+            self.base = 2**(self.byte_count * 8)
 
             self.pack, self.unpack = self._pack_fixed_size, \
                                         self._unpack_fixed_size
@@ -342,13 +351,20 @@ class Int(Field):
         return slots
 
     def init(self, packet, defaults):
-        setattr(packet, self.field_name, defaults.get(self.field_name,
-                                                                self.default))
+        setattr(
+            packet, self.field_name,
+            defaults.get(self.field_name, self.default)
+        )
+
     def unpack(self, pkt, raw, offset=0, **k):
-        raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
+        raise NotImplementedError(
+            "This method should be implemented during the 'compilation' phase."
+        )
 
     def pack(self, pkt, fragments, **k):
-        raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
+        raise NotImplementedError(
+            "This method should be implemented during the 'compilation' phase."
+        )
 
     def _unpack_fixed_and_primitive_size(self, pkt, raw, offset=0, **k):
         next_offset = offset + self.byte_count
@@ -369,9 +385,11 @@ class Int(Field):
         raw_data = raw[offset:next_offset]
 
         try:
-            num = int.from_bytes(raw_data,
-                        byteorder='big' if self.is_bigendian else 'little',
-                        signed=self.is_signed)
+            num = int.from_bytes(
+                raw_data,
+                byteorder='big' if self.is_bigendian else 'little',
+                signed=self.is_signed
+            )
 
         except AttributeError:
             if not self.is_bigendian:
@@ -390,14 +408,16 @@ class Int(Field):
         integer = getattr(pkt, self.field_name)
 
         try:
-            data = integer.to_bytes(self.byte_count,
-                            byteorder='big' if self.is_bigendian else 'little',
-                            signed=self.is_signed)
+            data = integer.to_bytes(
+                self.byte_count,
+                byteorder='big' if self.is_bigendian else 'little',
+                signed=self.is_signed
+            )
 
         except AttributeError:
             num = (self.base + integer) if integer < 0 else integer
 
-            xcode = "%%0%(count)ix" % {'count': self.byte_count*2}
+            xcode = "%%0%(count)ix" % {'count': self.byte_count * 2}
             data = (xcode % num).decode('hex')
 
             if not self.is_bigendian:
@@ -413,31 +433,46 @@ class Int(Field):
         if is_literal:
             self.pack(pkt, fragments, **k)
         else:
-            fragments.append((".{%i}" % self.byte_count).encode('ascii'),
-                                                            is_literal=False)
+            fragments.append(
+                (".{%i}" % self.byte_count).encode('ascii'), is_literal=False
+            )
 
         return fragments
 
+
 @defer_operations(allowed_categories=['sequence'])
 class Data(Field):
-    def __init__(self, byte_count=None, until_marker=None,
-            include_delimiter=False, consume_delimiter=True, default=b''):
+    def __init__(
+        self,
+        byte_count=None,
+        until_marker=None,
+        include_delimiter=False,
+        consume_delimiter=True,
+        default=b''
+    ):
         Field.__init__(self)
         assert (byte_count is None and until_marker is not None) or \
                 (until_marker is None and byte_count is not None)
 
         if until_marker is not None:
-            if hasattr(until_marker, 'search'): # aka regex
+            if hasattr(until_marker, 'search'):  # aka regex
                 pattern = until_marker.pattern
                 if not isinstance(pattern, bytes):
-                    raise ValueError("The until marker is a regular expression which pattern is of type '%s' but it must be 'bytes'." % type(pattern))
+                    raise ValueError(
+                        "The until marker is a regular expression which pattern is of type '%s' but it must be 'bytes'."
+                        % type(pattern)
+                    )
             else:
                 if not isinstance(until_marker, bytes):
-                    raise ValueError("The until marker must be 'bytes' or a regular expression, not '%s'." % type(until_marker))
+                    raise ValueError(
+                        "The until marker must be 'bytes' or a regular expression, not '%s'."
+                        % type(until_marker)
+                    )
 
         if not isinstance(default, bytes):
-            raise ValueError("The default must be 'bytes' not '%s'." %
-                                                                type(default))
+            raise ValueError(
+                "The default must be 'bytes' not '%s'." % type(default)
+            )
 
         self.default = default
         if not default and isinstance(byte_count, integer_types):
@@ -447,12 +482,13 @@ class Data(Field):
         self.until_marker = until_marker
 
         self.include_delimiter = include_delimiter
-        self.delimiter_to_be_included = (self.until_marker if
-                isinstance(self.until_marker, bytes) and not include_delimiter
-                else b'')
+        self.delimiter_to_be_included = (
+            self.until_marker if isinstance(self.until_marker, bytes)
+            and not include_delimiter else b''
+        )
 
         assert not (consume_delimiter == False and include_delimiter == True)
-        self.consume_delimiter = consume_delimiter #XXX document this!
+        self.consume_delimiter = consume_delimiter  #XXX document this!
         self.is_fixed = isinstance(byte_count, integer_types)
 
     @exec_once
@@ -470,7 +506,9 @@ class Data(Field):
             elif callable(self.byte_count):
                 self.unpack = self._unpack_variable_size_callable
 
-            elif isinstance(self.byte_count, (UnaryExpr, BinaryExpr, NaryExpr)):
+            elif isinstance(
+                self.byte_count, (UnaryExpr, BinaryExpr, NaryExpr)
+            ):
                 self.byte_count = compile_expr_into_callable(self.byte_count)
                 self.unpack = self._unpack_variable_size_callable
 
@@ -478,7 +516,9 @@ class Data(Field):
                 assert False
 
         else:
-            self._search_buffer_length = bisturi_conf.get('search_buffer_length')
+            self._search_buffer_length = bisturi_conf.get(
+                'search_buffer_length'
+            )
             if self._search_buffer_length is not None:
                 # the length can be 0 or None (means infinite) or a positive number
                 assert self._search_buffer_length >= 0
@@ -495,11 +535,15 @@ class Data(Field):
         return slots
 
     def init(self, packet, defaults):
-        setattr(packet, self.field_name, defaults.get(self.field_name,
-                                                                self.default))
+        setattr(
+            packet, self.field_name,
+            defaults.get(self.field_name, self.default)
+        )
 
     def unpack(self, pkt, raw, offset=0, **k):
-        raise NotImplementedError("This method should be implemented during the 'compilation' phase.")
+        raise NotImplementedError(
+            "This method should be implemented during the 'compilation' phase."
+        )
 
     def pack(self, pkt, fragments, **k):
         r = getattr(pkt, self.field_name) + self.delimiter_to_be_included
@@ -512,8 +556,9 @@ class Data(Field):
 
         chunk = raw[offset:next_offset]
         if len(chunk) != byte_count:
-            raise Exception("Unpacked %i bytes but expected %i" %
-                                                    (len(chunk), byte_count))
+            raise Exception(
+                "Unpacked %i bytes but expected %i" % (len(chunk), byte_count)
+            )
 
         setattr(pkt, self.field_name, chunk)
         return next_offset
@@ -524,8 +569,9 @@ class Data(Field):
 
         chunk = raw[offset:next_offset]
         if len(chunk) != byte_count:
-            raise Exception("Unpacked %i bytes but expected %i" %
-                                                    (len(chunk), byte_count))
+            raise Exception(
+                "Unpacked %i bytes but expected %i" % (len(chunk), byte_count)
+            )
 
         setattr(pkt, self.field_name, chunk)
         return next_offset
@@ -536,8 +582,9 @@ class Data(Field):
 
         chunk = raw[offset:next_offset]
         if len(chunk) != byte_count:
-            raise Exception("Unpacked %i bytes but expected %i" %
-                                                    (len(chunk), byte_count))
+            raise Exception(
+                "Unpacked %i bytes but expected %i" % (len(chunk), byte_count)
+            )
 
         setattr(pkt, self.field_name, chunk)
         return next_offset
@@ -577,17 +624,19 @@ class Data(Field):
             search_buffer = raw[offset:]
 
         extra_count = 0
-        if until_marker.pattern == b"$":    # shortcut
+        if until_marker.pattern == b"$":  # shortcut
             count = len(raw) - offset
         else:
-            match = until_marker.search(search_buffer, 0) #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
+            match = until_marker.search(
+                search_buffer, 0
+            )  #XXX should be (raw, offset) or (raw[offset:], 0) ? See the method search in the module re
             if match:
                 if self.include_delimiter:
                     count = match.end()
                 else:
                     count = match.start()
                     if self.consume_delimiter:
-                        extra_count = match.end()-count
+                        extra_count = match.end() - count
                     self.delimiter_to_be_included = match.group()
             else:
                 assert False
@@ -605,8 +654,9 @@ class Data(Field):
             self.pack(pkt, fragments, **k)
 
         else:
-            custom_regexp = (value.regexp.pattern if value.regexp is not None
-                                                  else b".*")
+            custom_regexp = (
+                value.regexp.pattern if value.regexp is not None else b".*"
+            )
             if self.byte_count is not None:
                 if isinstance(self.byte_count, integer_types):
                     byte_count = self.byte_count
@@ -622,18 +672,23 @@ class Data(Field):
 
                 if byte_count is not None:
                     # TODO ignoring the custom regexp!!
-                    fragments.append((".{%i}" % byte_count).encode('ascii'),
-                                                            is_literal=False)
+                    fragments.append(
+                        (".{%i}" % byte_count).encode('ascii'),
+                        is_literal=False
+                    )
                 else:
                     fragments.append(custom_regexp, is_literal=False)
 
             else:
-                endswith = (re.escape(self.until_marker) if
-                                        isinstance(self.until_marker, bytes)
-                                        else self.until_marker.pattern)
+                endswith = (
+                    re.escape(self.until_marker)
+                    if isinstance(self.until_marker, bytes) else
+                    self.until_marker.pattern
+                )
                 fragments.append(custom_regexp + endswith, is_literal=False)
 
         return fragments
+
 
 class Ref(Field):
     r'''Reference to another packet description. This field allows to composite
@@ -723,9 +778,13 @@ class Ref(Field):
         True
 
         '''
-
-    def __init__(self, prototype, default=None, embeb=False,
-                                            _is_a_subpacket_definition=False):
+    def __init__(
+        self,
+        prototype,
+        default=None,
+        embeb=False,
+        _is_a_subpacket_definition=False
+    ):
         Field.__init__(self)
 
         if _is_a_subpacket_definition:
@@ -740,27 +799,36 @@ class Ref(Field):
 
         if not isinstance(prototype, Packet) and not callable(prototype) and \
                 not isinstance(prototype, (UnaryExpr, BinaryExpr, NaryExpr)):
-            raise ValueError("The prototype of a Ref field must be a packet (class or instance), an expression of fields or a callable that should return a Field or a Packet.")
+            raise ValueError(
+                "The prototype of a Ref field must be a packet (class or instance), an expression of fields or a callable that should return a Field or a Packet."
+            )
 
         self._lets_find_a_nice_default(prototype, default)
 
         if embeb and not isinstance(prototype, Packet):
-            raise ValueError("The prototype must be a Packet if you want to embeb it.")
+            raise ValueError(
+                "The prototype must be a Packet if you want to embeb it."
+            )
 
         self.prototype = prototype
         self.embeb = embeb
 
     def _lets_find_a_nice_default(self, prototype, default):
-        if callable(prototype) or isinstance(prototype, (UnaryExpr, BinaryExpr,
-                                                         NaryExpr)):
+        if callable(prototype) or isinstance(
+            prototype, (UnaryExpr, BinaryExpr, NaryExpr)
+        ):
             if default is None:
-                raise ValueError("If your are using an expression of fields or a callable as the prototype of Ref I need a default object.")
+                raise ValueError(
+                    "If your are using an expression of fields or a callable as the prototype of Ref I need a default object."
+                )
 
             self.default = default
 
         elif isinstance(prototype, Packet):
             if default is not None:
-                raise ValueError("We don't need a default object, we will be using the prototype object instead.")
+                raise ValueError(
+                    "We don't need a default object, we will be using the prototype object instead."
+                )
 
             self.default = copy.deepcopy(prototype)
 
@@ -770,7 +838,9 @@ class Ref(Field):
     def _describe_yourself(self, field_name, bisturi_conf):
         desc = Field._describe_yourself(self, field_name, bisturi_conf)
         if self.embeb:
-            desc.extend([(fname, f) for fname, f, _, _ in self.prototype.get_fields()])
+            desc.extend(
+                [(fname, f) for fname, f, _, _ in self.prototype.get_fields()]
+            )
 
         return desc
 
@@ -783,14 +853,14 @@ class Ref(Field):
         prototype = self.prototype
         if isinstance(prototype, Packet):
             self.unpack = self._unpack_referencing_a_packet
-            self.pack   = self._pack_referencing_a_packet
-            self.prototype   = prototype.as_prototype()
+            self.pack = self._pack_referencing_a_packet
+            self.prototype = prototype.as_prototype()
             self.proto_class = prototype.__class__
 
         else:
-            assert callable(prototype) or isinstance(prototype, (UnaryExpr,
-                                                                 BinaryExpr,
-                                                                 NaryExpr))
+            assert callable(prototype) or isinstance(
+                prototype, (UnaryExpr, BinaryExpr, NaryExpr)
+            )
             from bisturi.structural_fields import normalize_raw_condition_into_a_callable
             self.prototype = normalize_raw_condition_into_a_callable(prototype)
             prototype = self.prototype
@@ -799,15 +869,16 @@ class Ref(Field):
                 self.default = self.default.as_prototype()
 
             self.unpack = self._unpack_using_callable
-            self.pack   = self._pack_with_callable
+            self.pack = self._pack_with_callable
 
         if self.embeb:
             assert isinstance(prototype, Packet)
-            self.pack   = self.pack_noop
+            self.pack = self.pack_noop
             self.unpack = self.unpack_noop
 
         assert not isinstance(self.prototype, Packet)
-        assert isinstance(self.prototype, Prototype) or callable(self.prototype)
+        assert isinstance(self.prototype,
+                          Prototype) or callable(self.prototype)
         return slots
 
     def init(self, packet, defaults):
@@ -833,8 +904,10 @@ class Ref(Field):
         referenced = self.prototype(pkt=pkt, raw=raw, offset=offset, **k)
 
         if isinstance(referenced, Field):
-            referenced.field_name=self.field_name
-            referenced._compile(position=self.position, fields=[], bisturi_conf={})
+            referenced.field_name = self.field_name
+            referenced._compile(
+                position=self.position, fields=[], bisturi_conf={}
+            )
             referenced.init(pkt, {})
 
             return referenced.unpack(pkt=pkt, raw=raw, offset=offset, **k)
@@ -854,11 +927,15 @@ class Ref(Field):
         # we try to know how to pack this value
         assert callable(self.prototype)
         # TODO add more parameters, like raw=partial_raw
-        referenced = self.prototype(pkt=pkt, fragments=fragments, packing=True, **k)
+        referenced = self.prototype(
+            pkt=pkt, fragments=fragments, packing=True, **k
+        )
 
         if isinstance(referenced, Field):
             referenced.field_name = self.field_name
-            referenced._compile(position=self.position, fields=[], bisturi_conf={})
+            referenced._compile(
+                position=self.position, fields=[], bisturi_conf={}
+            )
             #referenced.init(pkt, {})
 
             return referenced.pack(pkt, fragments, **k)
@@ -866,8 +943,10 @@ class Ref(Field):
         # well, we are in a dead end: the 'obj' object IS NOT a Packet,
         # it is a "primitive" value however, the 'referenced' object IS
         # a Packet and we cannot do anything else
-        raise NotImplementedError("I have a value to pack of type '%s' and because it is not a Packet instance I don't know how to pack it. The prototype of this Ref field is a callable so I called it hoping to receive a Field instance to show me how to pack the value but instead I received a '%s' so I'm stuck." % (type(obj), type(referenced)))
-
+        raise NotImplementedError(
+            "I have a value to pack of type '%s' and because it is not a Packet instance I don't know how to pack it. The prototype of this Ref field is a callable so I called it hoping to receive a Field instance to show me how to pack the value but instead I received a '%s' so I'm stuck."
+            % (type(obj), type(referenced))
+        )
 
     def _unpack_referencing_a_packet(self, pkt, **k):
         p = self.proto_class(_initialize_fields=False)
@@ -875,7 +954,8 @@ class Ref(Field):
         return p.unpack_impl(**k)
 
     def _pack_referencing_a_packet(self, pkt, fragments, **k):
-        return getattr(pkt, self.field_name).pack_impl(fragments=fragments, **k)
+        return getattr(pkt,
+                       self.field_name).pack_impl(fragments=fragments, **k)
 
 
 @defer_operations(allowed_categories=['integer'])
@@ -887,7 +967,7 @@ class Bits(Field):
     def __init__(self, bit_count, default=0):
         Field.__init__(self)
         self.default = default
-        self.mask = (2**bit_count)-1
+        self.mask = (2**bit_count) - 1
         self.bit_count = bit_count
 
         self.iam_first = self.iam_last = False
@@ -896,17 +976,19 @@ class Bits(Field):
     def _compile(self, position, fields, bisturi_conf):
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
-        if position == 0 or not isinstance(fields[position-1][1], Bits):
+        if position == 0 or not isinstance(fields[position - 1][1], Bits):
             self.iam_first = True
 
-        if position == len(fields)-1 or not isinstance(fields[position+1][1], Bits):
+        if position == len(fields) - 1 or not isinstance(
+            fields[position + 1][1], Bits
+        ):
             self.iam_last = True
 
         if self.iam_last:
             cumshift = 0
             I = Int()
             self.members = []
-            for n, f in reversed(fields[:position+1]):
+            for n, f in reversed(fields[:position + 1]):
                 if not isinstance(f, Bits):
                     break
 
@@ -923,22 +1005,27 @@ class Bits(Field):
             name_of_members, bit_sequence = zip(*self.members)
 
             if not (cumshift % 8 == 0):
-                raise Bits.ByteBoundaryError("Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)." % (str(list(bit_sequence)), cumshift))
+                raise Bits.ByteBoundaryError(
+                    "Wrong sequence of bits: %s with total sum of %i (not a multiple of 8)."
+                    % (str(list(bit_sequence)), cumshift)
+                )
 
             I.byte_count = cumshift // 8
-            fname = "_bits__"+"_".join(name_of_members)
+            fname = "_bits__" + "_".join(name_of_members)
             I.field_name = fname
             I._compile(position=-1, fields=[], bisturi_conf={})
 
             slots.append(fname)
         return slots
 
-
     def init(self, packet, defaults):
         if self.iam_first:
             setattr(packet, self.I.field_name, 0)
 
-        setattr(packet, self.field_name, defaults.get(self.field_name, self.default))
+        setattr(
+            packet, self.field_name,
+            defaults.get(self.field_name, self.default)
+        )
 
     def unpack(self, pkt, raw, offset=0, **k):
         if self.iam_first:
@@ -951,7 +1038,11 @@ class Bits(Field):
 
     def pack(self, pkt, fragments, **k):
         I = getattr(pkt, self.I.field_name)
-        setattr(pkt, self.I.field_name, ((getattr(pkt, self.field_name) << self.shift) & self.mask) | (I & (~self.mask)))
+        setattr(
+            pkt, self.I.field_name,
+            ((getattr(pkt, self.field_name) << self.shift) & self.mask) |
+            (I & (~self.mask))
+        )
 
         if self.iam_last:
             return self.I.pack(pkt, fragments=fragments, **k)
@@ -966,15 +1057,17 @@ class Bits(Field):
 
                 if is_literal:
                     b = bin(getattr(pkt, name))[2:]
-                    zeros = bit_count-len(b)
+                    zeros = bit_count - len(b)
 
                     bits.append("0" * zeros)
                     bits.append(b)
                 else:
                     bits.append("x" * bit_count)
 
-            bits  = "".join(bits)
-            bytes_ = [bits[0+(i*8):8+(i*8)] for i in range(len(bits)//8)]
+            bits = "".join(bits)
+            bytes_ = [
+                bits[0 + (i * 8):8 + (i * 8)] for i in range(len(bits) // 8)
+            ]
 
             for byte in bytes_:
                 if byte == "x" * 8:
@@ -987,13 +1080,19 @@ class Bits(Field):
                         char = from_int_to_byte(int(byte, 2))
                         fragments.append(char, is_literal=True)
 
-                    elif byte[first_dont_care:] == "x" * len(byte[first_dont_care:]):
+                    elif byte[first_dont_care:] == "x" * len(
+                        byte[first_dont_care:]
+                    ):
                         # 00xx xxxx pattern (lower dont care)
                         dont_care_bits = len(byte[first_dont_care:])
 
-                        lower_bin = byte[:first_dont_care] + ("0"*dont_care_bits)
-                        higher_bin = byte[:first_dont_care] + ("1"*dont_care_bits)
-                        lower_char = from_int_to_byte(int(lower_bin,  2))
+                        lower_bin = byte[:first_dont_care] + (
+                            "0" * dont_care_bits
+                        )
+                        higher_bin = byte[:first_dont_care] + (
+                            "1" * dont_care_bits
+                        )
+                        lower_char = from_int_to_byte(int(lower_bin, 2))
                         higher_char = from_int_to_byte(int(higher_bin, 2))
 
                         lower_literal = re.escape(lower_char)
@@ -1008,9 +1107,11 @@ class Bits(Field):
 
                     else:
                         # 00xx x0x0 pattern (mixed pattern)
-                        all_patterns   = range(256)
-                        fixed_pattern  = int(byte.replace("x", "0"), 2)
-                        dont_care_mask = int(byte.replace("1", "0").replace("x", "1"), 2)
+                        all_patterns = range(256)
+                        fixed_pattern = int(byte.replace("x", "0"), 2)
+                        dont_care_mask = int(
+                            byte.replace("1", "0").replace("x", "1"), 2
+                        )
 
                         mixed_patterns = sorted(
                                             set((p & dont_care_mask) | \
@@ -1046,6 +1147,7 @@ class Bkpt(Field):
     def pack_regexp(self, pkt, fragments, **k):
         return fragments
 
+
 class Em(Field):
     def __init__(self):
         Field.__init__(self)
@@ -1063,4 +1165,3 @@ class Em(Field):
     def pack(self, pkt, fragments, **k):
         fragments.append(b"")
         return fragments
-

@@ -5,11 +5,15 @@ from __future__ import division
 from bisturi.six import integer_types
 
 FROM_BEGIN = 0
-FROM_END   = 2
+FROM_END = 2
+
 
 def to_bytes(bytes_or_text):
-    return (bytes_or_text if isinstance(bytes_or_text, bytes)
-                          else bytes(bytes_or_text, 'ascii'))
+    return (
+        bytes_or_text
+        if isinstance(bytes_or_text, bytes) else bytes(bytes_or_text, 'ascii')
+    )
+
 
 class SeekableFile(bytes):
     def __new__(cls, file_open):
@@ -40,7 +44,7 @@ class SeekableFile(bytes):
 
         if step == 1:
             self._seek(start)
-            return self._file.read(stop-start)
+            return self._file.read(stop - start)
 
         else:
             return b"".join((self[i] for i in irange(start, stop, step)))
@@ -75,26 +79,42 @@ import functools
 
 _non_printable = set(range(256)) - set(ord(c) for c in string.printable)
 _non_printable.union(ord(c) for c in string.whitespace if c != ' ')
-_translate = b''.join(b'.' if i in _non_printable else bytes([i]) for i in range(256))
+_translate = b''.join(
+    b'.' if i in _non_printable else bytes([i]) for i in range(256)
+)
 del _non_printable
 
-def inspect(packet, indent="", current_level=0, aligned_to=8,
-                truncate_values_to=8, max_items=4, max_depth=99999):
+
+def inspect(
+    packet,
+    indent="",
+    current_level=0,
+    aligned_to=8,
+    truncate_values_to=8,
+    max_items=4,
+    max_depth=99999
+):
     inspection_too_deep = current_level > max_depth
-    print("%s%s%s" % (indent, packet.__class__.__name__, " [truncated]"
-                            if inspection_too_deep
-                            else ""))
+    print(
+        "%s%s%s" % (
+            indent, packet.__class__.__name__,
+            " [truncated]" if inspection_too_deep else ""
+        )
+    )
 
     if inspection_too_deep:
         return
 
     indent = "  " + indent
 
-    inspect_recursive = functools.partial(inspect, current_level=current_level+1,
-                                                   aligned_to=aligned_to,
-                                                   truncate_values_to=truncate_values_to,
-                                                   max_items=max_items,
-                                                   max_depth=max_depth)
+    inspect_recursive = functools.partial(
+        inspect,
+        current_level=current_level + 1,
+        aligned_to=aligned_to,
+        truncate_values_to=truncate_values_to,
+        max_items=max_items,
+        max_depth=max_depth
+    )
     ALIGNED_TO = aligned_to
 
     for name, _, _, _ in packet.get_fields():
@@ -106,7 +126,6 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
         if isinstance(value, array.array):
             value = value.tostring()
 
-
         if isinstance(value, bytes):
             l = len(value)
             MAX = truncate_values_to
@@ -115,8 +134,10 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
 
             _value = []
             _value.append(' '.join("%02x" % x for x in truncated_value))
-            _value.append(" " * ((MAX*3) - len(_value[-1])))
-            _value.append("|%s|" % truncated_value.translate(_translate).decode('ascii'))
+            _value.append(" " * ((MAX * 3) - len(_value[-1])))
+            _value.append(
+                "|%s|" % truncated_value.translate(_translate).decode('ascii')
+            )
             if truncated:
                 _value.append("[truncated]")
 
@@ -134,14 +155,14 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
                 if isinstance(value[0], Packet):
                     truncated = len(value) > max_items
                 else:
-                    truncated = len(value) > max_items*8
+                    truncated = len(value) > max_items * 8
 
                 print("%s%s: %i items %s[" % \
                         (indent, name, len(value),
                         "[truncated] " if truncated else ""))
                 if isinstance(value[0], Packet):
                     for subvalue in value[:max_items]:
-                        inspect_recursive(subvalue, indent+"  ")
+                        inspect_recursive(subvalue, indent + "  ")
 
                 else:
                     try:
@@ -164,4 +185,3 @@ def inspect(packet, indent="", current_level=0, aligned_to=8,
                             (indent_and_prefix, space, "unknow '%s'" % value))
             except:
                 print("%s%s%s" % (indent_and_prefix, space, "unknow value"))
-

@@ -12,6 +12,7 @@ from re import finditer, compile, escape
 from functools import partial
 from operator import eq as equals_to
 
+
 class Any(object):
     def __init__(self, startswith=None, endswith=None, contains=None):
         if startswith == endswith == contains == None:  # most common case
@@ -35,7 +36,6 @@ class Any(object):
         self.regexp = compile(self.regexp)
         self.__eq__ = self.eq_for_regexp
         self.__ne__ = self.ne_for_regexp
-
 
     def __eq__(self, other):
         if self.regexp is None:
@@ -61,6 +61,7 @@ class Any(object):
     def ne_for_regexp(self, other):
         return not bool(self.regexp.search(other))
 
+
 def anything_like(pkt_class):
     pkt = pkt_class()
 
@@ -69,9 +70,14 @@ def anything_like(pkt_class):
 
     return pkt
 
+
 def filter_like(pkt, iterable, scan_through_string_for_a_match=False):
     pattern = pkt.as_regular_expression()
-    return ifilter(pattern.search if scan_through_string_for_a_match else pattern.match, iterable)
+    return ifilter(
+        pattern.search if scan_through_string_for_a_match else pattern.match,
+        iterable
+    )
+
 
 def filter(pkt, iterable, filter_with_regexp_first=True, filter_like_args={}):
     if filter_with_regexp_first:
@@ -79,4 +85,6 @@ def filter(pkt, iterable, filter_with_regexp_first=True, filter_like_args={}):
 
     cls = pkt.__class__
     equals_to_pkt = partial(equals_to, pkt)
-    return ifilter(equals_to_pkt, (cls.unpack(r, silent=True) for r in iterable))
+    return ifilter(
+        equals_to_pkt, (cls.unpack(r, silent=True) for r in iterable)
+    )
