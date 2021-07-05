@@ -1,22 +1,35 @@
-RUNDOCTEST=byexample -l python --ff --diff ndiff --jobs 2
-RUNUNITTEST=python -m unittest -q
-RUNPYTHON=python
+RUNDOCTEST ?= byexample -l python --ff --diff ndiff --jobs 2
+RUNUNITTEST ?= python -m unittest -q
+RUNPYTHON ?= python
+RUNPIP ?= pip
 
-.PHONY: test test-docs test-src test-examples test-tests dist upload
+.PHONY: test format-test lib-test docs-test unit-test examples-test dist upload
 
-test: test-src test-docs test-tests test-examples
+test: format-test lib-test docs-test unit-test examples-test
 
-test-docs:
-	@${RUNDOCTEST} `find docs -name "*.md"` *.md
+format-test:
+	yapf -vv --style=.style.yapf --diff --recursive bisturi/
 
-test-src:
+lib-test:
 	@${RUNDOCTEST} `find bisturi -name "*.py"`
 
-test-examples:
+docs-test:
+	@${RUNDOCTEST} `find docs -name "*.md"` *.md
+
+unit-test:
+	@cd tests; for t in `find . -name "*.py"`; do echo $$t; ${RUNUNITTEST} `basename -s .py $$t`; done; cd ..
+
+examples-test:
 	@for t in `find examples -name "*.py"`; do echo $$t; ${RUNPYTHON} $$t; done
 
-test-tests:
-	@cd tests; for t in `find . -name "*.py"`; do echo $$t; ${RUNUNITTEST} `basename -s .py $$t`; done; cd ..
+format:
+	yapf -vv -i --style=.style.yapf --recursive bisturi/
+
+deps:
+	$(RUNPIP) install -e .
+
+deps-dev: deps
+	$(RUNPIP) install -r requirements-dev.txt
 
 dist:
 	rm -Rf dist/ build/ *.egg-info
