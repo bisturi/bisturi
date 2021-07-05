@@ -1,6 +1,6 @@
 theme: jekyll-theme-dinky
 title: bisturi
-description: Parse binary data painless describing the packets' structures in python classes: no need to write 'for' loops or nested 'if' conditionals.
+description: Parse binary data painless describing the structures in a declarative way.
 github:
     owner_name: Martin Di Paola
     owner_url: https://github.com/eldipa
