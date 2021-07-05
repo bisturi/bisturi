@@ -104,7 +104,6 @@ class Sequence(Field):
                 "You must set one and only one of them."
             )
 
-        self.ctime = prototype.ctime
         self.default = default if default is not None else []
 
         self.prototype_field = prototype
@@ -314,7 +313,6 @@ class Optional(Field):
         Field.__init__(self)
         assert isinstance(prototype, Field)
 
-        self.ctime = prototype.ctime
         self.default = default
 
         self.prototype_field = prototype

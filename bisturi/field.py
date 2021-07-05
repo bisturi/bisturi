@@ -53,7 +53,6 @@ class Field(object):
 
             '''
     def __init__(self):
-        self.ctime = time.time()
         self.is_fixed = False
         self.struct_code = None
         self.is_bigendian = True
@@ -778,17 +777,8 @@ class Ref(Field):
         True
 
         '''
-    def __init__(
-        self,
-        prototype,
-        default=None,
-        embeb=False,
-        _is_a_subpacket_definition=False
-    ):
+    def __init__(self, prototype, default=None, embeb=False):
         Field.__init__(self)
-
-        if _is_a_subpacket_definition:
-            self.ctime = prototype.get_fields()[0][1].ctime
 
         self.default = default
 

@@ -91,66 +91,64 @@ class PacketClassBuilder(object):
         name = subpacket_name[0].lower() + subpacket_name[1:]
         return "".join((c if c.islower() else "_" + c.lower()) for c in name)
 
-    @_trace(pattrs=['attrs'])
-    def create_fields_for_embebed_subclasses_and_replace_them(self):
-        ''' Create Ref fields to refer to 'embebed' subclasses.
-            Something like this:
-
-            class A(Packet):
-                class B(Packet):
-                    pass
-
-            is transformed into
-
-            class A(Packet):
-                b = Ref(B)
-
-            See the method create_field_name_from_subpacket_name to know how
-            the name 'B' was transformed into 'b'.
-        '''
-
-        from bisturi.packet import Packet
-        from bisturi.field import Ref
-        import inspect
-
-        def is_a_packet_instance(name_and_field):
-            _, field = name_and_field
-            return inspect.isclass(field) and issubclass(field, Packet)
-
-        names_and_subpackets = filter(is_a_packet_instance, self.attrs.items())
-        subpackets_as_refs = [(self.create_field_name_from_subpacket_name(name),
-                               Ref(prototype=subpacket, _is_a_subpacket_definition=True)) \
-                                    for name, subpacket in names_and_subpackets]
-
-        self.attrs.update(dict(subpackets_as_refs))
-
     @_trace(pattrs=['fields_in_class', 'original_fields_in_class'])
     def collect_the_fields_from_class_definition(self):
-        ''' Collect the fields of the packet and sort them by creation time.
+        ''' Collect the fields of the packet and make new Ref fields
+            from Packets "fields".
+
             Take something like this:
 
             class A(Packet):
                 a = 1
                 b = Int(2)
                 c = Int(2)
+                d = B       # B is a Packet subclass
+                e = B()
 
-            and collect [b->Int(2), c->Int(2)]
+            and collect [
+                b->Int(2), c->Int(2),
+                d->Ref(B), e->Ref(B()),
+                ]
         '''
+        from bisturi.packet import Packet
         from bisturi.field import Field
+        from bisturi.field import Ref
+        import inspect
 
-        def is_a_field_instance(name_and_field):
-            _, field = name_and_field
-            return isinstance(field, Field)
+        def make_a_field(name_and_field):
+            name, field = name_and_field
+            if isinstance(field, Field):
+                return name, field  # return as it
 
-        def creation_time_of_field(name_and_field):
-            _, field = name_and_field
-            return field.ctime
+            is_a_pkt_instance = isinstance(field, Packet)
+            is_a_pkt_class = (
+                inspect.isclass(field) and issubclass(field, Packet)
+            )
+            if is_a_pkt_class or is_a_pkt_instance:
+                # make a Ref field from it
+                newfield = Ref(prototype=field)
+                newname = name
 
-        self.fields_in_class = filter(is_a_field_instance, self.attrs.items())
-        self.fields_in_class = sorted(
-            self.fields_in_class, key=creation_time_of_field
-        )
+                return newname, newfield
 
+            # anything else it is not a field so it should be filtered
+            # out
+            return None
+
+        # Since Python 3.6 self.attrs (coming from the Metaclass
+        # __new__) will be already ordered following the order in the
+        # Packet class definition
+        names_and_field = map(make_a_field, self.attrs.items())
+
+        # Filter out non-field like objects (marked as None by the
+        # previous step)
+        names_and_field = filter(None, names_and_field)
+
+        # Save the values from the iterator
+        self.fields_in_class = list(names_and_field)
+
+        # Preserve a copy because self.fields_in_class may be modified
+        # later
         self.original_fields_in_class = list(self.fields_in_class)
 
     @_trace(pattrs=['fields'])
@@ -368,7 +366,6 @@ class PacketClassBuilder(object):
             then collect all of them and at last ask to each field to
             describe itself returning a final list of fields.
         '''
-        self.create_fields_for_embebed_subclasses_and_replace_them()
         self.collect_the_fields_from_class_definition()
         self.ask_to_each_field_to_describe_itself()
 
@@ -440,9 +437,10 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
             if isinstance(
                 attrvalue, Field
             ) and attrname in original_fields_in_superclass:
-                attrvalue.ctime = original_fields_in_superclass[
-                    attrname
-                ].ctime  # override the creation time to keep the same order
+                # TODO remove?
+                #attrvalue.ctime = original_fields_in_superclass[
+                #    attrname
+                #].ctime  # override the creation time to keep the same order
                 specialized_fields[attrname] = attrvalue
 
         return specialized_fields
