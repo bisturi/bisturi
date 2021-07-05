@@ -750,13 +750,13 @@ class Ref(Field):
         True
 
 
-        If the embeb parameter is True, the prototype must be a packet.
+        If the embed parameter is True, the prototype must be a packet.
         With this flag all the fields of the prototype are borrow to the
         current packet.
-        The embeb feature is quite experimental and has a few quirks:
+        The embed feature is quite experimental and has a few quirks:
 
         >>> class Point3D(Packet):
-        ...     point_2d = Ref(Point(x=1, y=2), embeb=True)
+        ...     point_2d = Ref(Point(x=1, y=2), embed=True)
         ...     z = Int(1)
 
         >>> pkt = Point3D(x=7)
@@ -777,7 +777,7 @@ class Ref(Field):
         True
 
         '''
-    def __init__(self, prototype, default=None, embeb=False):
+    def __init__(self, prototype, default=None, embed=False):
         Field.__init__(self)
 
         self.default = default
@@ -795,13 +795,13 @@ class Ref(Field):
 
         self._lets_find_a_nice_default(prototype, default)
 
-        if embeb and not isinstance(prototype, Packet):
+        if embed and not isinstance(prototype, Packet):
             raise ValueError(
-                "The prototype must be a Packet if you want to embeb it."
+                "The prototype must be a Packet if you want to embed it."
             )
 
         self.prototype = prototype
-        self.embeb = embeb
+        self.embed = embed
 
     def _lets_find_a_nice_default(self, prototype, default):
         if callable(prototype) or isinstance(
@@ -827,7 +827,7 @@ class Ref(Field):
 
     def _describe_yourself(self, field_name, bisturi_conf):
         desc = Field._describe_yourself(self, field_name, bisturi_conf)
-        if self.embeb:
+        if self.embed:
             desc.extend(
                 [(fname, f) for fname, f, _, _ in self.prototype.get_fields()]
             )
@@ -861,7 +861,7 @@ class Ref(Field):
             self.unpack = self._unpack_using_callable
             self.pack = self._pack_with_callable
 
-        if self.embeb:
+        if self.embed:
             assert isinstance(prototype, Packet)
             self.pack = self.pack_noop
             self.unpack = self.unpack_noop

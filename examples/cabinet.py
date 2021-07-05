@@ -96,7 +96,7 @@ class File(Packet):
 class Cabinet(Packet):
    __bisturi__ = {'endianness': 'little'}
 
-   header  = Ref(Header, embeb=True)
+   header  = Ref(Header, embed=True)
    folders = Ref(Folder).repeated(lambda root, **k: root.number_of_folders)
 
    files = Ref(File).repeated(lambda root, **k: root.number_of_files)\

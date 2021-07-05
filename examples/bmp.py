@@ -65,7 +65,7 @@ class BMP(Packet):
 
   offset_pixel_array = Int(4)
 
-  dib = Ref(DIB, embeb=True)
+  dib = Ref(DIB, embed=True)
 
   pixel_rows = Ref(PixelRow).repeated(lambda root, **k: root.image_height)\
                       .at(offset_pixel_array)
