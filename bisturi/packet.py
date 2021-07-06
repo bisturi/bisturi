@@ -187,6 +187,12 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
 
         yield offset, "."
 
+    def __repr__(self):
+        msg = [f'{self.__class__.__name__}:']
+        for name, f, _, _ in self.get_fields():
+            msg.append(f'  {name}: {getattr(self, name)}')
+
+        return '\n'.join(msg)
 
 class Prototype(object):
     def __init__(self, pkt):
