@@ -1,13 +1,14 @@
+# Integer Fields
 
-A `Int` field represents an integer which can be
- - signed or unsigned
- - represented in big endian, little endian or local
+A `Int` field represents an integer which can:
+
+ - be signed or unsigned.
+ - be in big endian, little endian or local endian
 (based in the local machine, `sys.byteorder`)
+ - be of arbitrary but fixed size.
 
-By default `Int` is unsigned and big endian.
-
-The `Int` field obviously requires some amount of bytes: the size
-if the field. By default is 4.
+By default `Int` represents an unsigned, big endian integer of 4 bytes
+but that can be changed of course.
 
 Let see an example that uses several different `Int`s
 
@@ -24,7 +25,7 @@ Let see an example that uses several different `Int`s
 ...    f = Int(endianness='local')
 ```
 
-The code should be self explaining. But to remove any doubt,
+The code should be self explanatory, but to remove any doubt:
 
 ```python
 >>> a = b'\x00\x00\x00\x01'  # 1
@@ -46,8 +47,10 @@ True
 True
 ```
 
+### [extra] Arbitrary fixed size
+
 `Int` supports an arbitrary number of bytes as its size but it is
-heavily optimized for fixed sizes of 1, 2, 4 and 8.
+**heavily optimized** for fixed sizes of 1, 2, 4 and 8.
 
 In this other example we have `Int`s of non-standard sizes and `bisturi`
 works just fine.
@@ -108,4 +111,4 @@ True
 
 `__bisturi__` is a special attribute that controls several aspects of
 `Packet`. For now it is sufficient to say that
-with `{'endianness': ...}` you can control the defaults for that class.
+with `{'endianness': ...}` you can control the defaults for that packet class.

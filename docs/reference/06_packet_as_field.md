@@ -1,6 +1,10 @@
+# Packet Reference (aka Composite of Packets)
 
-If writing a packet class is an easy way to describe a piece of
-binary data. Could we use it as part of something bigger?
+`Int`, `Data` and `Bits` are the key stone from where you can
+build complex structures.
+
+`bisturi` allows you to **composite packets** definitions to form
+newer and more complex ones.
 
 Consider the following example of an `Ethernet` packet.
 
@@ -18,9 +22,14 @@ Consider the following example of an `Ethernet` packet.
 In `Ethernet`, the `destination` and the `source` are addresses of the
 two endpoints talking.
 
-They are not just 6 bytes, they are `MAC` addresses which it is formed, in
-its simplest way, by two parts: the organization identifier `oui` and
-the network controller identifier `nic`.
+They are `MAC` addresses.
+
+A `MAC` is composed of two parts:
+
+ - the organization identifier `oui`
+ - the network controller identifier `nic`.
+
+So we could write a packet that represents a `MAC`:
 
 ```python
 >>> class MAC(Packet):
@@ -28,25 +37,31 @@ the network controller identifier `nic`.
 ...    nic = Data(3)
 ```
 
-Now we can rewrite `Ethernet` *referencing* this `MAC`:
+Now we can rewrite `Ethernet` **referencing** this `MAC` just using it
+in the same place where you would be putting a field:
 
 ```python
 >>> from bisturi.field import Ref
 >>> class Ethernet(Packet):
-...    destination = Ref(MAC)
-...    source = Ref(MAC)
+...    destination = MAC
+...    source = MAC
 ...    size = Int(1)
 ...    payload = Data(lambda pkt, raw, offset, **k: pkt.size if pkt.size <= 1500 else len(raw)-offset)
 ```
+
+Note that I wrote `destination = MAC`: `bisturi` is smart enough
+to realice that your are compositing.
+
+Unpacking/packing works as usual: `Ethernet` unpacks/packs its
+primitive attributes like  `size` and `payload` and
+*delegates* to `MAC` the unpack/pack of `destination` and `source`.
 
 So, we can do this
 
 ```python
 >>> s1 = b'\x00\x01\x01\x00\x00\x01\x00\x01\x01\x00\x00\x02\x05hello'
->>> s2 = b'\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
 
 >>> p = Ethernet.unpack(s1)
->>> q = Ethernet.unpack(s2)
 
 >>> p.destination.nic
 b'\x00\x00\x01'
@@ -57,6 +72,21 @@ b'\x00\x00\x02'
 >>> p.payload
 b'hello'
 
+>>> p.pack() == s1
+True
+```
+
+Note how you can access to the `nic` field through the `destination` (or
+`source`) fields.
+
+<!--
+Add an extra test to verify that we can parse a second instance that
+will not interfere with the first one.
+
+>>> s2 = b'\x00\x01\x01\x00\x00\x02\x00\x01\x01\x00\x00\x01\x05world'
+
+>>> q = Ethernet.unpack(s2)
+
 >>> q.destination.nic
 b'\x00\x00\x02'
 >>> q.source.nic
@@ -66,11 +96,11 @@ b'\x00\x00\x01'
 >>> q.payload
 b'world'
 
->>> p.pack() == s1
-True
 >>> q.pack() == s2
 True
-```
+-->
+
+## Referencing a packet or a field
 
 The `Ref` field accepts either a `Packet` subclass or a `Field` subclass.
 
@@ -113,6 +143,10 @@ bind your `Ethernet` implementation to `IP`.
 
 Compositing unrelated packets into a single unit will be cover later.
 
+<!--
+
+Deprecated!
+
 ## Inner packet
 
 It is possible to define a `Packet` subclass *inside* another one.
@@ -121,38 +155,39 @@ This will make the outer packet to have a reference to the inner packet.
 It is just a shortcut for `Ref`:
 
 ```python
->>> class Person(Packet):
-...    length = Int(1)
-...    name = Data(length)
-...
-...    class BirthDate(Packet):
-...        day   = Int(1)
-...        month = Int(1)
-...        year  = Int(2)
-...
-...    age = Int(1)
+#   >>> class Person(Packet):
+#   ...    length = Int(1)
+#   ...    name = Data(length)
+#   ...
+#   ...    class BirthDate(Packet):
+#   ...        day   = Int(1)
+#   ...        month = Int(1)
+#   ...        year  = Int(2)
+#   ...
+#   ...    age = Int(1)
 
->>> s = b"\x04john\x05\x03\x07\xda\x16"
->>> p = Person.unpack(s)
+#   >>> s = b"\x04john\x05\x03\x07\xda\x16"
+#   >>> p = Person.unpack(s)
 
->>> p.length
-4
->>> p.name
-b'john'
->>> p.age
-22
->>> p.birth_date.day    # access the 'BirthDate' field via 'birth_date'
-5
->>> p.birth_date.year
-2010
+#   >>> p.length
+#   4
+#   >>> p.name
+#   b'john'
+#   >>> p.age
+#   22
+#   >>> p.birth_date.day    # access the 'BirthDate' field via 'birth_date'
+#   5
+#   >>> p.birth_date.year
+#   2010
 ```
 
 Notice how the packet's name `BirthDate` has got transformed into
 the `birth_date` field.
 
-The rules for renaming follows the *pyhonic way*: things like `FooBar`
+The rules for renaming follows the *pythonic way*: things like `FooBar`
 gets into lowercase and separated by underscores like `foo_bar`.
 
+-->
 
 ## Embedded
 
@@ -163,7 +198,7 @@ Consider the following:
 
 ```python
 >>> class Frame(Packet):
-...    address = Ref(Ethernet, embeb=True)
+...    address = Ref(Ethernet, embed=True)
 
 >>> p = Frame()
 >>>
@@ -173,5 +208,5 @@ b'\xff\xff\x01'
 b'\xff\xff\x02'
 ```
 
-`embeb` makes the referenced subpacket *embedded in* the outer packet:
+`embed` makes the referenced subpacket *embedded in* the outer packet:
 the fields of the subpacket can be accessed directly.

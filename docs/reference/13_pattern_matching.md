@@ -1,3 +1,5 @@
+# Pattern Matching
+
 There are occasions in which we use a parser against a lots of string,
 parsing even invalid data, with the goal to filter out and keep only
 a few strings that are valid and of interest for us.

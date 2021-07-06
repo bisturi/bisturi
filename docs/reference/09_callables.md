@@ -1,3 +1,5 @@
+# Callables
+
 All the fields accept different ways to define how much they will consume.
 
 This is a summary:
@@ -145,6 +147,7 @@ b'\x02\x03\x01\x02\x03\x04\x05\x06'
 ```
 
 Here are more:
+
  - comparison
  - byte substring
  - logical operators (`&` for `and` and `|` for `or`)

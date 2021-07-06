@@ -1,11 +1,20 @@
-We will begin with a simple packet called Type-Length-Payload or TLP.
+# Introduction
+
+`bisturi` is all about creating binary structures or *ṕackets*
+in Python in a declarative way.
+
+The main goal is to **avoid manual parsing**.
+
+We will begin with a simple packet called Type-Length-Payload or `TLP`
+for short.
 
 It consists of three fields:
+
  - `type`: 1 byte
  - `length`: 4 bytes (big endian, unsigned)
  - `payload`: `length` bytes
 
-We translate this into a Python's class
+We translate this into a Python class
 
 ```python
 >>> from bisturi.packet import Packet
@@ -22,14 +31,16 @@ One of the primary goals of `bisturi` is to be **simple and easy to read**.
 In the best cases reading a packet class is almost the same as reading
 the specification of the format, protocol or RFC.
 
+## Fields
 
-We will explore more about Int and Data in the following sections, but for now
-a few notes:
+We will explore more about `Int` and `Data` in the following sections,
+but for now a few notes:
+
  - `Int(1)` denotes an *integer* field, a number of 1 byte length,
 unsigned and in big endian.
  - `Int(4)` denotes also an unsigned, big endian number but this time is
 of 4 bytes.
- - `Data(length)` denotes arbitrary data and its length is not fixed but
+ - `Data(length)` denotes *arbitrary data* and its length is *not fixed* but
 variable and it depends of the value of the field `length`.
 
 Ok, now let's instantiate a `TLP` packet:
@@ -77,6 +88,8 @@ will inherit it:
 >>> p.payload
 b''
 ```
+
+### [extra] Field introspection
 
 One last comment, `get_fields` is a special class method to
 retrieve, among other things, the name of the fields.

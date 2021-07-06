@@ -194,6 +194,7 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
 
         return '\n'.join(msg)
 
+
 class Prototype(object):
     def __init__(self, pkt):
         try:

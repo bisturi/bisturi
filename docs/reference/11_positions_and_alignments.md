@@ -1,3 +1,5 @@
+# Positions and Alignments
+
 Until now, all our fields in a packet are packed/unpacked sequentially.
 
 This is fine, but in some cases it is desired to control where a field begins.
