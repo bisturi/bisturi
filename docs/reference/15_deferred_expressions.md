@@ -107,20 +107,20 @@ True
 ```
 
 As a special case, any field or expression of fields implement
-the `choose` operator.
+the `chooses` operator.
 
 This one select an item based on the value of the field/expression
 who owns the operator.
 
 This can be use to select one item from its parameters by position
-in the argument list ( `choose(a, b, ...)` ) or by name from a
-keyword argument call ( `choose(k1=a, k2=b, ...)` ).
+in the argument list ( `chooses(a, b, ...)` ) or by name from a
+keyword argument call ( `chooses(k1=a, k2=b, ...)` ).
 
-If the `choose` operator receives only one argument,
-this must be a list/tuple (to select by position like `choose([a, b, ...])` )
-or a dictionary (to select by keyword like `choose({k1: a, k2: b, ...})` ).
+If the `chooses` operator receives only one argument,
+this must be a list/tuple (to select by position like `chooses([a, b, ...])` )
+or a dictionary (to select by keyword like `chooses({k1: a, k2: b, ...})` ).
 
-Here are some examples of using `choose` by position and by name:
+Here are some examples of using `chooses` by position and by name:
 
 ```python
 >>> class ChooseExpressions(Packet):
@@ -128,18 +128,18 @@ Here are some examples of using `choose` by position and by name:
 ...     b = Int(1)
 ...
 ...     # by position from the argument list:
-...     # if a == 1 then the position 1 is looked up and choose will return True
-...     # if a != 1 then the position 0 is looked up and choose will return False
-...     extra     = Data(byte_count = 1).when( (a == 1).choose(False, True) )
+...     # if a == 1 then the position 1 is looked up and True will be returned
+...     # if a != 1 then the position 0 is looked up and False will be returned
+...     extra     = Data(byte_count = 1).when( (a == 1).chooses(False, True) )
 ...
 ...     # by position but from a list
-...     # if a < b then the position 1 is looked up and choose will return 'a'
-...     # if a >= b then the position 0 is looked up and choose will return 'b'
-...     mindata   = Data(byte_count = (a < b).choose([b, a]))
+...     # if a < b then the position 1 is looked up and 'a' will be returned
+...     # if a >= b then the position 0 is looked up and b' will be returned
+...     mindata   = Data(byte_count = (a < b).chooses([b, a]))
 ...
 ...     # by name/keyword from a dictionary (this is the preferred way to
 ...     # code a 'if-then-else' expression. Equivalent to: 4 if a > 4 else a
-...     truncated = Data(byte_count = (a > 4).choose({True: 4, False: a}))
+...     truncated = Data(byte_count = (a > 4).chooses({True: 4, False: a}))
 
 >>> raw_min = b'\x01\x02:AB'
 >>> pkt_min = ChooseExpressions.unpack(raw_min)
@@ -175,7 +175,7 @@ instead of an explicit dictionary.
 ```python
 >>> class ChooseExpressions(Packet):
 ...     size_type = Data(until_marker=b'\x00')
-...     data      = Data(byte_count = size_type.choose(small=2, large=4, extra_large=8))
+...     data      = Data(byte_count = size_type.chooses(small=2, large=4, extra_large=8))
 
 >>> raw_small = b'small\x00AB'
 >>> pkt_small = ChooseExpressions.unpack(raw_small)

@@ -33,11 +33,11 @@ To have a field with a **dynamic type** we need a `Ref` and a callable:
 # fields than the shown below
 >>> class SOCKS(Packet):
 ...    type = Int(1, default=0x01)
-...    address = Ref(lambda pkt, **k: {
+...    address = Ref(type.chooses({
 ...                           0x01: Data(4),        # IP v4
 ...                           0x04: Data(16),       # IP v6
 ...                           0x03: DomainName(),   # domain name
-...                           }[pkt.type],  default=b'\x00\x00\x00\x00')
+...                           }),  default=b'\x00\x00\x00\x00')
 ```
 
 The callable will be executed in runtime and it will select a field

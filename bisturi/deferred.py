@@ -13,7 +13,7 @@ def if_true_then_else(condition, possible_values):
     return value_if_true if bool(condition) else value_if_false
 
 
-def choose(index, options):
+def chooses(index, options):
     return options[index]
 
 
@@ -341,7 +341,7 @@ def _defer_operations_of(cls, allowed_categories='all'):
         is_binary=False,
         is_nary=True
     )
-    _defer_method(cls, 'choose', choose, is_binary=False, is_nary=True)
+    _defer_method(cls, 'chooses', chooses, is_binary=False, is_nary=True)
 
     return cls
 
