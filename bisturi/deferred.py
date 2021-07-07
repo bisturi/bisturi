@@ -94,9 +94,16 @@ UnaryOperationsByCategory = {
     ],
 }
 
-NaryExpr = collections.namedtuple('NaryExpr', ['l', 's', 'm', 'op'])
-BinaryExpr = collections.namedtuple('BinaryExpr', ['l', 'r', 'op'])
-UnaryExpr = collections.namedtuple('UnaryExpr', ['r', 'op'])
+# For
+NaryExpr = collections.namedtuple(
+    'NaryExpr', ['left', 'arglist', 'argmapping', 'op']
+)
+
+# For x + y
+BinaryExpr = collections.namedtuple('BinaryExpr', ['left', 'right', 'op'])
+
+# For -x
+UnaryExpr = collections.namedtuple('UnaryExpr', ['arg', 'op'])
 
 
 class Operations(object):
@@ -124,61 +131,68 @@ def compile_expr(root_expr, ops=None, level=0, verbose=False):
         ops = Operations()
 
     if not isinstance(root_expr, (UnaryExpr, BinaryExpr, NaryExpr, Field)):
-        ops.append(
-            0, lambda pkt, *vargs, **kargs: root_expr, level,
-            'literal-value ' + repr(root_expr)
-        )
+        # the identity function.
+        # example: 42 -> [42]
+        cb = lambda pkt, *vargs, **kargs: root_expr
+        ops.append(0, cb, level, 'literal-value ' + repr(root_expr))
 
     elif isinstance(root_expr, NaryExpr):
-        r, l, m, op = root_expr
+        # root_expr is "op(x, list)" or "op(x, mapping)",
+        # compile x then each element of list/mapping and append
+        # a single element representing the whole list/mapping
+        # and then the op
+        #
+        # example: foo(x, [y, z]) -> [x, (y, z), foo]
+        # example: foo(x, {k1=y, k2=z}) -> [x, {k1=y, k2=z}, foo]
+        left, arglist, argmapping, op = root_expr
 
-        compile_expr(r, ops, level=next_level)
+        compile_expr(left, ops, level=next_level)
 
-        assert l or m
-        assert not (l and m)
+        assert arglist or argmapping
+        assert not (arglist and argmapping)
 
-        if l:
-            n = len(l)
-            for value in l:
+        if arglist:
+            n = len(arglist)
+            for value in arglist:
                 compile_expr(value, ops, level=next_level)
 
-            ops.append(n, lambda *vargs: vargs, level, 'arg-list')
+            cb = lambda *vargs: vargs
+            ops.append(n, cb, level, 'arg-list')
 
         else:
-            n = len(m)
-            keys, values = zip(*m.items())
+            n = len(argmapping)
+            keys, values = zip(*argmapping.items())
             for value in values:
                 compile_expr(value, ops, level=next_level)
 
-            ops.append(
-                n, lambda *vargs: dict(zip(keys, vargs)), level, 'arg-mapping'
-            )
+            cb = lambda *vargs: dict(zip(keys, vargs))
+            ops.append(n, cb, level, 'arg-mapping')
 
         ops.append(2, op, level)
 
     elif isinstance(root_expr, BinaryExpr):
+        # root_expr is "op(x, y)", compile x and y and append then op
+        # example: x + y -> [x, y, +]
         l, r, op = root_expr
         compile_expr(l, ops, level=next_level)
         compile_expr(r, ops, level=next_level)
         ops.append(2, op, level)
 
     elif isinstance(root_expr, UnaryExpr):
-        r, op = root_expr
-        compile_expr(r, ops, level=next_level)
+        # root_expr is "op(x)", compile x and append then op
+        # example: -x  -> [x, -]
+        a, op = root_expr
+        compile_expr(a, ops, level=next_level)
         ops.append(1, op, level)
 
     elif isinstance(root_expr, Field):
         if hasattr(root_expr, 'field_name'):
             field_name = root_expr.field_name
-            ops.append(
-                0, lambda pkt, *vargs, **kargs: getattr(pkt, field_name),
-                level, 'field-lookup ' + repr(root_expr)
-            )
+            cb = lambda pkt, *vargs, **kargs: getattr(pkt, field_name)
+            ops.append(0, cb, level, 'field-lookup ' + repr(root_expr))
         else:
-            ops.append(
-                0, lambda pkt, *vargs, **kargs: root_expr, level,
-                'literal-field-value ' + repr(root_expr)
-            )
+            cb = lambda pkt, *vargs, **kargs: root_expr
+            ops.append(0, cb, level, 'literal-field-value ' + repr(root_expr))
     else:
         raise Exception("Invalid argument of type %s" % repr(type(root_expr)))
 
@@ -217,6 +231,25 @@ def _defer_method(
     is_nary=False,
     swap_binary_arguments=False
 ):
+    ''' Creates a method definition and set it to the given target
+        (possible a class).
+
+        The definition will be save under the given methodname.
+
+        The method, once called, it will return a:
+          - UnaryExpr if is_binary == False and is_nary == False
+          - BinaryExpr if is_binary == True
+          - NaryExpr if is_binary == False and is_nary == True
+
+        All of these xxExpr are representation of the given operator
+        (a unary, binary or nary operator).
+
+        The idea is that calling x + 1 *does not* do the real addition.
+        Instead, x + 1 returns a BinaryExpr between x and 1 with the
+        addition as its associated operation.
+
+        In this way we can defer the operation.
+    '''
     if is_binary:
         if swap_binary_arguments:
             setattr(target, methodname, lambda A, B: BinaryExpr(B, A, op))
@@ -231,6 +264,12 @@ def _defer_method(
 
                 is_keyword_call = bool(C)
 
+                # nary supports different ways to call it:
+                #   - keyword-arguments-only: nary(k1=v1, k2=v2)
+                #   - dictionary: nary({k1: v1, k2: v2})
+                #   - list/tuple: nary([v1, v2])
+                #   - positional-arguments-only: nary(v1, v2)
+                # the following code tries to see which way was chosen
                 if not C and len(B) == 1:
                     if isinstance(B[0], dict):  # nary({k1: v1, k2: v2})
                         C = B[0]
@@ -263,6 +302,14 @@ def _defer_method(
 
                 # else  --> nary(v1, v2)
 
+                # after the processing of above we should have:
+                #   - A being the first argument of the nary operation
+                #   - B being the next N arguments as a list
+                #   - C being the next M arguments as a dictionary
+                # the nary operation may operate over A and B or A and C
+                # but never over A and B and C
+                assert B or C
+                assert not (B and C)
                 return NaryExpr(A, B, C, op)
 
             setattr(target, methodname, nary)
@@ -299,6 +346,10 @@ def _defer_operations_of(cls, allowed_categories='all'):
         ), []
     )
 
+    # for each binary operation (op) create a magic
+    # method named __op__ that when it gets call it will return
+    # a deferred operation (unary/binary/nary deferred operation)
+    # that would represent op without executing it (hence the name)
     for binary_op in allowed_binary_operations:
         op_name = binary_op.__name__
         if op_name.endswith("_"):
@@ -347,6 +398,20 @@ def _defer_operations_of(cls, allowed_categories='all'):
 
 
 def defer_operations(allowed_categories='all'):
+    ''' Decorate the class adding it several magic methods that when
+        called they will return deferred operations.
+
+        For example x + 1 will call __add__ which it will return
+        BinaryExpr(x, 1, operator.add). So instead of executing the
+        addition we return an object that represents the addition.
+
+        The object returned will be interpreted by Field to make sense
+        of it and executing the real operation during the runtime
+        (pack/unpack time).
+
+        allowed_categories says which subset of the operations would be
+        added to the class.
+    '''
     def decorator(cls):
         return _defer_operations_of(cls, allowed_categories)
 
