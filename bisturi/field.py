@@ -1155,3 +1155,7 @@ class Em(Field):
     def pack(self, pkt, fragments, **k):
         fragments.append(b"")
         return fragments
+
+
+# end of string
+EOS = re.compile(b"$")

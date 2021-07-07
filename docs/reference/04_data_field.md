@@ -148,10 +148,11 @@ The `$` regex means "give me all until the end of the string". This can
 be done very efficiently so there is no need for a limit.
 
 ```python
+>>> from bisturi.field import EOS
 >>> class DataWithSearchLengthLimitTooShortButIgnored(Packet):
 ...    __bisturi__ = { 'search_buffer_length': 2 }
 ...
-...    a = Data(until_marker=re.compile(b'$'), include_delimiter=False)
+...    a = Data(until_marker=EOS, include_delimiter=False)
 
 >>> s = b'abeeee'
 >>> p = DataWithSearchLengthLimitTooShortButIgnored.unpack(s)
@@ -159,8 +160,9 @@ be done very efficiently so there is no need for a limit.
 b'abeeee'
 ```
 
-        TODO                    
-        talke about a shortcut for re.compile(b'$')
+Yes, `EOS` is just an alias of `re.compile(b"$")` to signal that we want
+to read until the *end of string*.
+
 
 ## Size based on functions
 
