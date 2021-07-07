@@ -11,10 +11,97 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+<style>
+header.banner {
+    position: inherit;
+    float: none;
+}
+
+.leftpanels {
+    float: left;
+}
+
+.footer {
+    position: default;
+}
+
+.leftpanels h2, .leftpanels h3, .leftpanels h4 {
+    color: #fff;
+    margin: 0px 0 10px;
+}
+
+header li {
+    height: auto !important;
+}
+
+header.reference {
+    background-color: #171717;
+    color: #FDFDFB;
+    width:170px;
+    float:left;
+    position: initial;
+    border: 1px solid #000;
+    -webkit-border-top-right-radius: 4px;
+    -webkit-border-bottom-right-radius: 4px;
+    -moz-border-radius-topright: 4px;
+    -moz-border-radius-bottomright: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    padding: 34px 25px 22px 50px;
+    margin: 30px 25px 0 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+header.reference ul {
+    list-style:none;
+    padding:0;
+    position: inherit;
+}
+header.reference li {
+    background: inherit;
+    list-style: none;
+    border: none;
+    box-shadow: none;
+    margin-bottom: none;
+}
+header.reference li:hover {
+    background: inherit;
+    border: none;
+}
+header.reference li::before {
+    content: ">";
+    color: #C3001D;
+    font-weight: bold;
+    display: inline-block; /* Needed to add space between the bullet and the text */
+    width: 1em; /* Also needed for space (tweak if needed) */
+    margin-left: -1em; /* Also needed for space (tweak if needed) */
+}
+header.reference li a {
+    text-decoration: underline;
+}
+
+section.mainsection {
+    float: right;
+}
+
+
+@media print, screen and (max-width: 960px) {
+header.reference li {
+    float: left;
+}
+header.reference {
+    width: initial;
+}
+section.mainsection {
+    float: none;
+}
+}
+</style>
   </head>
   <body>
     <div class="wrapper">
-      <header>
+      <div class="leftpanels">
+      <header class="banner">
         <h1 class="header">{{ site.title | default: site.github.repository_name }}</h1>
         <p class="header">{{ site.description | default: site.github.project_tagline }}</p>
 
@@ -37,14 +124,20 @@
           </ul>
         {% endif %}
       </header>
+      <header class="reference">
+          {% include idx.html %}
+      </header>
+      </div>
 
-      <section>
+      <section class="mainsection">
         {{ content }}
       </section>
 
-      <footer>
+      <!--
+      <footer class="footer">
         <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
       </footer>
+      -->
     </div>
   </body>
 </html>

@@ -5,7 +5,11 @@ RUNPIP ?= pip
 
 .PHONY: test format-test lib-test docs-test unit-test examples-test dist upload
 
-test: format-test lib-test docs-test unit-test examples-test
+test: index-links-test format-test lib-test docs-test unit-test examples-test
+
+index-links-test:
+	@echo "Running index-links-test"
+	@./tests/idx.sh
 
 format-test:
 	yapf -vv --style=.style.yapf --diff --recursive bisturi/
@@ -44,4 +48,5 @@ clean:
 	find . -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -delete
 	rm -Rf dist/ build/ *.egg-info
+	rm -f .flinks.tmp .fnames.tmp
 	rm -f README.rst
