@@ -2,6 +2,12 @@
 
 __version__ = "0.5.0"
 
-_author = 'Gehn'
+_author  = 'Di Paola Martin'
 _license = 'GNU LGPLv3'
-_url = 'https://github.com/gehnch/bisturi'
+_url = 'https://bisturi.github.io/'
+
+try:
+    from .packet import Packet
+    from .field import Data, Int, Bits, Ref, Field
+except SystemError:
+    pass    # this happens when importing from setup.py
