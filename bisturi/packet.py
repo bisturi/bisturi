@@ -156,6 +156,15 @@ class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
 
         return fragments
 
+    def assert_consistency(self, dont_raise=False):
+        try:
+            self.__class__.unpack(self.pack())
+            return True
+        except:
+            if dont_raise:
+                return False
+            raise
+
     def as_regular_expression(self, debug=False):
         fragments = FragmentsOfRegexps()
         stack = []
