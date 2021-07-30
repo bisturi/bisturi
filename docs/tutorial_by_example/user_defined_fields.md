@@ -1,8 +1,9 @@
+# User Defined Fields
 
 A lot of packets and structures can be built using the primitive
 *fields* of `bisturi`: `Int`, `Data` and `Bits`.
 
-But what if we want something custom? Consider the following packet that
+But what if we want something custom? Consider a packet that
 has two attributes that represent two MAC addresses.
 
 Using only the primitive fields we would have to write something like
@@ -19,6 +20,8 @@ this:
 Yes, a MAC address is a binary blob of 6 bytes, but working with bytes
 is **awkward**. A MAC is a much richer object like the one made with
 [netaddr](https://pythonhosted.org/netaddr/api.html)
+
+Considere the following MAC address:
 
 ```python
 >>> from netaddr import EUI         # byexample: +fail-fast
