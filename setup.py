@@ -85,6 +85,6 @@ setup(
 
     keywords='parsing parser dissector binary packet structure struct',
 
-    packages=['bisturi'],
+    packages=find_packages(),
 )
 
