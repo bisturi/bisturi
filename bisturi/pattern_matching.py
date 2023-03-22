@@ -1,7 +1,4 @@
-try:
-    from itertools import ifilter
-except:
-    ifilter = filter
+ifilter = filter
 
 from re import finditer, compile, escape
 from functools import partial

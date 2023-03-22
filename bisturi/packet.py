@@ -1,10 +1,7 @@
 from bisturi.fragments import Fragments, FragmentsOfRegexps
 from bisturi.pattern_matching import Any
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 import copy, collections
 import traceback, sys, re
