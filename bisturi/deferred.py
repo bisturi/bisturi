@@ -1,5 +1,3 @@
-from bisturi.six import text_types
-
 import collections, functools, operator
 
 
@@ -282,7 +280,7 @@ def _defer_method(
                 elif C:  # nary(k1=v1, k2=v2)
 
                     def _encode_to_ascii_or_fail(obj):
-                        if not isinstance(obj, text_types):
+                        if not isinstance(obj, str):
                             return obj  # as is
 
                         try:

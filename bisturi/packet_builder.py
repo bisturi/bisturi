@@ -1,8 +1,6 @@
 import bisturi.codegen
 import copy, pprint
 
-from bisturi.six import integer_types
-
 __trace_enabled = False
 __trace_indent = 0
 
@@ -424,7 +422,10 @@ class PacketSpecializationClassBuilder(PacketClassBuilder):
                 )
 
             if isinstance(
-                attrvalue, integer_types + (bytes, )
+                attrvalue, (
+                    int,
+                    bytes,
+                )
             ) and attrname in original_fields_in_superclass:
                 specialized_fields[
                     attrname

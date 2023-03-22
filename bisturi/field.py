@@ -7,8 +7,6 @@ from bisturi.pattern_matching import Any
 from bisturi.fragments import FragmentsOfRegexps
 from bisturi.util import to_bytes
 
-from bisturi.six import integer_types, from_int_to_byte
-
 
 def exec_once(m):
     ''' Force to execute the method m only once and save its result.
@@ -469,7 +467,7 @@ class Data(Field):
             )
 
         self.default = default
-        if not default and isinstance(byte_count, integer_types):
+        if not default and isinstance(byte_count, int):
             self.default = b"\x00" * byte_count
 
         self.byte_count = byte_count
@@ -483,14 +481,14 @@ class Data(Field):
 
         assert not (consume_delimiter == False and include_delimiter == True)
         self.consume_delimiter = consume_delimiter  #XXX document this!
-        self.is_fixed = isinstance(byte_count, integer_types)
+        self.is_fixed = isinstance(byte_count, int)
 
     @exec_once
     def _compile(self, position, fields, bisturi_conf):
         slots = Field._compile_impl(self, position, fields, bisturi_conf)
 
         if self.byte_count is not None:
-            if isinstance(self.byte_count, integer_types):
+            if isinstance(self.byte_count, int):
                 self.struct_code = "%is" % self.byte_count
                 self.unpack = self._unpack_fixed_size
 
@@ -652,7 +650,7 @@ class Data(Field):
                 value.regexp.pattern if value.regexp is not None else b".*"
             )
             if self.byte_count is not None:
-                if isinstance(self.byte_count, integer_types):
+                if isinstance(self.byte_count, int):
                     byte_count = self.byte_count
 
                 elif isinstance(self.byte_count, Field):
@@ -1062,7 +1060,7 @@ class Bits(Field):
                     first_dont_care = byte.find("x")
                     if first_dont_care == -1:
                         # 0000 0000 pattern (all fixed)
-                        char = from_int_to_byte(int(byte, 2))
+                        char = bytes([int(byte, 2)])
                         fragments.append(char, is_literal=True)
 
                     elif byte[first_dont_care:] == "x" * len(
@@ -1077,8 +1075,8 @@ class Bits(Field):
                         higher_bin = byte[:first_dont_care] + (
                             "1" * dont_care_bits
                         )
-                        lower_char = from_int_to_byte(int(lower_bin, 2))
-                        higher_char = from_int_to_byte(int(higher_bin, 2))
+                        lower_char = bytes([int(lower_bin, 2)])
+                        higher_char = bytes([int(higher_bin, 2)])
 
                         lower_literal = re.escape(lower_char)
                         higher_literal = re.escape(higher_char)
@@ -1103,7 +1101,7 @@ class Bits(Field):
                                             fixed_pattern for p in all_patterns))
 
                         # [ABCD....]
-                        literal_patterns = (re.escape(from_int_to_byte(p)) \
+                        literal_patterns = (re.escape(bytes([p])) \
                                                         for p in mixed_patterns)
                         fragments.append(b'[' + \
                                          b''.join(literal_patterns) + \

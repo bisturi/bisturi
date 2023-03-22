@@ -11,7 +11,24 @@ import traceback, sys, re
 
 import bisturi.packet_builder
 
-from bisturi.six import with_metaclass
+
+# Note: this was taken from 'six'. It is currently used
+# to add a metaclass to Packet class without doing a cyclic
+# dependency with PacketClassBuilder
+def _with_metaclass(meta, *bases):
+    """Create a base class with a metaclass."""
+
+    # This requires a bit of explanation: the basic idea is to make a dummy
+    # metaclass for one level of class instantiation that replaces itself with
+    # the actual metaclass.
+    class metaclass(meta):
+        def __new__(cls, name, this_bases, d):
+            return meta(name, bases, d)
+
+    try:
+        return type.__new__(metaclass, u'temporary_class', (), {})
+    except TypeError:
+        return type.__new__(metaclass, b'temporary_class', (), {})
 
 
 class PacketError(Exception):
@@ -61,7 +78,7 @@ class PacketError(Exception):
         return msg
 
 
-class Packet(with_metaclass(bisturi.packet_builder.MetaPacket, object)):
+class Packet(_with_metaclass(bisturi.packet_builder.MetaPacket, object)):
     __bisturi__ = {}
 
     def __init__(self, _initialize_fields=True, **defaults):

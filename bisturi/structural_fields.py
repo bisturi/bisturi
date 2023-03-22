@@ -1,8 +1,6 @@
 from bisturi.field import Field, exec_once
 from bisturi.deferred import UnaryExpr, BinaryExpr, NaryExpr, compile_expr_into_callable, defer_operations
 
-from bisturi.six import integer_types
-
 
 def normalize_raw_condition_into_a_callable(raw_condition):
     if callable(raw_condition):
@@ -51,7 +49,7 @@ def normalize_count_condition_into_a_callable(count_raw_condition):
     if callable(count_raw_condition):
         return count_raw_condition
 
-    if isinstance(count_raw_condition, integer_types):
+    if isinstance(count_raw_condition, int):
         return lambda **k: count_raw_condition
 
     if isinstance(count_raw_condition, Field):
@@ -439,7 +437,7 @@ class Move(Field):
         if isinstance(self.move_arg, Field):
             move_value = getattr(pkt, self.move_arg.field_name)
 
-        elif isinstance(self.move_arg, integer_types):
+        elif isinstance(self.move_arg, int):
             move_value = self.move_arg
 
         else:
@@ -478,7 +476,7 @@ class Move(Field):
         if isinstance(self.move_arg, Field):
             move_value = getattr(pkt, self.move_arg.field_name)
 
-        elif isinstance(self.move_arg, integer_types):
+        elif isinstance(self.move_arg, int):
             move_value = self.move_arg
 
         else:

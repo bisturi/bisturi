@@ -1,5 +1,3 @@
-from bisturi.six import integer_types
-
 FROM_BEGIN = 0
 FROM_END = 2
 
@@ -25,7 +23,7 @@ class SeekableFile(bytes):
         return self._slice(slice(i, j))
 
     def __getitem__(self, index):
-        if isinstance(index, integer_types):
+        if isinstance(index, int):
             self._seek(index)
             return self._file.read(1)
 
