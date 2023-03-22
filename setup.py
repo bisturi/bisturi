@@ -80,7 +80,7 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    python_requires='>=3.6',
+    python_requires='>=3.9',
     install_requires=install_deps + optional_deps,
 
     keywords='parsing parser dissector binary packet structure struct',

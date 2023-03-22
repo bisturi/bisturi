@@ -9,9 +9,10 @@ from bisturi.util import to_bytes
 
 
 def exec_once(m):
-    ''' Force to execute the method m only once and save its result.
+    ''' Allow the execution of the method only once and save its result.
         The next calls will always return the same result,
-        ignoring the parameters. '''
+        ignoring the parameters.
+        '''
     def wrapper(self, *args, **kargs):
         try:
             return getattr(self, "_%s_cached_result" % m.__name__)
@@ -24,8 +25,8 @@ def exec_once(m):
 
 
 class Field(object):
-    ''' A field represent a single parsing unit. This is the superclass from
-        where all the other field must inherit.
+    ''' A field represents a single parsing unit. This is the superclass from
+        where all the other fields must inherit.
 
         A field will hold a raw configuration from it initialization (__init__)
         until the compilation of it (_compile method).
@@ -233,7 +234,7 @@ class Field(object):
 
              If a field is not parsed, None is used as the value for that field.
 
-             The 'when' condition has no effect in a default packet neither
+             The 'when' condition has no effect neither in a default packet nor
              during the packing phase.
 
              >>> from bisturi.packet import Packet
@@ -1118,13 +1119,11 @@ class Bkpt(Field):
         pass
 
     def unpack(self, pkt, raw, offset=0, **k):
-        import pdb
-        pdb.set_trace()
+        breakpoint()
         return offset
 
     def pack(self, pkt, fragments, **k):
-        import pdb
-        pdb.set_trace()
+        breakpoint()
         return fragments
 
     def pack_regexp(self, pkt, fragments, **k):
