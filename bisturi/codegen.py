@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
-from __future__ import unicode_literals
-
 import struct
 import itertools
 import hashlib
@@ -28,10 +23,6 @@ def generate_code(
             codes.append(generate_code_for_variable_fields(group))
     if generate_for_pack or generate_for_unpack:
         import_code = '''
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
-
 from struct import pack as StructPack, unpack as StructUnpack
 from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
