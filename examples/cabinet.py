@@ -8,7 +8,7 @@ from bisturi.field  import Bits, Int, Data, Ref
 #  - flags and byte order, works?
 #  - one packet reference the fields of another (like Folder referencing to Header), it is possible to implement?
 
-class HeaderFlags(object):
+class HeaderFlags:
    PREV_CABINET    = 0x0001
    NEXT_CABINET    = 0x0002
    RESERVE_PRESENT = 0x0004

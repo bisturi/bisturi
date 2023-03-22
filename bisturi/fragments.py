@@ -2,7 +2,7 @@ from bisect import insort, bisect_left, bisect_right
 import re, pprint
 
 
-class Fragments(object):
+class Fragments:
     def __init__(self, fill=b'.'):
         self.fragments = {}
         self.begin_of_fragments = []
@@ -70,7 +70,7 @@ class Fragments(object):
             return self.tobytes() == other.tobytes()
 
 
-class FragmentRegEx(object):
+class FragmentRegEx:
     def __init__(self, regexp, length):
         self.length = length if length else 1
         self.regexp = regexp

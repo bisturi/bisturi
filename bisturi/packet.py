@@ -213,7 +213,7 @@ class Packet(_with_metaclass(bisturi.packet_builder.MetaPacket, object)):
         return '\n'.join(msg)
 
 
-class Prototype(object):
+class Prototype:
     def __init__(self, pkt):
         try:
             self.template = pickle.dumps(pkt, -1)

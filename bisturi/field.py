@@ -24,7 +24,7 @@ def exec_once(m):
     return wrapper
 
 
-class Field(object):
+class Field:
     ''' A field represents a single parsing unit. This is the superclass from
         where all the other fields must inherit.
 

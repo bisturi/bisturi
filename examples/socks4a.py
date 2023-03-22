@@ -7,7 +7,7 @@ from bisturi.field  import Int, Data
 # See https://www.openssh.com/txt/socks4.protocol
 # and https://www.openssh.com/txt/socks4a.protocol
 
-class ClientCommand(object):
+class ClientCommand:
     TCP_CONNECTION = 0x01
     TCP_PORT_BIND  = 0x02
 
@@ -15,7 +15,7 @@ class ClientCommand(object):
     CONNECT = TCP_CONNECTION
     BIND    = TCP_PORT_BIND
 
-class ServerStatus(object):
+class ServerStatus:
     REQ_GRANTED  = 0x5a
     REQ_REJECTED = 0x5b
 

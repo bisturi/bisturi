@@ -99,7 +99,7 @@ BinaryExpr = collections.namedtuple('BinaryExpr', ['left', 'right', 'op'])
 UnaryExpr = collections.namedtuple('UnaryExpr', ['arg', 'op'])
 
 
-class Operations(object):
+class Operations:
     def __init__(self):
         self.ops = []
 

@@ -5,7 +5,7 @@ from functools import partial
 from operator import eq as equals_to
 
 
-class Any(object):
+class Any:
     def __init__(self, startswith=None, endswith=None, contains=None):
         if startswith == endswith == contains == None:  # most common case
             self.regexp = None

@@ -65,7 +65,7 @@ def _trace(pargs=[], pattrs=[], presult=False):
     return decorator
 
 
-class PacketClassBuilder(object):
+class PacketClassBuilder:
     def __init__(self, metacls, name, bases, attrs):
         self.metacls = metacls
         self.name = name
