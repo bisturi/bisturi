@@ -185,7 +185,7 @@ def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
         setup_code = "   sync_methods = pkt.get_sync_after_unpack_methods()\n"
 
     if not sync_methods:
-        return "   "
+        return ""
 
     sync_calls = '\n'.join('   sync_methods[%i](pkt)' % i \
                                         for i in range(len(sync_methods)))
