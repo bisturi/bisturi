@@ -47,7 +47,7 @@ class PixelRow(Packet):
   __bisturi__ = {'endianness': 'little'}
   pixels = Int(1).repeated(lambda root, **k: root.image_width*3)
 
-  tail = Em().aligned(4, local=True)
+  tail = Em().aligned(4, 'innermost-pkt')
 
 class BMP(Packet):
   __bisturi__ = {'endianness': 'little', 'write_py_module': True}

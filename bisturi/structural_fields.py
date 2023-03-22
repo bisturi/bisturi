@@ -427,10 +427,11 @@ class Optional(Field):
 
 
 class Move(Field):
-    def __init__(self, move_arg, movement_type):
+    def __init__(self, move_arg, reference, is_alignment):
         Field.__init__(self)
         self.move_arg = move_arg
-        self.movement_type = movement_type
+        self.reference = reference
+        self.is_alignment = is_alignment
         self.default = b''
 
     def unpack(self, pkt, raw, offset=0, **k):
@@ -449,15 +450,13 @@ class Move(Field):
         # TODO we need to disable this, the data may be readed by other field
         # in the future and then the packet will have duplicated data (but see pack())
         #setattr(pkt, self.field_name, raw[offset:move_value])
-        if self.movement_type == 'absolute':
-            return move_value
-        elif self.movement_type == 'relative':
-            return offset + move_value
-        elif self.movement_type.startswith('align-'):
-            if self.movement_type == 'align-global':
+        if self.is_alignment:
+            if self.reference == 'begins':
                 start = 0
-            elif self.movement_type == 'align-local':
-                start = k['pktoffset']
+            elif self.reference == 'current-offset':
+                start = offset
+            elif self.reference == 'innermost-pkt':
+                start = k['innermost-pkt-pos']
             else:
                 raise Exception()
 
@@ -465,7 +464,14 @@ class Move(Field):
                 (move_value - ((offset - start) % move_value)) % move_value
             )
         else:
-            raise Exception()
+            if self.reference == 'begins':
+                return move_value
+            elif self.reference == 'current-offset':
+                return offset + move_value
+            elif self.reference == 'innermost-pkt':
+                return k['innermost-pkt-pos'] + move_value
+            else:
+                raise Exception()
 
     def init(self, packet, defaults):
         pass
@@ -487,23 +493,30 @@ class Move(Field):
         # this may not be garbage and if  we try to put here, the other field will
         # try to put the same data in the same place and we get a collission.
         #fragments.append(garbage)
-        if self.movement_type == 'absolute':
-            fragments.current_offset = move_value
-        elif self.movement_type == 'relative':
-            fragments.current_offset += move_value
-        elif self.movement_type.startswith('align-'):
-            offset = fragments.current_offset
-            if self.movement_type == 'align-global':
+        assert isinstance(self.is_alignment, bool)
+        offset = fragments.current_offset
+        if self.is_alignment:
+            if self.reference == 'begins':
                 start = 0
-            elif self.movement_type == 'align-local':
-                start = k['pktoffset']
+            elif self.reference == 'current-offset':
+                start = offset
+            elif self.reference == 'innermost-pkt':
+                start = k['innermost-pkt-pos']
             else:
                 raise Exception()
 
-            fragments.current_offset += (
+            offset += (
                 (move_value - ((offset - start) % move_value)) % move_value
             )
         else:
-            raise Exception()
+            if self.reference == 'begins':
+                offset = move_value
+            elif self.reference == 'current-offset':
+                offset += move_value
+            elif self.reference == 'innermost-pkt':
+                offset = k['innermost-pkt-pos'] + move_value
+            else:
+                raise Exception()
 
+        fragments.current_offset = offset
         return fragments

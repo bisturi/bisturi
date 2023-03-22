@@ -11,11 +11,17 @@ This is fine, but in some cases it is desired to control where a field begins.
 >>> class Folder(Packet):
 ...   offset_of_file = Int(1)
 ...
-...   file_data = Data(4).at(offset_of_file) # TODO is 'absolute' the correct default instead of relative?
+...   file_data = Data(4).at(offset_of_file)
 ```
 
-`at` moves the reading pointer before the field unpacks. This is very
-common in file structures where a field says where another field begins.
+`at` moves the reading pointer before the field unpacks to a position
+relative to the begin of the packet (`Folder`).
+
+This is very common in file structures where a field says where
+another field begins.
+
+In the case above `file_data` will be unpacked at the offset given
+by the value read in `offset_of_file` field.
 
 ```python
 >>> s = b'\x04XXXABCD'
@@ -26,7 +32,15 @@ common in file structures where a field says where another field begins.
 
 >>> p.file_data
 b'ABCD'
+```
 
+Notice how `file_data` started at 0x04 offset respect the begin of
+`Folder`, reading `ABCD`, and leaving the bytes in between unread
+(`XXX`)
+
+The `at` positioning works also during a `pack` call:
+
+```python
 >>> p = Folder(offset_of_file=1)
 >>> p.offset_of_file
 1
@@ -47,11 +61,15 @@ between them?
 
 By default `bisturi` fills the gaps with just dots.
 
-Moving backward is possible too, even reading the same piece of raw data
-already parsed by another field, but at the packing time
+## Overlap
+
+Reading the same piece of raw data
+already parsed by another field is possible, but at the packing time
 you will receive an error.
 
 We can't know how to put two different set of data at the same position!
+
+Considere the following `Folder` packet class:
 
 ```python
 >>> class Folder(Packet):
@@ -59,7 +77,12 @@ We can't know how to put two different set of data at the same position!
 ...
 ...   payload   = Data(8)
 ...   file_data = Data(4).at(offset_of_file)
+```
 
+Now we could set `offset_of_file` to a lower number so `file_data` will
+read the same data read by `payload`. During the `unpack` this is valid:
+
+```python
 >>> s = b'\x04XXXABCDX'
 >>> p = Folder.unpack(s)
 
@@ -85,13 +108,45 @@ Traceback (most recent call last):
 The problem is that the `file_data` is trying to put its packed data
 in the same place where the data of `payload` is already there.
 
+## Reference points
+
+As we said `at` uses the begin of the current packet as reference.
+
+To show this, considere the `data` field of `Vec` which starts
+at the 2 bytes *after* the being of `Vec` (leaving those 2 bytes unread)
+
+```python
+>>> class Vec(Packet):
+...     data = Data(4).at(2)
+
+>>> class Tensor(Packet):
+...     vecs = Ref(Vec).repeated(2)
+
+>>> s = b'xxABCDyyEFGH'
+>>> p = Tensor.unpack(s)
+
+>>> p.vecs[0].data
+b'ABCD'
+>>> p.vecs[1].data
+b'EFGH'
+```
+
+`pack` works as you may expect:
+
+```python
+>>> p.pack()
+b'..ABCD..EFGH'
+```
+
 ## Relative positions
 
 In other cases we don't want to define an absolute position,
-instead we want something relative.
+instead we want something relative to the natural position of the field.
+
+Like *shifting it* by some amount.
 
 In the following example, we want to start the options field
-three bytes after the field `count_options`
+three bytes after the field `count_options` with `shift`
 
 ```python
 >>> class Option(Packet):
@@ -100,7 +155,7 @@ three bytes after the field `count_options`
 
 >>> class Datagram(Packet):
 ...   count_options = Int(1)
-...   options = Ref(Option).repeated(count_options).at(3, 'relative')
+...   options = Ref(Option).repeated(count_options).shift(3)
 ...   checksum = Int(4)
 
 >>> s = b'\x02...\x01A\x04ABCDABCD'
@@ -112,6 +167,26 @@ b'A'
 b'ABCD'
 >>> p.checksum == 0x41424344
 True
+
+>>> p.pack() == s
+True
+```
+
+As you may expect, negative shifts are possible too:
+
+```python
+>>> class Backwards(Packet):
+...     i = Int(1).at(4)
+...     d = Data(4).shift(-4 - 1)
+
+>>> s = b'ABCD\xff'
+>>> p = Backwards.unpack(s)
+
+>>> p.i
+255
+
+>>> p.d
+b'ABCD'
 
 >>> p.pack() == s
 True
@@ -192,13 +267,16 @@ True
 True
 ```
 
-The alignment is based in the global offset during the packing/unpacking.
-For example, if we have this:
+In contrast with `at`, the alignment of a field is respect
+the begin of the unpacking/packing (while `at` is respect the
+`innermost-pkt`)
+
+For example, this is `aligned` as it works by default:
 
 ```python
 >>> class Point(Packet):
 ...   x = Int(2)    # at position 0
-...   y = Int(2).aligned(4) # at position 4
+...   y = Int(2).aligned(4, 'begins') # at position 4
 
 >>> s = b'\x00\x01..\x00\x02'
 >>> p = Point.unpack(s)
@@ -235,7 +313,7 @@ begin: the fields are aligned inside the packet but not necessary outside:
 ```python
 >>> class Point(Packet):
 ...   x = Int(2)
-...   y = Int(2).aligned(4, local=True)
+...   y = Int(2).aligned(4, 'innermost-pkt')
 
 >>> s = b'\x00\x01..\x00\x02'
 >>> p = Point.unpack(s)

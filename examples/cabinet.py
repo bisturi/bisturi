@@ -72,7 +72,7 @@ class Folder(Packet):
                        .when(lambda root, **k: root.flags & HeaderFlags.RESERVE_PRESENT)
 
    datablocks = Ref(DataBlock).repeated(number_of_datablocks)\
-                  .at(offset_first_datablock)
+                  .at(offset_first_datablock, 'begins')
 
 
 class File(Packet):
@@ -95,7 +95,7 @@ class Cabinet(Packet):
    folders = Ref(Folder).repeated(lambda root, **k: root.number_of_folders)
 
    files = Ref(File).repeated(lambda root, **k: root.number_of_files)\
-            .at(lambda root, **k: root.offset_first_file)
+            .at((lambda root, **k: root.offset_first_file), 'begins')
 
 
 if __name__ == '__main__':

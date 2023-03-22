@@ -52,7 +52,8 @@ class Field:
         self.is_bigendian = True
 
         self.move_arg = None
-        self.movement_type = None
+        self.reference = None
+        self.is_alignment = None
 
         self.descriptor = None
         self.descriptor_name = None
@@ -94,7 +95,7 @@ class Field:
             return [(field_name, self)]
 
         else:
-            m = Move(self.move_arg, self.movement_type)
+            m = Move(self.move_arg, self.reference, self.is_alignment)
             m.field_name = "_shift_to_%s" % field_name
             return [(m.field_name, m), (field_name, self)]
 
@@ -280,14 +281,24 @@ class Field:
         from bisturi.structural_fields import Optional
         return Optional(prototype=self, when=condition, default=default)
 
-    def at(self, position, movement_type='absolute'):
+    def at(self, position, reference='innermost-pkt'):
+        assert reference in ('innermost-pkt', 'begins', 'current-offset')
         self.move_arg = position
-        self.movement_type = movement_type
+        self.reference = reference
+        self.is_alignment = False
         return self
 
-    def aligned(self, to, local=False):
+    def shift(self, position):
+        self.move_arg = position
+        self.reference = 'current-offset'
+        self.is_alignment = False
+        return self
+
+    def aligned(self, to, reference='begins'):
+        assert reference in ('innermost-pkt', 'begins', 'current-offset')
         self.move_arg = to
-        self.movement_type = 'align-local' if local else 'align-global'
+        self.reference = reference
+        self.is_alignment = True
         return self
 
     def pack_regexp(self, pkt, fragments, **k):

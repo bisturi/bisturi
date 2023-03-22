@@ -29,14 +29,14 @@ class Option(Packet):
 
 class HopByHop(Packet):
    length      = Int(1)
-   options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + k['pktoffset'] )
+   options     = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 6 + k['innermost-pkt-pos'] )
 
 
 class Routing(Packet):
    length       = Int(1)
    type         = Int(1)
    segment_left = Int(1)
-   options      = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 4 + k['pktoffset'])
+   options      = Ref(Option).repeated(until=lambda pkt, offset, **k: offset > (pkt.length * 8) + 4 + k['innermost-pkt-pos'])
 
 class IPAddr(Field):
    def __init__(self, version=4, default=None):

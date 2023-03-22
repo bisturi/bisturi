@@ -119,7 +119,7 @@ class Packet(_with_metaclass(bisturi.packet_builder.MetaPacket, object)):
                 raise
 
     def unpack_impl(self, raw, offset, **k):
-        k['pktoffset'] = offset
+        k['innermost-pkt-pos'] = offset
         try:
             for name, f, _, unpack in self.get_fields():
                 offset = unpack(pkt=self, raw=raw, offset=offset, **k)
@@ -147,7 +147,7 @@ class Packet(_with_metaclass(bisturi.packet_builder.MetaPacket, object)):
 
     def pack_impl(self, fragments, **k):
         [sync(self) for sync in self.get_sync_before_pack_methods()]
-        k['pktoffset'] = fragments.current_offset
+        k['innermost-pkt-pos'] = fragments.current_offset
 
         try:
             for name, f, pack, _ in self.get_fields():
