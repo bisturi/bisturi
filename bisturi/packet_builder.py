@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 from __future__ import unicode_literals
-import bisturi.blocks
+import bisturi.codegen
 import copy, pprint
 
 from bisturi.six import integer_types
@@ -348,7 +348,7 @@ class PacketClassBuilder(object):
 
         write_py_module = self.cls.__bisturi__.get('write_py_module', False)
 
-        bisturi.blocks.generate_code(
+        bisturi.codegen.generate_code(
             [
                 (i, name_f[0], name_f[1])
                 for i, name_f in enumerate(self.fields)
