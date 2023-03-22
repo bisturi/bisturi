@@ -267,4 +267,6 @@ offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 
 def indent(code, level=1):
     i = "   " * level
-    return "\n".join([i + line for line in code.split("\n")])
+    return "\n".join(
+        [((i + line) if line else line) for line in code.split("\n")]
+    )

@@ -130,7 +130,7 @@ But if the lower bits are fixed, then we need to try every single bit pattern:
 ```python
 >>> ip.fragment_offset = Any()
 >>> ip.flags = 3
->>> ip.as_regular_expression().pattern		# byexample: +geometry=10x300
+>>> ip.as_regular_expression().pattern          # byexample: +geometry=10x300
 b'(?s).{1}.{1}.{2}.{2}.{1}[\x03\\\x0b\x13\x1b\\#\\+3;CKS\\[cks\\{\x83\x8b\x93\x9b\xa3\xab\xb3\xbb\xc3\xcb\xd3\xdb\xe3\xeb\xf3\xfb].{4}.{4}.{4}.*.*'
 ```
 

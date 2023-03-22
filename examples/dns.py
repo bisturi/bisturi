@@ -10,7 +10,10 @@ from bisturi.packet import Packet
 from bisturi.field  import Bits, Int, Data, Ref, Bkpt
 
 import copy
-class ResponseCode(object):
+from enum import Enum, unique
+
+@unique
+class ResponseCode(Enum):
     Ok = 0      # No error condition
 
     FormatError    = 1  # The name server was unable to interpret the query
@@ -49,7 +52,7 @@ class Label(Packet):
         else:
             builder = _Builder.unpack(raw, offset=self.offset())
             return b".".join(n.uncompressed_name(raw, offset) for n in builder.name)
-            
+
 class _Builder(Packet):
     name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
 
@@ -66,7 +69,7 @@ class ResourceRecord(Packet):
     class_ = Int(2, default=1)
     ttl    = Int(4)     # time interval that the RR may be cached before the source consult it again. Zero means shouldn't cached (SOA used this)
     length = Int(2)
-    data   = Data(length) # (the data varies according type_ and class_) 
+    data   = Data(length) # (the data varies according type_ and class_)
 
 
 class Question(Packet):
@@ -85,7 +88,7 @@ class Message(Packet):
     is_authoritative  = Bits(1) # is an authoritative answer?
     was_truncated     = Bits(1) # was the message truncated due its excessive length?
     request_recursion = Bits(1) # the query desires to be resolved recursively; it's copied in the reply
-   
+
     is_recursion_available = Bits(1) # is the server supporting recursion? it's set/cleared in the reply
     reserved      = Bits(3)
     response_code = Bits(4)
@@ -192,7 +195,7 @@ if __name__ == '__main__':
     response = Message.unpack(raw_response)
 
     assert query.id == response.id == 0xfabc
-   
+
     assert query.opcode == query.is_authoritative == query.was_truncated == query.reserved == query.response_code == 0
     assert response.opcode == response.is_authoritative == response.was_truncated == response.reserved == response.response_code == 0
 
@@ -201,24 +204,24 @@ if __name__ == '__main__':
 
     assert query.request_recursion == 1 and query.is_recursion_available == 0
     assert response.request_recursion == 1 and response.is_recursion_available == 1
-   
+
     assert query.qd_count == len(query.questions) == 1
     assert query.an_count == len(query.answers) == 0
     assert query.ns_count == len(query.authorities) == 0
     assert query.ar_count == len(query.additionals) == 1
- 
+
     assert response.qd_count == len(response.questions) == 1
     assert response.an_count == len(response.answers) == 6
     assert response.ns_count == len(response.authorities) == 4
     assert response.ar_count == len(response.additionals) == 5
-   
+
 
     the_question = query.questions[0]
     assert list(map(lambda n: n.name, the_question.name)) == [b'www', b'google', b'com', b'']
 
     the_question = response.questions[0]
     assert list(map(lambda n: n.name, the_question.name)) == [b'www', b'google', b'com', b'']
- 
+
     BASE = b"google.com."
     W    = b"www." + BASE
     NS1  = b"ns1." + BASE
@@ -229,14 +232,14 @@ if __name__ == '__main__':
     for resource_records, expecteds in zip(
             (response.questions, response.answers, response.authorities, response.additionals),
             ([W], [W]*6, [BASE]*4, [NS1, NS2, NS3, NS4, ROOT])):
-      
+
         assert len(resource_records) == len(expecteds)
         for one_record, expected_name in zip(resource_records, expecteds):
-            labels = one_record.name 
+            labels = one_record.name
             name = b".".join([label.uncompressed_name(raw_response) for label in labels])
-         
+
             assert name == expected_name
-   
+
     assert query.pack() == raw_query
     assert response.pack() == raw_response
 

@@ -38,14 +38,14 @@ class Header(Packet):
     flags = Int(2)
 
     set_id = Int(2) # must be the same for all cabinets in a set
-    cabinet_id = Int(2) # number of this cabinet file in a set 
-    
-    size_reserved_area_per_cabinet   = Int(2).when(flags & HeaderFlags.RESERVE_PRESENT)  
+    cabinet_id = Int(2) # number of this cabinet file in a set
+
+    size_reserved_area_per_cabinet   = Int(2).when(flags & HeaderFlags.RESERVE_PRESENT)
     size_reserved_area_per_folder    = Int(1).when(flags & HeaderFlags.RESERVE_PRESENT)
     size_reserved_area_per_datablock = Int(1).when(flags & HeaderFlags.RESERVE_PRESENT)
 
     # (optional) per-cabinet reserved area
-    reserved_area = Data(size_reserved_area_per_cabinet).when(flags & HeaderFlags.RESERVE_PRESENT) 
+    reserved_area = Data(size_reserved_area_per_cabinet).when(flags & HeaderFlags.RESERVE_PRESENT)
 
     name_previous_cabinet = Data(until_marker=b'\0').when(flags & HeaderFlags.PREV_CABINET)
     name_previous_disk = Data(until_marker=b'\0').when(flags & HeaderFlags.PREV_CABINET)
@@ -72,7 +72,7 @@ class Folder(Packet):
    offset_first_datablock = Int(4)
    number_of_datablocks = Int(2)
    compression_type = Int(2)
-   
+
    reserved_area = Data(lambda root, **k: root.pkt.size_reserved_area_per_folder)\
                        .when(lambda root, **k: root.flags & HeaderFlags.RESERVE_PRESENT)
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
    # example from https://msdn.microsoft.com/en-us/library/bb417343.aspx
    raw_file = b16decode(b'4d53434600000000fd000000000000002c000000000000000301010002000000220600005e000000010000004d0000000000000000006c22ba59200068656c6c6f2e63004a0000004d00000000006c22e759200077656c636f6d652e6300bd5aa6309700970023696e636c756465203c737464696f2e683e0d0a0d0a766f6964206d61696e28766f6964290d0a7b0d0a202020207072696e7466282248656c6c6f2c20776f726c64215c6e22293b0d0a7d0d0a23696e636c756465203c737464696f2e683e0d0a0d0a766f6964206d61696e28766f6964290d0a7b0d0a202020207072696e7466282257656c636f6d65215c6e22293b0d0a7d0d0a0d0a', True)
-   
+
    cabinet_file = Cabinet.unpack(raw_file)
 
    assert cabinet_file.signature == b'MSCF'
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
    assert cabinet_file.set_id == 0x0622
    assert cabinet_file.cabinet_id == 0
-   
+
    assert cabinet_file.size_reserved_area_per_cabinet   == None
    assert cabinet_file.size_reserved_area_per_folder    == None
    assert cabinet_file.size_reserved_area_per_datablock == None
@@ -145,7 +145,7 @@ if __name__ == '__main__':
    assert folder.offset_first_datablock == 0x0000005e
    assert folder.number_of_datablocks == 1
    assert folder.compression_type == 0 # none compression
-   
+
    assert folder.reserved_area == None
    assert len(folder.datablocks) == 1
 

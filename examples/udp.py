@@ -34,7 +34,7 @@ if __name__ == '__main__':
    assert udp_query.length == 51
    upper = int((51-8) // 4) + 1
    assert udp_query.payload == b16decode(b'e11e' * upper * 2, True)[:51-8]
-   
+
    assert udp_response.length == 267
    upper = int((267-8) // 4) + 1
    assert udp_response.payload == b16decode(b'e11e' * upper * 2, True)[:267-8]

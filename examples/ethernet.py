@@ -13,12 +13,12 @@ class Ethernet(Packet):
    dst_addr = Data(6)
    src_addr = Data(6)
    size     = Int(2)
-   payload  = Data(lambda pkt, raw, offset, **k: 
+   payload  = Data(lambda pkt, raw, offset, **k:
                         pkt.size if pkt.size <= 1500 else (len(raw)-offset))
 
 if __name__ == '__main__':
    from base64 import b16decode
-   
+
    raw_message_empty_payload = b16decode(b'0018f7f6f7fd00000000000c0000', True)
    raw_message_low_payload = b16decode(b'0018f7f6f7fd00000000000c000141', True)
    raw_message_high_level_payload = b16decode(b'0018f7f6f7fd00000000000c0600e11e', True)

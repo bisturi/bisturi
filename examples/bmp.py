@@ -12,7 +12,7 @@ from bisturi.field  import Bits, Int, Data, Ref, Em, Bkpt
 class DIB(Packet):
   __bisturi__ = {'endianness': 'little'}
   header_size = Int(4)
-   
+
   image_width  = Int(4)
   image_height = Int(4)
 
@@ -69,7 +69,7 @@ class BMP(Packet):
 
   pixel_rows = Ref(PixelRow).repeated(lambda root, **k: root.image_height)\
                       .at(offset_pixel_array)
-  
+
 
 if __name__ == '__main__':
     from base64 import b16decode, b16encode

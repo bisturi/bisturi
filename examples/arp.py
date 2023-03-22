@@ -16,7 +16,7 @@ class ARP(Packet):
    hw_len    = Int(1)
    prot_len  = Int(1)
    opcode    = Int(2)
-   
+
    sender_hw_addr   = Data(hw_len)
    sender_prot_addr = Data(prot_len)
    target_hw_addr   = Data(hw_len)
@@ -28,7 +28,7 @@ class ARP_EthIP(Packet):
    hw_len    = Int(1, default=6)
    prot_len  = Int(1, default=4)
    opcode    = Int(2)
-   
+
    sender_hw_addr   = Data(6)
    sender_prot_addr = Data(4)
    target_hw_addr   = Data(6)

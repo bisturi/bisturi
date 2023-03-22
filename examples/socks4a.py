@@ -24,7 +24,7 @@ class ClientCommand(object):
 class ServerStatus(object):
     REQ_GRANTED  = 0x5a
     REQ_REJECTED = 0x5b
-    
+
     CLIENT_NOT_REACHABLE = 0x5c
 
     INVALID_ID = 0x5d
