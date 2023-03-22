@@ -3,24 +3,33 @@ import itertools
 import hashlib
 import os.path
 import imp
+import inspect
 
 
 def generate_code(
-    fields, pkt_class, generate_for_pack, generate_for_unpack, write_py_module
+    fields,
+    pkt_class,
+    generate_for_pack,
+    generate_for_unpack,
 ):
     if not generate_for_pack and not generate_for_unpack:
         return
 
+    # Divide the fields into groups where each group share the same value
+    # fof the 'is_fixed' attribute.
     grouped_by_variability = [
         (k, list(g))
         for k, g in itertools.groupby(fields, lambda i_n_f: i_n_f[2].is_fixed)
     ]
+
+    # Generate code for each group
     codes = []
     for is_fixed, group in grouped_by_variability:
         if is_fixed:
             codes.extend(generate_code_for_fixed_fields(group))
         else:
             codes.append(generate_code_for_variable_fields(group))
+
     if generate_for_pack or generate_for_unpack:
         import_code = '''
 from struct import pack as StructPack, unpack as StructUnpack
@@ -28,6 +37,7 @@ from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
 
 '''
+
     if generate_for_pack:
         pack_code = '''
 def pack_impl(pkt, fragments, **k):
@@ -86,52 +96,77 @@ def unpack_impl(pkt, raw, offset, **k):
     else:
         unpack_code = ""
 
+    # Compute a hash over the pack and unpack generated code
+    # We will use it to verify that the generated code that may already
+    # exist correspond with the one generated right now
     cookie_hash = hashlib.sha1()
     cookie_hash.update(pack_code.encode('utf-8'))
     cookie_hash.update(unpack_code.encode('utf-8'))
     cookie = cookie_hash.hexdigest()
-    cookie_code = "BISTURI_PACKET_COOKIE = '%(cookie)s'\n" % {
-        'cookie': cookie,
-    }
+    cookie_code = f"BISTURI_PACKET_COOKIE = '{cookie}'\n"
 
-    module_name = "_%s_pkt" % pkt_class.__name__
-    module_filename = module_name + ".py"
+    # From which file we got the packet class?
+    try:
+        pkt_definition_fpath = inspect.getfile(pkt_class)
+    except TypeError:
+        # For builtins packet classes (like the ones created in a
+        # interactive shell session) will not have a file associated
+        # Assume current workign directory as the location for the code
+        # generated
+        pkt_definition_fpath = './__main__.py'
 
+    pkt_definition_fpath = os.path.abspath(pkt_definition_fpath)
+
+    # We will write the generated code in the same folder
+    # that the file above was found, so get its path
+    folder = os.path.dirname(pkt_definition_fpath)
+
+    # But put the code in a subfolder named __pkts__
+    folder = os.path.join(folder, '__pkts__')
+
+    # Get also the name of the filename (without the extension)
+    pkt_definition_module = os.path.splitext(
+        os.path.basename(pkt_definition_fpath)
+    )[0]
+
+    # Create the new module name based on the original module name
+    # and packet class name
+    module_name = "%s_%s" % (pkt_definition_module, pkt_class.__name__)
+
+    # Full path for the new module
+    module_pathname = os.path.join(folder, module_name + ".py")
+
+    # Try to import it first, if exists
     module = None
-    if os.path.exists(module_filename):
+    if os.path.exists(module_pathname):
         try:
-            module = imp.load_source(module_name, module_filename)
+            module = imp.load_source(module_name, module_pathname)
         except ImportError:
             pass
 
-    if module and hasattr(module, '__cached__'):
-        module_compiled_filename = module.__cached__
-    else:
-        module_compiled_filename = module_name + ".pyc"
-
+    # If no previously written module exists or its cooke does not match
+    # ours, recreate the file and reload it
     if not module or getattr(module, 'BISTURI_PACKET_COOKIE', None) != cookie:
-        if os.path.exists(module_compiled_filename):
-            os.remove(module_compiled_filename)
-
-        with open(module_filename, 'w') as module_file:
-            module_file.write(import_code)
-            module_file.write(cookie_code)
-            module_file.write(pack_code)
-            module_file.write(unpack_code)
-
-        module = imp.load_source(module_name, module_filename)
-
+        # Delete the compiled file (.pyc)
         if module and hasattr(module, '__cached__'):
             module_compiled_filename = module.__cached__
         else:
             module_compiled_filename = module_name + ".pyc"
 
-        if not write_py_module:
-            try:
-                os.remove(module_compiled_filename)
-            except:
-                pass
-            os.remove(module_filename)
+        if os.path.exists(module_compiled_filename):
+            os.remove(module_compiled_filename)
+
+        # creates folder to host our generated code
+        os.makedirs(folder, exist_ok=True)
+
+        with open(module_pathname, 'w') as module_file:
+            module_file.write(import_code)
+            module_file.write(cookie_code)
+            module_file.write(pack_code)
+            module_file.write(unpack_code)
+
+        # load it (again)
+        module = imp.load_source(module_name, module_pathname)
 
     from bisturi.packet import Packet
     if generate_for_pack and (pkt_class.pack_impl == Packet.pack_impl):
@@ -158,19 +193,33 @@ def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
 
 
 def generate_code_for_fixed_fields(fields):
-    grouped_by_struct_code =  [(k, list(g)) for k, g in \
-                                itertools.groupby(fields,
-                                                  lambda i_n_f: i_n_f[2].struct_code is not None)]
-    codes = []
-    for has_struct_code, group in grouped_by_struct_code:
-        if has_struct_code:
-            grouped_by_endianness = [(k, list(g)) for k, g in \
-                                        itertools.groupby(group,
-                                                        lambda i_n_f: i_n_f[2].is_bigendian)]
+    # Group the fields of fixed size by if they have a Python' struct
+    # format or not
+    grouped_by_has_struct_code = [
+        (k, list(g)) for k, g in itertools.
+        groupby(fields, lambda i_n_f: i_n_f[2].struct_code is not None)
+    ]
 
-            codes.extend([generate_code_for_fixed_fields_with_struct_code(g, k) \
-                                for k, g in grouped_by_endianness])
+    codes = []
+    for has_struct_code, group in grouped_by_has_struct_code:
+        if has_struct_code:
+            # We cannot call Python's struct for two fields with different
+            # endianness so we do a regroup by fields that have the same
+            # endianness in common
+            grouped_by_endianness = [
+                (k, list(g)) for k, g in
+                itertools.groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)
+            ]
+
+            # Generate the code for each endianness-struct group
+            codes.extend(
+                [
+                    generate_code_for_fixed_fields_with_struct_code(g, k)
+                    for k, g in grouped_by_endianness
+                ]
+            )
         else:
+            # Generate the code for each fixed-but-without-struct group
             codes.append(
                 generate_code_for_fixed_fields_without_struct_code(group)
             )

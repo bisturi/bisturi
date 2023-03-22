@@ -327,9 +327,6 @@ class PacketClassBuilder:
             flags generate_for_pack/generate_for_unpack.
             And it is totally disabled if the class is in debug mode
             (see check_if_we_are_in_debug_mode)
-
-            Optionally the generated code can be kept to manual inspection
-            with the flag write_py_module in True.
         '''
         generate_by_default = True if not self.am_in_debug_mode else False
 
@@ -340,14 +337,14 @@ class PacketClassBuilder:
             'generate_for_unpack', generate_by_default
         )
 
-        write_py_module = self.cls.__bisturi__.get('write_py_module', False)
-
         bisturi.codegen.generate_code(
             [
                 (i, name_f[0], name_f[1])
                 for i, name_f in enumerate(self.fields)
-            ], self.cls, generate_for_pack, generate_for_unpack,
-            write_py_module
+            ],
+            self.cls,
+            generate_for_pack,
+            generate_for_unpack,
         )
 
     @_trace()

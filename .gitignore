@@ -1,7 +1,4 @@
 *.py[cod]
-_*_pkt.py
-bisturi/_*_pkt.py
-tests/_*_pkt.py
 
 # C extensions
 *.so
@@ -22,3 +19,4 @@ README.rst
 .check-secrets-impl.sh
 
 dist/
+__pkts__

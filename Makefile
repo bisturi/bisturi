@@ -21,10 +21,10 @@ docs-test:
 	@${RUNDOCTEST} `find docs -name "*.md"` *.md
 
 unit-test:
-	@cd tests; for t in `find . -name "*.py"`; do echo $$t; ${RUNUNITTEST} `basename -s .py $$t`; done; cd ..
+	@cd tests; for t in `find . -name __pkts__ -prune -o -name "*.py" -print`; do echo $$t; ${RUNUNITTEST} `basename -s .py $$t`; done; cd ..
 
 examples-test:
-	@for t in `find examples -name "*.py"`; do echo $$t; ${RUNPYTHON} $$t; done
+	@for t in `find examples -name __pkts__ -prune -o -name "*.py" -print`; do echo $$t; ${RUNPYTHON} $$t; done
 
 format:
 	yapf -vv -i --style=.style.yapf --recursive bisturi/
@@ -44,9 +44,9 @@ upload: dist
 	twine upload dist/*.tar.gz dist/*.whl
 
 clean:
-	find . -name "_*_pkt.py*" -delete
 	find . -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -delete
+	find . -type d -name "__pkts__" -print | xargs /bin/rm -rf
 	rm -Rf dist/ build/ *.egg-info
 	rm -f .flinks.tmp .fnames.tmp
 	rm -f README.rst
