@@ -457,7 +457,7 @@ class Move(Field):
             if self.movement_type == 'align-global':
                 start = 0
             elif self.movement_type == 'align-local':
-                start = k['local_offset']
+                start = k['pktoffset']
             else:
                 raise Exception()
 
@@ -496,7 +496,7 @@ class Move(Field):
             if self.movement_type == 'align-global':
                 start = 0
             elif self.movement_type == 'align-local':
-                start = k['local_offset']
+                start = k['pktoffset']
             else:
                 raise Exception()
 

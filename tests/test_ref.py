@@ -350,7 +350,7 @@ class TestRef(unittest.TestCase):
             'pkt': one,
             'raw': raw,
             'offset': 0,
-            'local_offset': 0,
+            'pktoffset': 0,
             'root': one,
          }
 
@@ -358,7 +358,7 @@ class TestRef(unittest.TestCase):
             'pkt': one,
             'raw': raw,
             'offset': 2,
-            'local_offset': 0,
+            'pktoffset': 0,
             'root': one,
          }
 

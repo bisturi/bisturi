@@ -51,11 +51,6 @@ class Label(Packet):
 class _Builder(Packet):
     name = Ref(Label).repeated(until=lambda pkt, **k: pkt.name[-1].is_root() or pkt.name[-1].is_compressed())
 
-'''
-class Name(Packet):
-    labels = Ref(Label).repeated(until=lambda pkt, **k: pkt.labels[-1].is_root() or pkt.labels[-1].is_compressed())
-    suffix = Ref(Name).at((labels[-1].length & (~0xc0) << 8) + labels[-1].shift).when(labels[-1].is_compressed())
-    '''
 
 # from https://www.ietf.org/rfc/rfc1035.txt
 class ResourceRecord(Packet):

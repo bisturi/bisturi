@@ -32,7 +32,7 @@ from bisturi.packet import PacketError
         pack_code = '''
 def pack_impl(pkt, fragments, **k):
 %(sync_descriptors_code)s
-   k['local_offset'] = fragments.current_offset
+   k['pktoffset'] = fragments.current_offset
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
@@ -62,7 +62,7 @@ from bisturi.fragments import Fragments
 from bisturi.packet import PacketError
 
 def unpack_impl(pkt, raw, offset, **k):
-   k['local_offset'] = offset
+   k['pktoffset'] = offset
    fields = pkt.get_fields()
    try:
 %(blocks_of_code)s
