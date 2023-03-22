@@ -40,6 +40,7 @@ long_description = __doc__
 
 install_deps=[
         'xview',
+        'importlib-resources>=5.5.0,<6.0.0', # importlib-resources 5.y.x (y >= 5)
         ]
 
 optional_deps=[

@@ -2,8 +2,8 @@ import struct
 import itertools
 import hashlib
 import os.path
-import imp
 import inspect
+from importlib.machinery import SourceFileLoader
 
 
 def generate_code(
@@ -140,7 +140,8 @@ def unpack_impl(pkt, raw, offset, **k):
     module = None
     if os.path.exists(module_pathname):
         try:
-            module = imp.load_source(module_name, module_pathname)
+            module = SourceFileLoader(module_name,
+                                      module_pathname).load_module()
         except ImportError:
             pass
 
@@ -166,7 +167,7 @@ def unpack_impl(pkt, raw, offset, **k):
             module_file.write(unpack_code)
 
         # load it (again)
-        module = imp.load_source(module_name, module_pathname)
+        module = SourceFileLoader(module_name, module_pathname).load_module()
 
     from bisturi.packet import Packet
     if generate_for_pack and (pkt_class.pack_impl == Packet.pack_impl):
