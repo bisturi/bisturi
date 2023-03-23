@@ -338,8 +338,9 @@ class PacketClassBuilder:
         )
 
         vectorize = self.cls.__bisturi__.get('vectorize', True)
+        annotate = self.cls.__bisturi__.get('annotate', True)
 
-        bisturi.codegen.generate_code(
+        bisturi.codegen.CodeGenerator(
             [
                 (i, name_f[0], name_f[1])
                 for i, name_f in enumerate(self.fields)
@@ -348,8 +349,9 @@ class PacketClassBuilder:
             generate_for_pack,
             generate_for_unpack,
             sourcecode_by_field_name=self.sourcecode_by_field_name,
-            vectorize=vectorize
-        )
+            vectorize=vectorize,
+            annotate=annotate
+        ).generate_code()
 
     @_trace()
     def get_packet_class(self):
