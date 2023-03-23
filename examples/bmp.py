@@ -50,7 +50,7 @@ class PixelRow(Packet):
   tail = Em().aligned(4, 'innermost-pkt')
 
 class BMP(Packet):
-  __bisturi__ = {'endianness': 'little', 'write_py_module': True}
+  __bisturi__ = {'endianness': 'little'}
 
   signature = Data(2, default=b"BM")
 
