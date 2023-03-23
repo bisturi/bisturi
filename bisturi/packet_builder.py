@@ -337,6 +337,8 @@ class PacketClassBuilder:
             'generate_for_unpack', generate_by_default
         )
 
+        vectorize = self.cls.__bisturi__.get('vectorize', True)
+
         bisturi.codegen.generate_code(
             [
                 (i, name_f[0], name_f[1])
@@ -345,6 +347,7 @@ class PacketClassBuilder:
             self.cls,
             generate_for_pack,
             generate_for_unpack,
+            vectorize=vectorize
         )
 
     @_trace()

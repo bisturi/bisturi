@@ -7,10 +7,7 @@ from importlib.machinery import SourceFileLoader
 
 
 def generate_code(
-    fields,
-    pkt_class,
-    generate_for_pack,
-    generate_for_unpack,
+    fields, pkt_class, generate_for_pack, generate_for_unpack, vectorize
 ):
     if not generate_for_pack and not generate_for_unpack:
         return
@@ -26,7 +23,7 @@ def generate_code(
     codes = []
     for is_fixed, group in grouped_by_variability:
         if is_fixed:
-            codes.extend(generate_code_for_fixed_fields(group))
+            codes.extend(generate_code_for_fixed_fields(group, vectorize))
         else:
             codes.append(generate_code_for_variable_fields(group))
 
@@ -193,7 +190,7 @@ def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     return setup_code + sync_calls
 
 
-def generate_code_for_fixed_fields(fields):
+def generate_code_for_fixed_fields(fields, vectorize):
     # Group the fields of fixed size by if they have a Python' struct
     # format or not
     grouped_by_has_struct_code = [
@@ -204,21 +201,30 @@ def generate_code_for_fixed_fields(fields):
     codes = []
     for has_struct_code, group in grouped_by_has_struct_code:
         if has_struct_code:
-            # We cannot call Python's struct for two fields with different
-            # endianness so we do a regroup by fields that have the same
-            # endianness in common
-            grouped_by_endianness = [
-                (k, list(g)) for k, g in
-                itertools.groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)
-            ]
-
-            # Generate the code for each endianness-struct group
-            codes.extend(
-                [
-                    generate_code_for_fixed_fields_with_struct_code(g, k)
-                    for k, g in grouped_by_endianness
+            if vectorize:
+                # We cannot call Python's struct for two fields with different
+                # endianness so we do a regroup by fields that have the same
+                # endianness in common
+                grouped_by_endianness = [
+                    (k, list(g)) for k, g in itertools.
+                    groupby(group, lambda i_n_f: i_n_f[2].is_bigendian)
                 ]
-            )
+
+                # Generate the code for each endianness-struct group
+                codes.extend(
+                    [
+                        generate_code_for_fixed_fields_with_struct_code(g, k)
+                        for k, g in grouped_by_endianness
+                    ]
+                )
+            else:
+                codes.extend(
+                    [
+                        generate_code_for_fixed_fields_with_struct_code(
+                            [(a, b, f)], f.is_bigendian
+                        ) for a, b, f in group
+                    ]
+                )
         else:
             # Generate the code for each fixed-but-without-struct group
             codes.append(
