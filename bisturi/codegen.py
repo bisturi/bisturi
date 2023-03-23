@@ -7,7 +7,8 @@ from importlib.machinery import SourceFileLoader
 
 
 def generate_code(
-    fields, pkt_class, generate_for_pack, generate_for_unpack, vectorize
+    fields, pkt_class, generate_for_pack, generate_for_unpack,
+    sourcecode_by_field_name, vectorize
 ):
     if not generate_for_pack and not generate_for_unpack:
         return
@@ -23,9 +24,17 @@ def generate_code(
     codes = []
     for is_fixed, group in grouped_by_variability:
         if is_fixed:
-            codes.extend(generate_code_for_fixed_fields(group, vectorize))
+            codes.extend(
+                generate_code_for_fixed_fields(
+                    group, sourcecode_by_field_name, vectorize
+                )
+            )
         else:
-            codes.append(generate_code_for_variable_fields(group))
+            codes.append(
+                generate_code_for_variable_fields(
+                    group, sourcecode_by_field_name
+                )
+            )
 
     if generate_for_pack or generate_for_unpack:
         import_code = '''
@@ -190,7 +199,9 @@ def generate_unrolled_code_for_descriptor_sync(pkt_class, sync_for_pack):
     return setup_code + sync_calls
 
 
-def generate_code_for_fixed_fields(fields, vectorize):
+def generate_code_for_fixed_fields(
+    fields, sourcecode_by_field_name, vectorize
+):
     # Group the fields of fixed size by if they have a Python' struct
     # format or not
     grouped_by_has_struct_code = [
@@ -213,22 +224,26 @@ def generate_code_for_fixed_fields(fields, vectorize):
                 # Generate the code for each endianness-struct group
                 codes.extend(
                     [
-                        generate_code_for_fixed_fields_with_struct_code(g, k)
-                        for k, g in grouped_by_endianness
+                        generate_code_for_fixed_fields_with_struct_code(
+                            g, k, sourcecode_by_field_name
+                        ) for k, g in grouped_by_endianness
                     ]
                 )
             else:
                 codes.extend(
                     [
                         generate_code_for_fixed_fields_with_struct_code(
-                            [(a, b, f)], f.is_bigendian
+                            [(a, b, f)], f.is_bigendian,
+                            sourcecode_by_field_name
                         ) for a, b, f in group
                     ]
                 )
         else:
             # Generate the code for each fixed-but-without-struct group
             codes.append(
-                generate_code_for_fixed_fields_without_struct_code(group)
+                generate_code_for_fixed_fields_without_struct_code(
+                    group, sourcecode_by_field_name
+                )
             )
 
     return codes
@@ -237,7 +252,9 @@ def generate_code_for_fixed_fields(fields, vectorize):
 # TODO if is_bigendian  is  None means "don't care",
 # no necessary means 'big endian (>)', so it should be joined
 # with any other endianness
-def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
+def generate_code_for_fixed_fields_with_struct_code(
+    group, is_bigendian, sourcecode_by_field_name
+):
     fmt = ">" if is_bigendian else "<"
     fmt += "".join([f.struct_code for _, _, f in group])
 
@@ -246,12 +263,19 @@ def generate_code_for_fixed_fields_with_struct_code(group, is_bigendian):
             'name': name
         }) for _, name, _ in group]
     )
+
+    comments = ''.join(
+        sourcecode_by_field_name.get(name, "") for _, name, _ in group
+    )
+
     unpack_code = '''
+%(comments)s
 name = "%(name)s"
 next_offset = offset + %(advance)s
 %(lookup_fields)s = StructUnpack("%(fmt)s", raw[offset:next_offset])
 offset = next_offset
 ''' % {
+         'comments': comments.rstrip(),
          'lookup_fields': lookup_fields,
          'fmt': fmt,
          'advance': struct.calcsize(fmt),
@@ -260,9 +284,11 @@ offset = next_offset
       }
 
     pack_code = '''
+%(comments)s
 name = "%(name)s"
 fragments.append(StructPack("%(fmt)s", %(lookup_fields)s))
 ''' % {
+         'comments': comments.rstrip(),
          'lookup_fields': lookup_fields[:-1], # remove the last ","
          'fmt': fmt,
          'name': ("between '%s' and '%s'" % (group[0][1], group[-1][1])) \
@@ -272,42 +298,50 @@ fragments.append(StructPack("%(fmt)s", %(lookup_fields)s))
     return pack_code, unpack_code
 
 
-def generate_code_for_variable_fields(group):
+def generate_code_for_variable_fields(group, sourcecode_by_field_name):
     return (
-        generate_code_for_loop_pack(group),
-        generate_code_for_loop_unpack(group)
+        generate_code_for_loop_pack(group, sourcecode_by_field_name),
+        generate_code_for_loop_unpack(group, sourcecode_by_field_name)
     )
 
 
-def generate_code_for_fixed_fields_without_struct_code(group):
+def generate_code_for_fixed_fields_without_struct_code(
+    group, sourcecode_by_field_name
+):
     return (
-        generate_code_for_loop_pack(group),
-        generate_code_for_loop_unpack(group)
+        generate_code_for_loop_pack(group, sourcecode_by_field_name),
+        generate_code_for_loop_unpack(group, sourcecode_by_field_name)
     )
 
 
-def generate_code_for_loop_pack(group):
+def generate_code_for_loop_pack(group, sourcecode_by_field_name):
     return ''.join(
         [
             '''
+%(comments)s
 name, _, pack, _ = fields[%(field_index)i]
 pack(pkt=pkt, fragments=fragments, **k)
 ''' % {
+                'comments': sourcecode_by_field_name.get(name, '').rstrip(),
                 'field_index': field_index
-            } for field_index in range(group[0][0], group[-1][0] + 1)
+            } for field_index, name in
+            zip(range(group[0][0], group[-1][0] + 1), [g[1] for g in group])
         ]
     )
 
 
-def generate_code_for_loop_unpack(group):
+def generate_code_for_loop_unpack(group, sourcecode_by_field_name):
     return ''.join(
         [
             '''
+%(comments)s
 name, _, _, unpack = fields[%(field_index)i]
 offset = unpack(pkt=pkt, raw=raw, offset=offset, **k)
 ''' % {
+                'comments': sourcecode_by_field_name.get(name, '').rstrip(),
                 'field_index': field_index
-            } for field_index in range(group[0][0], group[-1][0] + 1)
+            } for field_index, name in
+            zip(range(group[0][0], group[-1][0] + 1), [g[1] for g in group])
         ]
     )
 

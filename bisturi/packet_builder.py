@@ -347,6 +347,7 @@ class PacketClassBuilder:
             self.cls,
             generate_for_pack,
             generate_for_unpack,
+            sourcecode_by_field_name=self.sourcecode_by_field_name,
             vectorize=vectorize
         )
 
@@ -372,8 +373,42 @@ class PacketClassBuilder:
         self.compile_descriptors_and_extend_slots()
 
     @_trace()
+    def collect_fields_sourcecode(self):
+        import inspect, textwrap
+        try:
+            sourcelines, _ = inspect.getsourcelines(self.cls)
+        except TypeError:
+            self.sourcecode_by_field_name = {}
+            return
+
+        fields_names = [name for name, f in self.original_fields_in_class
+                        ] + ["@@@@@@@@@@@@@@"]
+
+        tmp = []
+        last_field_name = None
+        self.sourcecode_by_field_name = {}
+        for name in fields_names:
+            while sourcelines:
+                line = sourcelines.pop(0)
+                if line.strip().startswith(name
+                                           ) or line.strip().startswith('#'):
+                    tmp = textwrap.dedent(''.join(tmp))
+                    tmp = textwrap.indent(tmp, '# ')
+                    self.sourcecode_by_field_name[last_field_name] = tmp
+                    tmp = [line]
+                    last_field_name = name
+                    break
+
+                tmp.append(line)
+
+        tmp = textwrap.dedent(''.join(tmp))
+        tmp = textwrap.indent(tmp, '# ')
+        self.sourcecode_by_field_name[last_field_name] = tmp
+
+    @_trace()
     def create_packet_class_and_add_its_special_methods(self):
         self.create_class()
+        self.collect_fields_sourcecode()
         self.add_get_fields_class_method()
         self.add_sync_descriptor_class_methods()
 
